@@ -7,6 +7,7 @@
 import { Config } from "./Config.js";
 import { Renderer } from "./Renderer.js";
 import { Input } from "./Input.js";
+import { SelectionManager } from "../world/SelectionManager.js";
 import { GameClock } from "./GameClock.js";
 import { AssetManager } from "../utils/AssetManager.js";
 
@@ -23,6 +24,7 @@ export class Engine {
 
         // Systeme
         this.input = new Input(this);
+this.selection = new SelectionManager(this);
         this.assets = new AssetManager();
         this.clock = new GameClock();
 
@@ -96,6 +98,36 @@ export class Engine {
 
         // Spieluhr aktualisieren
         this.clock.update(this.delta / 1000);
+if (this.input.consumeClick()) {
+
+    const tileSize = this.renderer.tileSize;
+
+    const tileX = Math.floor(
+        this.input.mouse.x / tileSize
+    );
+
+    const tileY = Math.floor(
+        this.input.mouse.y / tileSize
+    );
+
+    if (
+        tileX >= 0 &&
+        tileY >= 0 &&
+        tileX < this.renderer.world.width &&
+        tileY < this.renderer.world.height
+    ) {
+
+        this.selection.select(tileX, tileY);
+
+        console.log(
+            "Ausgewählt:",
+            tileX,
+            tileY
+        );
+
+    }
+
+}
 
         // Kamera
         this.renderer.camera.update();

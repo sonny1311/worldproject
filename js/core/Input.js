@@ -21,7 +21,8 @@ export class Input {
             middle: false,
             right: false,
 
-            wheel: 0
+            wheel: 0,
+click: false,
 
         };
 
@@ -61,8 +62,9 @@ export class Input {
             switch (e.button) {
 
                 case 0:
-                    this.mouse.left = true;
-                    break;
+    this.mouse.left = true;
+    this.mouse.click = true;
+    break;
 
                 case 1:
                     this.mouse.middle = true;
@@ -117,5 +119,15 @@ export class Input {
         return this.keys[key] === true;
 
     }
+//----------------------------------------
 
+consumeClick() {
+
+    const clicked = this.mouse.click;
+
+    this.mouse.click = false;
+
+    return clicked;
+
+}
 }

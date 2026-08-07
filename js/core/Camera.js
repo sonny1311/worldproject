@@ -73,4 +73,4 @@ export class Camera {
 
     }
 
-}export class Camera {}
+}

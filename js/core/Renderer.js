@@ -182,6 +182,30 @@ export class Renderer {
                     this.tileSize
 
                 );
+//----------------------------------------
+// Auswahl
+//----------------------------------------
+
+if (
+    this.engine.selection.hasSelection() &&
+    this.engine.selection.selectedX === x &&
+    this.engine.selection.selectedY === y
+) {
+
+    ctx.strokeStyle = "#FFD700";
+    ctx.lineWidth = 3;
+
+    ctx.strokeRect(
+
+        px + 1,
+        py + 1,
+
+        this.tileSize - 2,
+        this.tileSize - 2
+
+    );
+
+}
 
             }
 

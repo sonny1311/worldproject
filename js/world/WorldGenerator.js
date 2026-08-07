@@ -147,13 +147,15 @@ export class WorldGenerator {
 
     this.smooth(world);
 
-    this.finish(world);
+this.finish(world);
 
-        //----------------------------------------
-    // Wälder erzeugen
-    //----------------------------------------
+}   // <-- DIESE KLAMMER FEHLT
 
-    generateForests(world) {
+//----------------------------------------
+// Wälder erzeugen
+//----------------------------------------
+
+generateForests(world) {
 
         for (let y = 0; y < world.height; y++) {
 
@@ -198,5 +200,4 @@ export class WorldGenerator {
 
     }
 
-}
 }
