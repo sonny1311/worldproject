@@ -1,0 +1,16 @@
+[
+    {
+        "id":"market_small",
+        "name":"Kleiner Supermarkt"
+    },
+
+    {
+        "id":"market_medium",
+        "name":"Mittlerer Supermarkt"
+    },
+
+    {
+        "id":"market_large",
+        "name":"Großer Supermarkt"
+    }
+]

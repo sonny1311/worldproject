@@ -1,0 +1,81 @@
+// ============================================
+// Renderer.js
+// WorldEngine
+// Version 0.2.0
+// ============================================
+
+import { Camera } from "./Camera.js";
+
+import { World } from "../world/World.js";
+import { WorldGenerator } from "../world/WorldGenerator.js";
+import { WorldRenderer } from "../world/WorldRenderer.js";
+
+export class Renderer {
+
+    constructor(engine) {
+
+        this.engine = engine;
+
+        this.ctx = engine.ctx;
+
+        this.camera = new Camera(engine);
+
+        // Welt erzeugen
+        this.world = new World(100, 100);
+
+        // Generator
+        this.generator = new WorldGenerator(this.world);
+
+        this.generator.generate();
+
+        // Renderer
+        this.worldRenderer = new WorldRenderer(
+
+            engine,
+            this.world,
+            this.camera
+
+        );
+
+    }
+
+    draw() {
+
+        const canvas = this.engine.canvas;
+
+        // Hintergrund
+
+        this.ctx.fillStyle = "#87CEEB";
+
+        this.ctx.fillRect(
+            0,
+            0,
+            canvas.width,
+            canvas.height
+        );
+
+        // Welt
+
+        this.worldRenderer.draw(this.ctx);
+
+        // Debug
+
+        this.ctx.fillStyle = "#ffffff";
+
+        this.ctx.font = "18px Arial";
+
+        this.ctx.fillText(
+            "WorldEngine v0.2.0",
+            20,
+            30
+        );
+
+        this.ctx.fillText(
+            "FPS: " + this.engine.fps,
+            20,
+            55
+        );
+
+    }
+
+}

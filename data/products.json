@@ -1,0 +1,14 @@
+[
+    {
+        "id": "water01",
+        "name": "Quellwasser",
+        "category": "Getränke",
+        "brand": "BlueSpring"
+    },
+    {
+        "id": "cola01",
+        "name": "Cola Classic",
+        "category": "Getränke",
+        "brand": "BlueFizz"
+    }
+]

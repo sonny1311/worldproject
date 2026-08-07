@@ -1,0 +1,16 @@
+[
+    {
+        "id":"truck_small",
+        "name":"7,5-Tonner"
+    },
+
+    {
+        "id":"truck_medium",
+        "name":"18-Tonner"
+    },
+
+    {
+        "id":"truck_large",
+        "name":"40-Tonner"
+    }
+]

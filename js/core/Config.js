@@ -1,0 +1,7 @@
+export const Config={
+VERSION:'0.1.1',
+DEBUG:true,
+TILE_WIDTH:64,
+TILE_HEIGHT:32,
+CHUNK_SIZE:32
+};
