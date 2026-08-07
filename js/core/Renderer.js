@@ -495,7 +495,7 @@ if (
             10,
 
             230,
-            75
+            180
 
         );
 
@@ -551,6 +551,47 @@ ctx.fillText(
 
 );
 
-    }
+if (this.engine.selection.hasSelection()) {
 
+    const parcel = this.engine.renderer.world.getParcel(
+
+        this.engine.selection.selectedX,
+        this.engine.selection.selectedY
+
+    );
+
+    ctx.font = "14px Arial";
+
+    ctx.fillText(
+
+        "Feld: " +
+        this.engine.selection.selectedX +
+        " / " +
+        this.engine.selection.selectedY,
+
+        20,
+        122
+
+    );
+
+    ctx.fillText(
+
+        "Terrain: " + parcel.terrain,
+
+        20,
+        142
+
+    );
+
+    ctx.fillText(
+
+        "Höhe: " + parcel.height.toFixed(2),
+
+        20,
+        162
+
+    );
+
+}
+}
 }

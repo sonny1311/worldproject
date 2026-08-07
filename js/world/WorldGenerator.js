@@ -116,8 +116,13 @@ export class WorldGenerator {
                     x * 0.04,
                     y * 0.04
                 );
-
+if (Number.isNaN(h)) {
+    console.error("Height ist NaN bei", x, y);
+}
             parcel.height = h;
+if (Number.isNaN(parcel.height)) {
+    console.error("Parcel Height ist NaN", parcel);
+}
 
             if (h < 0.30) {
 
@@ -145,7 +150,7 @@ export class WorldGenerator {
 
     this.generateBeaches(world);
 
-    this.smooth(world);
+    this.smoothTerrain(world);
 
 this.finish(world);
 
@@ -187,7 +192,7 @@ generateForests(world) {
 
     //----------------------------------------
 
-    smooth(world) {
+    smoothTerrain(world) {
 
         // Platzhalter
     }

@@ -21,6 +21,9 @@ export class Parcel {
         // Gelände
         this.terrain = "grass";
 
+// Höhe
+this.height = 0;
+
         // Straße vorhanden
         this.hasRoad = false;
 
