@@ -152,6 +152,12 @@ export const TruckTypes = {
 
         fuelType: "diesel",
 
+        // Reeller Fahrzeugwert fuer die
+        // Transportkostenberechnung.
+        // Liter Diesel je 100 km.
+
+        consumptionPer100Km: 29,
+
         suitableFor: [
             "generalCargo",
             "pallets",
