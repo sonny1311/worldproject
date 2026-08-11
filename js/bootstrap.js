@@ -10,6 +10,7 @@ import "./core/TransportVehicleCostIntegration.js";
 import "./core/TransportFuelTimeIntegration.js";
 import "./core/TransportGameplayIntegration.js";
 import "./core/CompanyEconomyIntegration.js";
+import "./core/ConnectedEconomyGameplay.js";
 
 
 import(
