@@ -7,6 +7,7 @@
 // ============================================
 
 import "./core/TransportVehicleCostIntegration.js";
+import "./core/TransportFuelTimeIntegration.js";
 
 
 import(
