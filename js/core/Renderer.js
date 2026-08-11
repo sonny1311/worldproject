@@ -113,22 +113,46 @@ export class Renderer {
                         );
 
                         break;
+case "forest":
 
-                    case "forest":
+    this.drawForest(
 
-                        this.drawForest(
+        ctx,
 
-                            ctx,
+        x,
+        y,
 
-                            x,
-                            y,
+        px,
+        py
 
-                            px,
-                            py
+    );
 
-                        );
+    break;
 
-                        break;
+
+case "hill":
+
+    this.drawHill(
+        ctx,
+        x,
+        y,
+        px,
+        py
+    );
+
+    break;
+
+case "mountain":
+
+    this.drawMountain(
+        ctx,
+        x,
+        y,
+        px,
+        py
+    );
+
+    break;
 
                     case "water":
 
@@ -210,12 +234,43 @@ if (
             }
 
         }
-
         //------------------------------------
         // HUD
         //------------------------------------
 
         this.drawHud(ctx);
+// ----------------------------------------
+// Firmeninformationen
+// ----------------------------------------
+
+const company = this.engine.company;
+
+ctx.fillStyle = "#ffffff";
+ctx.font = "16px Arial";
+
+ctx.fillText(
+    "Firma: " + (company.name || "Noch keine Firma"),
+    1450,
+    25
+);
+
+ctx.fillText(
+    "Geld: " + company.money.toLocaleString("de-DE") + " €",
+    1450,
+    48
+);
+
+ctx.fillText(
+    "Coins: " + company.coins,
+    1450,
+    71
+);
+
+ctx.fillText(
+    "Grundstück: " + company.land.size + " m²",
+    1450,
+    94
+);
 
     }
 
@@ -466,9 +521,105 @@ if (
 
         );
 
-        ctx.fill();
+        ctx.fill();}
+//----------------------------------------
+// Hügel
+//----------------------------------------
 
-    }
+drawHill(ctx, x, y, px, py) {
+
+    // Hügelgrund
+    ctx.fillStyle = "#6F9F4B";
+
+    ctx.fillRect(
+        px,
+        py,
+        this.tileSize,
+        this.tileSize
+    );
+
+    // Hügel
+    ctx.fillStyle = "#8FBE62";
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        px + 3,
+        py + this.tileSize
+    );
+
+    ctx.quadraticCurveTo(
+        px + this.tileSize * 0.5,
+        py + 4,
+        px + this.tileSize - 3,
+        py + this.tileSize
+    );
+
+    ctx.closePath();
+
+    ctx.fill();
+
+}
+
+//----------------------------------------
+// Berge
+//----------------------------------------
+
+drawMountain(ctx, x, y, px, py) {
+
+    // Fels
+    ctx.fillStyle = "#707070";
+
+    ctx.beginPath();
+
+    ctx.moveTo(px + 16, py + 2);
+    ctx.lineTo(px + 3, py + 29);
+    ctx.lineTo(px + 29, py + 29);
+
+    ctx.closePath();
+    ctx.fill();
+
+    // rechte Schattenseite
+    ctx.fillStyle = "#565656";
+
+    ctx.beginPath();
+
+    ctx.moveTo(px + 16, py + 2);
+    ctx.lineTo(px + 29, py + 29);
+    ctx.lineTo(px + 16, py + 29);
+
+    ctx.closePath();
+    ctx.fill();
+
+    // Schneekappe
+    ctx.fillStyle = "#FFFFFF";
+
+    ctx.beginPath();
+
+    ctx.moveTo(px + 16, py + 2);
+    ctx.lineTo(px + 11, py + 11);
+    ctx.lineTo(px + 16, py + 8);
+    ctx.lineTo(px + 21, py + 11);
+
+    ctx.closePath();
+    ctx.fill();
+
+    // kleiner Felsen
+    ctx.fillStyle = "#8D8D8D";
+
+    ctx.beginPath();
+
+    ctx.arc(
+        px + 10,
+        py + 22,
+        2,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+}
+
         //----------------------------------------
     // HUD
     //----------------------------------------

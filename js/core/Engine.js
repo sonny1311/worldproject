@@ -5,6 +5,8 @@
 // ============================================
 
 import { Config } from "./Config.js";
+import { GameConfig } from "./GameConfig.js";
+import { Company } from "./Company.js";
 import { Renderer } from "./Renderer.js";
 import { Input } from "./Input.js";
 import { SelectionManager } from "../world/SelectionManager.js";
@@ -17,6 +19,8 @@ export class Engine {
 
         // Version
         this.version = Config.VERSION;
+this.gameConfig = GameConfig;
+this.company = new Company();
 
         // Canvas
         this.canvas = document.getElementById("gameCanvas");
@@ -124,7 +128,6 @@ if (this.input.consumeClick()) {
             tileX,
             tileY
         );
-
     }
 
 }

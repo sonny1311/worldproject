@@ -1,19 +1,45 @@
 // ============================================
 // WorldGenerator.js
 // WorldEngine
-// Version 2.0.0
+// Version 3.0.0
 // ============================================
 
 export class WorldGenerator {
 
-    constructor(seed = Date.now()) {
+    constructor(seed = 123456) {
 
         this.seed = seed;
+
+        // ========================================
+        // Einstellungen
+        // ========================================
+
+        this.settings = {
+
+            // Größe der Kontinente
+            continentScale: 0.030,
+
+            // Anteil Wasser
+            waterLevel: 0.30,
+
+            // Strandbereich
+            beachLevel: 0.47,
+
+            // Hügel
+            hillLevel: 0.27,
+
+            // Berge
+            mountainLevel: 0.32,
+
+            // Wald
+            forestLevel: 0.63
+
+        };
 
     }
 
     //----------------------------------------
-    // Seed-Zufall
+    // Zufall aus Seed
     //----------------------------------------
 
     random(x, y) {
@@ -23,12 +49,19 @@ export class WorldGenerator {
             y * 668265263 +
             this.seed * 1447;
 
-        n = (n ^ (n >> 13)) * 1274126177;
+        n =
+            (n ^ (n >> 13)) *
+            1274126177;
 
-        return ((n ^ (n >> 16)) >>> 0) / 4294967295;
+        return (
+            ((n ^ (n >> 16)) >>> 0)
+            / 4294967295
+        );
 
     }
 
+    //----------------------------------------
+    // Interpolation
     //----------------------------------------
 
     lerp(a, b, t) {
@@ -37,6 +70,8 @@ export class WorldGenerator {
 
     }
 
+    //----------------------------------------
+    // Glättung
     //----------------------------------------
 
     smooth(t) {
@@ -51,21 +86,49 @@ export class WorldGenerator {
 
     noise(x, y) {
 
-        const ix = Math.floor(x);
-        const iy = Math.floor(y);
+        const ix =
+            Math.floor(x);
 
-        const fx = x - ix;
-        const fy = y - iy;
+        const iy =
+            Math.floor(y);
 
-        const a = this.random(ix, iy);
-        const b = this.random(ix + 1, iy);
-        const c = this.random(ix, iy + 1);
-        const d = this.random(ix + 1, iy + 1);
+        const fx =
+            x - ix;
 
-        const i1 = this.lerp(a, b, this.smooth(fx));
-        const i2 = this.lerp(c, d, this.smooth(fx));
+        const fy =
+            y - iy;
 
-        return this.lerp(i1, i2, this.smooth(fy));
+        const a =
+            this.random(ix, iy);
+
+        const b =
+            this.random(ix + 1, iy);
+
+        const c =
+            this.random(ix, iy + 1);
+
+        const d =
+            this.random(ix + 1, iy + 1);
+
+        const i1 =
+            this.lerp(
+                a,
+                b,
+                this.smooth(fx)
+            );
+
+        const i2 =
+            this.lerp(
+                c,
+                d,
+                this.smooth(fx)
+            );
+
+        return this.lerp(
+            i1,
+            i2,
+            this.smooth(fy)
+        );
 
     }
 
@@ -76,26 +139,170 @@ export class WorldGenerator {
     octaveNoise(x, y) {
 
         let value = 0;
-        let amp = 1;
-        let freq = 1;
-        let max = 0;
+
+        let amplitude = 1;
+
+        let frequency = 1;
+
+        let maximum = 0;
 
         for (let i = 0; i < 5; i++) {
 
             value +=
                 this.noise(
-                    x * freq,
-                    y * freq
-                ) * amp;
+                    x * frequency,
+                    y * frequency
+                ) * amplitude;
 
-            max += amp;
+            maximum += amplitude;
 
-            amp *= 0.5;
-            freq *= 2;
+            amplitude *= 0.5;
+
+            frequency *= 2;
 
         }
 
-        return value / max;
+        return value / maximum;
+
+    }
+
+    //----------------------------------------
+    // Kontinentkarte
+    //----------------------------------------
+
+    getContinent(x, y) {
+
+        const n =
+            this.octaveNoise(
+                x * this.settings.continentScale,
+                y * this.settings.continentScale
+            );
+
+        // Abstand vom Mittelpunkt
+        const centerX = 40;
+        const centerY = 25;
+
+        const dx = x - centerX;
+        const dy = y - centerY;
+
+        const distance =
+            Math.sqrt(
+                dx * dx +
+                dy * dy
+            );
+
+        // Weltmitte bevorzugen
+        const shape =
+            1 -
+            distance / 50;
+
+        return (
+            n * 0.65 +
+            shape * 0.35
+        );
+
+    }
+
+    //----------------------------------------
+    // Höhenkarte
+    //----------------------------------------
+
+    getHeight(x, y) {
+
+        const large =
+            this.octaveNoise(
+                x * 0.025,
+                y * 0.025
+            );
+
+        const detail =
+            this.octaveNoise(
+                x * 0.08 + 100,
+                y * 0.08 + 100
+            );
+
+        return (
+            large * 0.75 +
+            detail * 0.25
+        );
+
+    }
+
+    //----------------------------------------
+    // Terrain bestimmen
+    //----------------------------------------
+
+    getTerrain(x, y, continent, height) {
+
+        //------------------------------------
+        // Wasser
+        //------------------------------------
+
+        if (
+            continent <
+            this.settings.waterLevel
+        ) {
+
+            return "water";
+
+        }
+
+        //------------------------------------
+        // Strand
+        //------------------------------------
+
+        if (
+            continent <
+            this.settings.beachLevel
+        ) {
+
+            return "sand";
+
+        }
+
+        //------------------------------------
+        // Berge
+        //------------------------------------
+
+  if (height >= this.settings.mountainLevel) {
+
+    const mountainNoise =
+        this.octaveNoise(
+            x * 0.10 + 500,
+            y * 0.10 + 500
+        );
+
+    if (mountainNoise > 0.25) {
+        return "mountain";
+    }
+
+    return "hill";
+}
+
+        //------------------------------------
+        // Hügel
+        //------------------------------------
+
+       if (height >= this.settings.hillLevel) {
+
+    const hillNoise =
+        this.octaveNoise(
+            x * 0.12 + 300,
+            y * 0.12 + 300
+        );
+
+    if (hillNoise > 0.27) {
+        return "hill";
+    }
+
+    return "grass";
+}
+
+        //------------------------------------
+        // Gras
+        //------------------------------------
+
+        return "grass";
 
     }
 
@@ -103,77 +310,134 @@ export class WorldGenerator {
     // Welt erzeugen
     //----------------------------------------
 
-  generate(world) {
+    generate(world) {
+let minHeight = 1;
+let maxHeight = 0;
+let hillCount = 0;
+        for (
+            let y = 0;
+            y < world.height;
+            y++
+        ) {
 
-    for (let y = 0; y < world.height; y++) {
+            for (
+                let x = 0;
+                x < world.width;
+                x++
+            ) {
 
-        for (let x = 0; x < world.width; x++) {
+                const parcel =
+                    world.getParcel(x, y);
 
-            const parcel = world.getParcel(x, y);
+                //--------------------------------
+                // Kontinent
+                //--------------------------------
 
-            const h =
-                this.octaveNoise(
-                    x * 0.04,
-                    y * 0.04
-                );
-if (Number.isNaN(h)) {
-    console.error("Height ist NaN bei", x, y);
+                const continent =
+                    this.getContinent(x, y);
+
+                //--------------------------------
+                // Höhe
+                //--------------------------------
+
+                const height =
+                    this.getHeight(x, y);
+if (height < minHeight) {
+    minHeight = height;
 }
-            parcel.height = h;
-if (Number.isNaN(parcel.height)) {
-    console.error("Parcel Height ist NaN", parcel);
+
+if (height > maxHeight) {
+    maxHeight = height;
+}
+if (x === 40 && y === 25) {
+    console.log("Testhöhe:", height);
 }
 
-            if (h < 0.30) {
+                //--------------------------------
+                // Speichern
+                //--------------------------------
 
-                parcel.terrain = "water";
+                parcel.height =
+                    height;
 
-            }
+                //--------------------------------
+                // Terrain
+                //--------------------------------
 
-            else if (h < 0.36) {
-
-                parcel.terrain = "sand";
-
-            }
-
-            else {
-
-                parcel.terrain = "grass";
+                parcel.terrain =
+                    this.getTerrain(
+    x,
+    y,
+    continent,
+    height
+);
+if (parcel.terrain === "hill") {
+    hillCount++;
+}
 
             }
 
         }
 
+        //------------------------------------
+        // Wälder
+        //------------------------------------
+
+     console.log("Höhenbereich:", minHeight, "bis", maxHeight); 
+console.log("Hügel:", hillCount); 
+ this.generateForests(world);
+
+        //------------------------------------
+        // Abschluss
+        //------------------------------------
+
+        this.finish(world);
+
     }
 
-    this.generateForests(world);
+    //----------------------------------------
+    // Wälder
+    //----------------------------------------
 
-    this.generateBeaches(world);
+    generateForests(world) {
 
-    this.smoothTerrain(world);
+        for (
+            let y = 0;
+            y < world.height;
+            y++
+        ) {
 
-this.finish(world);
+            for (
+                let x = 0;
+                x < world.width;
+                x++
+            ) {
 
-}   // <-- DIESE KLAMMER FEHLT
+                const parcel =
+                    world.getParcel(x, y);
 
-//----------------------------------------
-// Wälder erzeugen
-//----------------------------------------
+                // Nur Gras kann Wald werden
+                if (
+                    parcel.terrain !== "grass"
+                ) {
 
-generateForests(world) {
-
-        for (let y = 0; y < world.height; y++) {
-
-            for (let x = 0; x < world.width; x++) {
-
-                const parcel = world.getParcel(x, y);
-
-                if (parcel.terrain !== "grass")
                     continue;
 
-                if (this.octaveNoise(x * 0.08 + 10, y * 0.08 + 10) > 0.62) {
+                }
 
-                    parcel.terrain = "forest";
+                const moisture =
+                    this.octaveNoise(
+                        x * 0.07 + 200,
+                        y * 0.07 + 200
+                    );
+
+                if (
+                    moisture >
+                    this.settings.forestLevel
+                ) {
+
+                    parcel.terrain =
+                        "forest";
 
                 }
 
@@ -184,24 +448,13 @@ generateForests(world) {
     }
 
     //----------------------------------------
-
-    generateBeaches(world) {
-
-        // Platzhalter
-    }
-
-    //----------------------------------------
-
-    smoothTerrain(world) {
-
-        // Platzhalter
-    }
-
+    // Abschluss
     //----------------------------------------
 
     finish(world) {
 
-        world.seed = this.seed;
+        world.seed =
+            this.seed;
 
     }
 
