@@ -2,6 +2,8 @@
 export class SupplierMarketSystem {
     constructor(seedOffers = null) {
         this.offers = seedOffers ?? this.createDefaultOffers();
+        this.priceHistory = {};
+        for (const offer of this.offers) this.recordPrice(offer);
     }
 
     createDefaultOffers() {
@@ -10,7 +12,6 @@ export class SupplierMarketSystem {
             unitPrice: price, distanceKm, availableAmount: stock, deliveryHours,
             updatedAt: new Date()
         });
-
         return [
             make("malt-a","Mälzerei Nord","malt_kg",0.78,95,50000,5),
             make("malt-b","Mälzerei West","malt_kg",0.74,185,70000,8),
@@ -23,9 +24,15 @@ export class SupplierMarketSystem {
         ];
     }
 
-    getOffers(itemId) {
-        return this.offers.filter(o => o.itemId === itemId && o.availableAmount > 0);
+    recordPrice(offer) {
+        if (!offer) return;
+        this.priceHistory[offer.id] ??= [];
+        this.priceHistory[offer.id].push({ price:Number(offer.unitPrice)||0, at:new Date() });
+        if (this.priceHistory[offer.id].length > 60) this.priceHistory[offer.id].shift();
     }
+
+    getPriceHistory(offerId) { return [...(this.priceHistory[offerId] ?? [])]; }
+    getOffers(itemId) { return this.offers.filter(o => o.itemId === itemId && o.availableAmount > 0); }
 
     estimateTransportCost(offer, amount) {
         const distance = Math.max(Number(offer?.distanceKm) || 0, 0);
@@ -39,20 +46,9 @@ export class SupplierMarketSystem {
             .map(o => {
                 const materialCost = o.unitPrice * amount;
                 const transportCost = this.estimateTransportCost(o, amount);
-                return {
-                    ...o,
-                    materialCost,
-                    estimatedTransportCost: transportCost,
-                    estimatedTotalCost: materialCost + transportCost
-                };
+                return { ...o, materialCost, estimatedTransportCost: transportCost, estimatedTotalCost: materialCost + transportCost };
             })
-            .sort((a,b) => {
-                if (a.estimatedTotalCost !== b.estimatedTotalCost) {
-                    return a.estimatedTotalCost - b.estimatedTotalCost;
-                }
-                return a.deliveryHours - b.deliveryHours;
-            });
-
+            .sort((a,b) => a.estimatedTotalCost !== b.estimatedTotalCost ? a.estimatedTotalCost-b.estimatedTotalCost : a.deliveryHours-b.deliveryHours);
         return offers[0] ?? null;
     }
 
@@ -61,15 +57,19 @@ export class SupplierMarketSystem {
             const factor = 1 + ((Math.random() * 2 - 1) * percent);
             offer.unitPrice = Math.max(offer.unitPrice * factor, 0.0001);
             offer.updatedAt = new Date();
+            this.recordPrice(offer);
         }
+        return this.offers;
+    }
+
+    replenishStock(percent=0.10) {
+        for (const offer of this.offers) offer.availableAmount += Math.max(Math.round(offer.availableAmount*percent),1);
         return this.offers;
     }
 
     reserveOffer(offerId, amount) {
         const offer = this.offers.find(o => o.id === offerId);
-        if (!offer || offer.availableAmount < amount) {
-            return { success:false, reason:"Lieferantenbestand reicht nicht" };
-        }
+        if (!offer || offer.availableAmount < amount) return { success:false, reason:"Lieferantenbestand reicht nicht" };
         offer.availableAmount -= amount;
         return { success:true, offer };
     }
@@ -78,10 +78,9 @@ export class SupplierMarketSystem {
 export function runSupplierMarketTest() {
     const market = new SupplierMarketSystem();
     const best = market.getBestOffer("malt_kg",55);
-    const success = !!best && best.availableAmount >= 55 && best.estimatedTotalCost > 0;
-    console[success ? "log" : "error"](
-        success ? "✅ LIEFERANTENMARKT-TEST ERFOLGREICH" : "❌ LIEFERANTENMARKT-TEST FEHLGESCHLAGEN",
-        best
-    );
-    return { success, best };
+    market.fluctuatePrices();
+    const history = best ? market.getPriceHistory(best.id) : [];
+    const success = !!best && best.availableAmount >= 55 && best.estimatedTotalCost > 0 && history.length >= 2;
+    console[success ? "log" : "error"](success ? "✅ LIEFERANTENMARKT-TEST ERFOLGREICH" : "❌ LIEFERANTENMARKT-TEST FEHLGESCHLAGEN",{best,history});
+    return { success, best, history };
 }
