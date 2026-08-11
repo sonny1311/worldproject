@@ -44,7 +44,8 @@ export class EconomyDashboard {
         suppliers.append(this.el("div","Bestes Malz-Angebot inklusive geschätztem Transport:"));
         const best=this.controller.market.getBestOffer("malt_kg",55);
         suppliers.append(this.el("div",best?`${best.supplierName}: ${this.money(best.estimatedTotalCost)} € / 55 kg`:"Kein Angebot"));
-        suppliers.append(this.button("55 kg Malz bestellen",()=>{ const r=this.controller.buyInput(this.company,"malt_kg",55); alert(r.success?"Malz bestellt und geliefert.":r.reason); this.render(panel); }));
+        suppliers.append(this.button("Rohstoffe für 1 Charge einkaufen",()=>{ const r=this.controller.buyRecipeInputs(this.company,"lager033",1); alert(r.success?"Alle fehlenden Rohstoffe wurden eingekauft und eingelagert.":r.reason); this.render(panel); }));
+        suppliers.append(this.button("Marktpreise neu berechnen",()=>{ this.controller.market.fluctuatePrices(); this.render(panel); }));
 
         const production=this.card("🍺 Produktion");
         production.append(this.el("div","Lagerbier 0,33 l – Charge 1.000 Flaschen"));
@@ -53,15 +54,18 @@ export class EconomyDashboard {
         const sales=this.card("🛒 Verkauf / Mission");
         const finished=this.company.finishedGoods?.lager033_bottle||0;
         sales.append(this.el("div",`Fertigware: ${finished.toLocaleString("de-DE")} Flaschen`));
-        sales.append(this.button("500 Flaschen liefern",()=>{ const r=this.controller.deliverMission(this.company,500); alert(r.success?`${r.accepted} Flaschen geliefert.`:r.reason); this.render(panel); }));
+        sales.append(this.button("500 Flaschen liefern",()=>{ const r=this.controller.deliverMission(this.company,500); alert(r.success?`${r.accepted} Flaschen geliefert.${r.completed?" Aufgabe abgeschlossen!":""}`:r.reason); this.render(panel); }));
 
         const fleet=this.card("🚛 Fuhrpark & Kosten");
         const firstVehicle=this.company.vehicles?.[0];
-        fleet.append(this.el("div",firstVehicle?`${firstVehicle.name} · ${firstVehicle.status} · ${Math.round(firstVehicle.odometerKm||0)} km` : "Noch kein Fahrzeug"));
+        fleet.append(this.el("div",firstVehicle?`${firstVehicle.name} · ${firstVehicle.status} · ${Math.round(firstVehicle.odometerKm||0)} km · Zustand ${Number(firstVehicle.condition||100).toFixed(1)} %` : "Noch kein Fahrzeug"));
         fleet.append(this.button("18-Tonner kaufen (35.000 €)",()=>{ const r=this.controller.buyVehicle(this.company,"truck18",35000); alert(r.success?"18-Tonner gekauft.":r.reason); this.render(panel); }));
+        if(firstVehicle){
+            fleet.append(this.button("200-km-Testfahrt abrechnen",()=>{ const r=this.controller.applyTripCosts(this.company,firstVehicle,200); alert(r.success?`Betriebskosten: ${this.money(r.totalOperatingCost)} €`:r.reason); this.render(panel); }));
+        }
 
         const warehouse=this.card("🏬 Lager");
-        const lines=Object.entries(this.company.inventory||{}).slice(0,8);
+        const lines=Object.entries(this.company.inventory||{}).slice(0,10);
         warehouse.append(this.el("div",lines.length?lines.map(([k,v])=>`${k}: ${Number(v).toLocaleString("de-DE")}`).join("\n"):"Lager leer"));
         warehouse.lastChild.style.whiteSpace="pre-line";
 
