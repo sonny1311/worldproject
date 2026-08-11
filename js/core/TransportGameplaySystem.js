@@ -8,6 +8,8 @@
 // - Fahrtenanzahl berechnen
 // - Tankstopps und Tankzeit beruecksichtigen
 // - Transportdauer / Ankunft berechnen
+// - Kosten fuer Kraftstoff, Fahrer, Maut,
+//   Wartung und Fahrzeug berechnen
 // - spielbaren Statusablauf erzeugen
 // ============================================
 
@@ -19,11 +21,21 @@ export class TransportGameplaySystem {
     constructor({
         averageSpeedKmH = 65,
         loadingMinutesPerTrip = 45,
-        unloadingMinutesPerTrip = 45
+        unloadingMinutesPerTrip = 45,
+        dieselPricePerLiter = 1.65,
+        driverCostPerHour = 28,
+        tollPerKm = 0.30,
+        maintenancePerKm = 0.18,
+        vehicleCostPerKm = 0.25
     } = {}) {
         this.averageSpeedKmH = averageSpeedKmH;
         this.loadingMinutesPerTrip = loadingMinutesPerTrip;
         this.unloadingMinutesPerTrip = unloadingMinutesPerTrip;
+        this.dieselPricePerLiter = dieselPricePerLiter;
+        this.driverCostPerHour = driverCostPerHour;
+        this.tollPerKm = tollPerKm;
+        this.maintenancePerKm = maintenancePerKm;
+        this.vehicleCostPerKm = vehicleCostPerKm;
         this.fuelPlanner = new VehicleFuelPlanner();
     }
 
@@ -32,9 +44,7 @@ export class TransportGameplaySystem {
             ? Object.keys(TruckTypes)
             : ["van15", "van30", "van", "truck75", "truck12", "truck18", "semi40"];
 
-        return allowed
-            .map(type => TruckTypes[type])
-            .filter(Boolean);
+        return allowed.map(type => TruckTypes[type]).filter(Boolean);
     }
 
     getPayloadKg(definition) {
@@ -55,7 +65,6 @@ export class TransportGameplaySystem {
         const totalWeightKg = Math.max(Number(cargo.weightKg) || 0, 0);
         const totalPallets = Math.max(Math.ceil(Number(cargo.pallets) || 0), 0);
         const totalVolumeM3 = Math.max(Number(cargo.volumeM3) || 0, 0);
-
         const payloadKg = this.getPayloadKg(definition);
         const maxPallets = Number(definition.maxPallets) || 0;
         const maxVolumeM3 = Number(definition.maxVolumeM3) || 0;
@@ -104,8 +113,6 @@ export class TransportGameplaySystem {
             return { success: false, reason: "Kein geeignetes Fahrzeug gefunden", candidates: [] };
         }
 
-        // Spielregel: zuerst moeglichst wenige Fahrten,
-        // bei Gleichstand das kleinste passende Fahrzeug.
         candidates.sort((a, b) => {
             if (a.trips !== b.trips) return a.trips - b.trips;
             return a.payloadKg - b.payloadKg;
@@ -135,7 +142,6 @@ export class TransportGameplaySystem {
             vehicleType,
             distanceKm: totalDrivingKm
         });
-
         if (!fuelPlan.success) return fuelPlan;
 
         const drivingHours = this.averageSpeedKmH > 0
@@ -144,7 +150,15 @@ export class TransportGameplaySystem {
         const loadingHours = evaluation.trips * this.loadingMinutesPerTrip / 60;
         const unloadingHours = evaluation.trips * this.unloadingMinutesPerTrip / 60;
         const refuelHours = fuelPlan.refuelTimeHours;
-        const totalHours = drivingHours + loadingHours + unloadingHours + refuelHours;
+        const driverHours = drivingHours + loadingHours + unloadingHours + refuelHours;
+        const totalHours = driverHours;
+
+        const fuelCost = fuelPlan.fuelNeededLiters * this.dieselPricePerLiter;
+        const driverCost = driverHours * this.driverCostPerHour;
+        const tollCost = totalDrivingKm * this.tollPerKm;
+        const maintenanceCost = totalDrivingKm * this.maintenancePerKm;
+        const vehicleCost = totalDrivingKm * this.vehicleCostPerKm;
+        const totalCost = fuelCost + driverCost + tollCost + maintenanceCost + vehicleCost;
 
         const departure = new Date(departureTime);
         const arrival = new Date(departure.getTime() + totalHours * 3600000);
@@ -162,9 +176,17 @@ export class TransportGameplaySystem {
             unloadingHours,
             refuelStops: fuelPlan.refuelStops,
             refuelTimeHours: refuelHours,
+            refuelTimeMinutes: refuelHours * 60,
             fuelNeededLiters: fuelPlan.fuelNeededLiters,
             tankCapacityLiters: fuelPlan.tankCapacityLiters,
             rangeKm: fuelPlan.rangeKm,
+            driverHours,
+            fuelCost,
+            driverCost,
+            tollCost,
+            maintenanceCost,
+            vehicleCost,
+            totalCost,
             totalHours,
             departureTime: departure,
             arrivalTime: arrival,
@@ -214,9 +236,12 @@ export class TransportGameplaySystem {
         const selectedType = vehicleType ?? recommendation?.recommended?.vehicleType;
         if (!selectedType) return recommendation;
 
+        const definition = TruckTypes[selectedType];
         const resolvedDistance = distanceKm ?? order.items?.[0]?.distanceKm ?? 0;
         const truck = new Truck(selectedType, {
-            name: `Transportfahrzeug ${TruckTypes[selectedType]?.name ?? selectedType}`
+            name: `Transportfahrzeug ${definition?.name ?? selectedType}`,
+            fuelCapacityLiters: definition?.fuelTankCapacityLiters ?? null,
+            currentFuelLiters: definition?.fuelTankCapacityLiters ?? null
         });
 
         const plan = this.createTripPlan({
@@ -225,7 +250,6 @@ export class TransportGameplaySystem {
             cargo: derivedCargo,
             departureTime: new Date()
         });
-
         if (!plan.success) return plan;
 
         order.selectedVehicleType = selectedType;
@@ -234,6 +258,15 @@ export class TransportGameplaySystem {
         order.transportTripPlan = plan;
         order.transportTimeline = this.createStatusTimeline(plan);
         order.transportStatus = "planned";
+        order.transportCost = plan.totalCost;
+        order.transportCosts = {
+            fuel: plan.fuelCost,
+            driver: plan.driverCost,
+            toll: plan.tollCost,
+            maintenance: plan.maintenanceCost,
+            vehicle: plan.vehicleCost,
+            total: plan.totalCost
+        };
 
         return {
             success: true,
@@ -267,8 +300,9 @@ export class TransportGameplaySystem {
             }
 
             order.transportStatus = step.status;
-            order.status = step.status === "delivered" ? "delivered" :
-                (step.status === "driving" || step.status === "refueling" ? "in_transit" : order.status);
+            order.status = step.status === "delivered"
+                ? "delivered"
+                : (step.status === "driving" || step.status === "refueling" ? "in_transit" : order.status);
             truck.setStatus(step.status === "delivered" ? "available" : step.status);
 
             if (typeof onStatus === "function") {
