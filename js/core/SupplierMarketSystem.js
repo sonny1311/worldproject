@@ -7,20 +7,29 @@ export class SupplierMarketSystem {
     }
 
     createDefaultOffers() {
-        const make = (id, supplier, itemId, price, distanceKm, stock, deliveryHours) => ({
+        const make = (id, supplier, itemId, price, distanceKm, stock, deliveryHours, reliability=0.95, minimumOrder=1, quality=80) => ({
             id, supplierId: supplier, supplierName: supplier, itemId,
             unitPrice: price, distanceKm, availableAmount: stock, deliveryHours,
+            reliability, minimumOrder, quality,
+            quantityDiscounts:[{min:50000,discount:0.08},{min:10000,discount:0.05},{min:1000,discount:0.025}],
             updatedAt: new Date()
         });
         return [
-            make("malt-a","Mälzerei Nord","malt_kg",0.78,95,50000,5),
-            make("malt-b","Mälzerei West","malt_kg",0.74,185,70000,8),
-            make("hops-a","Hopfenhandel Süd","hops_kg",16.50,240,3000,10),
-            make("yeast-a","Brauhefe GmbH","yeast_kg",8.80,130,5000,6),
-            make("water-a","Wasserwerk Regional","water_l",0.0025,8,1000000,1),
-            make("bottle-a","Glaswerk Mitte","bottle_033",0.17,115,150000,6),
-            make("cap-a","Verschlüsse GmbH","crown_cap",0.02,90,500000,5),
-            make("label-a","Etikettenwerk","label_033",0.08,75,500000,4)
+            make("malt-a","Mälzerei Nord","malt_kg",0.78,95,50000,5,0.98,25,92),
+            make("malt-b","Mälzerei West","malt_kg",0.74,185,70000,8,0.93,50,86),
+            make("malt-c","Mälzerei Regional","malt_kg",0.82,35,18000,3,0.99,20,95),
+            make("hops-a","Hopfenhandel Süd","hops_kg",16.50,240,3000,10,0.96,0.25,93),
+            make("hops-b","Hopfenkontor Mitte","hops_kg",17.20,105,1800,5,0.99,0.25,96),
+            make("yeast-a","Brauhefe GmbH","yeast_kg",8.80,130,5000,6,0.98,0.25,94),
+            make("yeast-b","Hefelabor West","yeast_kg",8.25,210,2800,9,0.92,0.5,90),
+            make("water-a","Wasserwerk Regional","water_l",0.0025,8,1000000,1,0.999,100,90),
+            make("water-b","Quellwasser Logistik","water_l",0.0031,55,500000,3,0.99,500,96),
+            make("bottle-a","Glaswerk Mitte","bottle_033",0.17,115,150000,6,0.97,500,91),
+            make("bottle-b","Flaschenglas Nord","bottle_033",0.162,220,220000,9,0.93,1000,87),
+            make("cap-a","Verschlüsse GmbH","crown_cap",0.02,90,500000,5,0.98,1000,92),
+            make("cap-b","CapTech","crown_cap",0.0185,175,300000,7,0.94,2500,89),
+            make("label-a","Etikettenwerk","label_033",0.08,75,500000,4,0.98,1000,93),
+            make("label-b","PrintPack","label_033",0.071,190,350000,8,0.92,2500,86)
         ];
     }
 
@@ -42,13 +51,17 @@ export class SupplierMarketSystem {
 
     getBestOffer(itemId, amount = 1) {
         const offers = this.getOffers(itemId)
-            .filter(o => o.availableAmount >= amount)
             .map(o => {
-                const materialCost = o.unitPrice * amount;
-                const transportCost = this.estimateTransportCost(o, amount);
-                return { ...o, materialCost, estimatedTransportCost: transportCost, estimatedTotalCost: materialCost + transportCost };
-            })
-            .sort((a,b) => a.estimatedTotalCost !== b.estimatedTotalCost ? a.estimatedTotalCost-b.estimatedTotalCost : a.deliveryHours-b.deliveryHours);
+                const orderAmount=Math.max(Number(amount)||0,Number(o.minimumOrder)||1);
+                if(o.availableAmount<orderAmount)return null;
+                const tier=(o.quantityDiscounts||[]).find(t=>orderAmount>=t.min);
+                const discount=tier?.discount||0;
+                const effectiveUnitPrice=o.unitPrice*(1-discount);
+                const materialCost = effectiveUnitPrice * orderAmount;
+                const transportCost = this.estimateTransportCost(o, orderAmount);
+                return { ...o, orderAmount, discount, effectiveUnitPrice, materialCost, estimatedTransportCost: transportCost, estimatedTotalCost: materialCost + transportCost };
+            }).filter(Boolean)
+            .sort((a,b) => a.estimatedTotalCost !== b.estimatedTotalCost ? a.estimatedTotalCost-b.estimatedTotalCost : b.reliability-a.reliability);
         return offers[0] ?? null;
     }
 
@@ -69,9 +82,11 @@ export class SupplierMarketSystem {
 
     reserveOffer(offerId, amount) {
         const offer = this.offers.find(o => o.id === offerId);
-        if (!offer || offer.availableAmount < amount) return { success:false, reason:"Lieferantenbestand reicht nicht" };
-        offer.availableAmount -= amount;
-        return { success:true, offer };
+        if(!offer)return {success:false,reason:"Lieferangebot fehlt"};
+        const qty=Math.max(Number(amount)||0,Number(offer.minimumOrder)||1);
+        if (offer.availableAmount < qty) return { success:false, reason:"Lieferantenbestand reicht nicht" };
+        offer.availableAmount -= qty;
+        return { success:true, offer, reservedAmount:qty };
     }
 }
 
@@ -80,7 +95,7 @@ export function runSupplierMarketTest() {
     const best = market.getBestOffer("malt_kg",55);
     market.fluctuatePrices();
     const history = best ? market.getPriceHistory(best.id) : [];
-    const success = !!best && best.availableAmount >= 55 && best.estimatedTotalCost > 0 && history.length >= 2;
+    const success = !!best && market.getOffers("malt_kg").length>=3 && best.estimatedTotalCost > 0 && history.length >= 2 && best.reliability>0;
     console[success ? "log" : "error"](success ? "✅ LIEFERANTENMARKT-TEST ERFOLGREICH" : "❌ LIEFERANTENMARKT-TEST FEHLGESCHLAGEN",{best,history});
     return { success, best, history };
 }
