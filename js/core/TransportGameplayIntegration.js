@@ -3,10 +3,12 @@
 // WorldProject
 //
 // Bindet das neue Transport-Gameplay an
-// ConstructionMaterialOrder an.
+// ConstructionMaterialOrder und den sichtbaren
+// Transportdialog an.
 // ============================================
 
 import { ConstructionMaterialOrder } from "./ConstructionMaterialOrder.js";
+import { ConstructionTransportDialog } from "./ConstructionTransportDialog.js";
 import { CargoTypes } from "./CargoTypes.js";
 import { TruckTypes } from "./TruckTypes.js";
 import { TransportGameplaySystem } from "./TransportGameplaySystem.js";
@@ -92,6 +94,86 @@ if (ConstructionMaterialOrder.prototype.__transportGameplayIntegrated !== true) 
     };
 
     ConstructionMaterialOrder.prototype.__transportGameplayIntegrated = true;
+}
+
+// ============================================
+// Sichtbaren Button in den bestehenden
+// Giga-/Transportdialog einfuegen.
+// ============================================
+
+if (ConstructionTransportDialog.prototype.__vehicleSelectionButtonIntegrated !== true) {
+    const originalCreateTransportSummary =
+        ConstructionTransportDialog.prototype.createTransportSummary;
+
+    if (typeof originalCreateTransportSummary === "function") {
+        ConstructionTransportDialog.prototype.createTransportSummary = function () {
+            const wrapper = originalCreateTransportSummary.call(this);
+
+            if (!wrapper || !this.order?.openTransportVehicleSelection) {
+                return wrapper;
+            }
+
+            const recommendation = this.order.recommendTransportVehicle?.();
+            const recommendedName = recommendation?.recommended?.vehicleName ?? "Fahrzeug";
+
+            const selectionBox = document.createElement("div");
+            Object.assign(selectionBox.style, {
+                marginTop: "18px",
+                padding: "16px",
+                borderRadius: "9px",
+                background: "rgba(255,255,255,0.07)"
+            });
+
+            const title = document.createElement("div");
+            title.textContent = "🚚 Fahrzeugauswahl";
+            Object.assign(title.style, {
+                fontWeight: "700",
+                marginBottom: "8px"
+            });
+
+            const info = document.createElement("div");
+            info.textContent = `Empfohlen: ${recommendedName}`;
+            Object.assign(info.style, {
+                fontSize: "13px",
+                opacity: "0.8",
+                marginBottom: "10px"
+            });
+
+            const button = document.createElement("button");
+            button.type = "button";
+            button.textContent = "Fahrzeug selbst wählen";
+            Object.assign(button.style, {
+                width: "100%",
+                padding: "11px 14px",
+                border: "none",
+                borderRadius: "8px",
+                cursor: "pointer",
+                fontWeight: "700"
+            });
+
+            button.addEventListener("click", () => {
+                this.order.openTransportVehicleSelection({
+                    parent: document.body,
+                    onSelected: ({ candidate, plan }) => {
+                        console.log("✅ TRANSPORTFAHRZEUG GEWÄHLT", {
+                            vehicle: candidate.vehicleName,
+                            vehicleType: candidate.vehicleType,
+                            trips: plan.trips,
+                            refuelStops: plan.refuelStops,
+                            arrivalTime: plan.arrivalTime,
+                            totalHours: plan.totalHours
+                        });
+                    }
+                });
+            });
+
+            selectionBox.append(title, info, button);
+            wrapper.append(selectionBox);
+            return wrapper;
+        };
+    }
+
+    ConstructionTransportDialog.prototype.__vehicleSelectionButtonIntegrated = true;
 }
 
 export function runTransportGameplayIntegrationTest() {
