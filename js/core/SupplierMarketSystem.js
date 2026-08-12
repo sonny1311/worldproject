@@ -1,4 +1,6 @@
 // WorldProject - dynamische Lieferanten und Marktpreise
+import { getIndustryProfile } from "./IndustryCatalog.js";
+
 export class SupplierMarketSystem {
     constructor(seedOffers = null) {
         this.offers = seedOffers ?? this.createDefaultOffers();
@@ -7,29 +9,36 @@ export class SupplierMarketSystem {
     }
 
     createDefaultOffers() {
-        const make = (id, supplier, itemId, price, distanceKm, stock, deliveryHours, reliability=0.95, minimumOrder=1, quality=80) => ({
+        const make = (id, supplier, itemId, price, distanceKm, stock, deliveryHours, reliability=0.95, minimumOrder=1, quality=80, branches=["brewery"]) => ({
             id, supplierId: supplier, supplierName: supplier, itemId,
             unitPrice: price, distanceKm, availableAmount: stock, deliveryHours,
-            reliability, minimumOrder, quality,
+            reliability, minimumOrder, quality, branches,
             quantityDiscounts:[{min:50000,discount:0.08},{min:10000,discount:0.05},{min:1000,discount:0.025}],
             updatedAt: new Date()
         });
+        const beverage=["brewery","beverage"];
         return [
-            make("malt-a","Mälzerei Nord","malt_kg",0.78,95,50000,5,0.98,25,92),
-            make("malt-b","Mälzerei West","malt_kg",0.74,185,70000,8,0.93,50,86),
-            make("malt-c","Mälzerei Regional","malt_kg",0.82,35,18000,3,0.99,20,95),
-            make("hops-a","Hopfenhandel Süd","hops_kg",16.50,240,3000,10,0.96,0.25,93),
-            make("hops-b","Hopfenkontor Mitte","hops_kg",17.20,105,1800,5,0.99,0.25,96),
-            make("yeast-a","Brauhefe GmbH","yeast_kg",8.80,130,5000,6,0.98,0.25,94),
-            make("yeast-b","Hefelabor West","yeast_kg",8.25,210,2800,9,0.92,0.5,90),
-            make("water-a","Wasserwerk Regional","water_l",0.0025,8,1000000,1,0.999,100,90),
-            make("water-b","Quellwasser Logistik","water_l",0.0031,55,500000,3,0.99,500,96),
-            make("bottle-a","Glaswerk Mitte","bottle_033",0.17,115,150000,6,0.97,500,91),
-            make("bottle-b","Flaschenglas Nord","bottle_033",0.162,220,220000,9,0.93,1000,87),
-            make("cap-a","Verschlüsse GmbH","crown_cap",0.02,90,500000,5,0.98,1000,92),
-            make("cap-b","CapTech","crown_cap",0.0185,175,300000,7,0.94,2500,89),
-            make("label-a","Etikettenwerk","label_033",0.08,75,500000,4,0.98,1000,93),
-            make("label-b","PrintPack","label_033",0.071,190,350000,8,0.92,2500,86)
+            make("malt-a","Mälzerei Nord","malt_kg",0.78,95,50000,5,0.98,25,92,["brewery"]),
+            make("malt-b","Mälzerei West","malt_kg",0.74,185,70000,8,0.93,50,86,["brewery"]),
+            make("malt-c","Mälzerei Regional","malt_kg",0.82,35,18000,3,0.99,20,95,["brewery"]),
+            make("hops-a","Hopfenhandel Süd","hops_kg",16.50,240,3000,10,0.96,0.25,93,["brewery"]),
+            make("hops-b","Hopfenkontor Mitte","hops_kg",17.20,105,1800,5,0.99,0.25,96,["brewery"]),
+            make("yeast-a","Brauhefe GmbH","yeast_kg",8.80,130,5000,6,0.98,0.25,94,["brewery"]),
+            make("yeast-b","Hefelabor West","yeast_kg",8.25,210,2800,9,0.92,0.5,90,["brewery"]),
+            make("water-a","Wasserwerk Regional","water_l",0.0025,8,1000000,1,0.999,100,90,beverage),
+            make("water-b","Quellwasser Logistik","water_l",0.0031,55,500000,3,0.99,500,96,beverage),
+            make("bottle-a","Glaswerk Mitte","bottle_033",0.17,115,150000,6,0.97,500,91,beverage),
+            make("bottle-b","Flaschenglas Nord","bottle_033",0.162,220,220000,9,0.93,1000,87,beverage),
+            make("cap-a","Verschlüsse GmbH","crown_cap",0.02,90,500000,5,0.98,1000,92,beverage),
+            make("cap-b","CapTech","crown_cap",0.0185,175,300000,7,0.94,2500,89,beverage),
+            make("label-a","Etikettenwerk","label_033",0.08,75,500000,4,0.98,1000,93,beverage),
+            make("label-b","PrintPack","label_033",0.071,190,350000,8,0.92,2500,86,beverage),
+            make("wood-spruce-a","Holzhandel Weser","timber_spruce_m3",410,42,800,4,0.98,1,92,["carpentry"]),
+            make("wood-spruce-b","Sägewerk Nord","timber_spruce_m3",385,128,1500,7,0.94,2,87,["carpentry"]),
+            make("wood-oak-a","Hartholz Kontor","timber_oak_m3",980,165,420,8,0.97,0.5,95,["carpentry"]),
+            make("mdf-a","Plattenwerk Mitte","board_mdf_m2",9.40,76,18000,5,0.98,20,91,["carpentry"]),
+            make("glue-a","Holztechnik Chemie","glue_kg",5.60,90,4000,5,0.97,5,93,["carpentry"]),
+            make("fittings-a","Beschlaghandel West","fittings_set",7.90,110,25000,6,0.96,10,90,["carpentry"])
         ];
     }
 
@@ -41,7 +50,16 @@ export class SupplierMarketSystem {
     }
 
     getPriceHistory(offerId) { return [...(this.priceHistory[offerId] ?? [])]; }
-    getOffers(itemId) { return this.offers.filter(o => o.itemId === itemId && o.availableAmount > 0); }
+
+    getOffers(itemId, company=null) {
+        const branch=company ? getIndustryProfile(company).branchKey : null;
+        return this.offers.filter(o => o.itemId === itemId && o.availableAmount > 0 && (!branch || !o.branches?.length || o.branches.includes(branch)));
+    }
+
+    getOffersForCompany(company){
+        const branch=getIndustryProfile(company).branchKey;
+        return this.offers.filter(o=>o.availableAmount>0 && (!o.branches?.length || o.branches.includes(branch)));
+    }
 
     estimateTransportCost(offer, amount) {
         const distance = Math.max(Number(offer?.distanceKm) || 0, 0);
@@ -49,8 +67,8 @@ export class SupplierMarketSystem {
         return distance * 0.42 + Math.min(sizeFactor * 0.002, 120);
     }
 
-    getBestOffer(itemId, amount = 1) {
-        const offers = this.getOffers(itemId)
+    getBestOffer(itemId, amount = 1, company=null) {
+        const offers = this.getOffers(itemId,company)
             .map(o => {
                 const orderAmount=Math.max(Number(amount)||0,Number(o.minimumOrder)||1);
                 if(o.availableAmount<orderAmount)return null;
@@ -92,10 +110,11 @@ export class SupplierMarketSystem {
 
 export function runSupplierMarketTest() {
     const market = new SupplierMarketSystem();
-    const best = market.getBestOffer("malt_kg",55);
+    const best = market.getBestOffer("malt_kg",55,{type:"Brauerei"});
+    const carpentry=market.getOffersForCompany({type:"Schreinerei"});
     market.fluctuatePrices();
     const history = best ? market.getPriceHistory(best.id) : [];
-    const success = !!best && market.getOffers("malt_kg").length>=3 && best.estimatedTotalCost > 0 && history.length >= 2 && best.reliability>0;
-    console[success ? "log" : "error"](success ? "✅ LIEFERANTENMARKT-TEST ERFOLGREICH" : "❌ LIEFERANTENMARKT-TEST FEHLGESCHLAGEN",{best,history});
+    const success = !!best && market.getOffers("malt_kg",{type:"Brauerei"}).length>=3 && carpentry.some(x=>x.itemId==="timber_spruce_m3") && !carpentry.some(x=>x.itemId==="malt_kg") && best.estimatedTotalCost > 0 && history.length >= 2 && best.reliability>0;
+    console[success ? "log" : "error"](success ? "✅ LIEFERANTENMARKT-TEST ERFOLGREICH" : "❌ LIEFERANTENMARKT-TEST FEHLGESCHLAGEN",{best,history,carpentry});
     return { success, best, history };
 }
