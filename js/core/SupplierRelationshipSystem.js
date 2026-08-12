@@ -1,0 +1,12 @@
+// WorldProject - Lieferantenbeziehungen, Rabatte, Zahlungsziele und Engpaesse
+export class SupplierRelationshipSystem{
+ constructor(){this.relations=new Map();this.stock=new Map();}
+ key(companyId,supplierId){return `${companyId}:${supplierId}`;}
+ relation(companyId,supplierId){const k=this.key(companyId,supplierId);if(!this.relations.has(k))this.relations.set(k,{companyId,supplierId,purchases:0,volume:0,score:0});return this.relations.get(k);}
+ recordPurchase(companyId,supplierId,total){const r=this.relation(companyId,supplierId);r.purchases++;r.volume+=Number(total||0);r.score=Math.min(100,r.score+1+Math.log10(Math.max(1,Number(total||0)))*.4);return this.benefits(r);}
+ benefits(r){const score=Number(r.score||0);return{discountRate:Math.min(.08,Math.floor(score/20)*.01),paymentTermDays:score>=80?30:score>=50?14:score>=25?7:0,priorityDelivery:score>=60};}
+ setStock(supplierId,item,quantity){this.stock.set(`${supplierId}:${item}`,Math.max(0,Number(quantity)));}
+ availability(supplierId,item,requested){const k=`${supplierId}:${item}`,available=Number(this.stock.get(k)||0),fulfilled=Math.min(available,Math.max(0,Number(requested)));return{requested:Number(requested),available,fulfilled,shortage:Math.max(0,Number(requested)-fulfilled)};}
+ purchase({companyId,supplierId,item,quantity,unitPrice}={}){const a=this.availability(supplierId,item,quantity);if(a.fulfilled<=0)throw new Error("Lieferant hat aktuell keinen Bestand");const r=this.relation(companyId,supplierId),benefits=this.benefits(r),gross=a.fulfilled*Number(unitPrice),total=gross*(1-benefits.discountRate);this.stock.set(`${supplierId}:${item}`,a.available-a.fulfilled);this.recordPurchase(companyId,supplierId,total);return{...a,gross,total,discountRate:benefits.discountRate,paymentTermDays:benefits.paymentTermDays,priorityDelivery:benefits.priorityDelivery};}
+}
+export function runSupplierRelationshipTest(){const s=new SupplierRelationshipSystem();s.setStock("farm","barley",50);const p=s.purchase({companyId:1,supplierId:"farm",item:"barley",quantity:80,unitPrice:2});if(p.fulfilled!==50||p.shortage!==30)throw new Error("Lieferantenengpass-Test fehlgeschlagen");for(let i=0;i<30;i++)s.recordPurchase(1,"farm",10000);if(s.benefits(s.relation(1,"farm")).paymentTermDays<7)throw new Error("Lieferantenbeziehung-Test fehlgeschlagen");console.log("🤝 LIEFERANTENBEZIEHUNGEN/RABATTE/ENGPAESSE ERFOLGREICH");return true;}
