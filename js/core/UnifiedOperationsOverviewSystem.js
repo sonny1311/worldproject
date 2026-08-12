@@ -9,11 +9,30 @@ export class UnifiedOperationsOverviewSystem {
   state() {
     const company = this.companyProvider?.();
     if (!company) return { company: null, operations: {} };
+
     if (!company.operationsState) company.operationsState = {};
+    if (!company.operationalSupplyState) company.operationalSupplyState = {};
+
     const s = company.operationsState;
-    if (!Array.isArray(s.supplyOrders)) s.supplyOrders = [];
-    if (!Array.isArray(s.productionQueue)) s.productionQueue = [];
+    const supply = company.operationalSupplyState;
+
+    // Uebergang/Migration: Der Einkaufsdialog speichert Lieferungen und Produktion
+    // historisch in operationalSupplyState, waehrend Dashboard/Kundenauftraege
+    // operationsState verwenden. Beide Ansichten muessen auf dieselben Arrays zeigen.
+    const legacyOrders = Array.isArray(supply.orders) ? supply.orders : [];
+    const overviewOrders = Array.isArray(s.supplyOrders) ? s.supplyOrders : [];
+    const canonicalOrders = legacyOrders.length ? legacyOrders : overviewOrders;
+    supply.orders = canonicalOrders;
+    s.supplyOrders = canonicalOrders;
+
+    const legacyProduction = Array.isArray(supply.productionQueue) ? supply.productionQueue : [];
+    const overviewProduction = Array.isArray(s.productionQueue) ? s.productionQueue : [];
+    const canonicalProduction = legacyProduction.length ? legacyProduction : overviewProduction;
+    supply.productionQueue = canonicalProduction;
+    s.productionQueue = canonicalProduction;
+
     if (!Array.isArray(s.customerOrders)) s.customerOrders = [];
+
     return { company, operations: s };
   }
 
@@ -82,6 +101,9 @@ export class UnifiedOperationsOverviewSystem {
   markDirty() {
     try {
       window.dispatchEvent(new CustomEvent("worldproject:state-changed", { detail: { source: "operations-overview" } }));
+      // SupabaseGameStateSync lauscht auf diesen zentralen Dirty-Event.
+      // Damit werden Kundenauftraege ebenso sicher persistiert wie Einkauf/Lager/Produktion.
+      window.dispatchEvent(new CustomEvent("world:game-state-dirty", { detail: { reason: "operations-overview" } }));
     } catch (_) {}
   }
 }
