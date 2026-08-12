@@ -1,9 +1,10 @@
 // WorldProject - persistenter Spielstand ueber Supabase
 export class SupabaseGameStateSync {
-    constructor({api,intervalMs=30000}={}){
+    constructor({api,intervalMs=5000}={}){
         this.api=api;this.intervalMs=intervalMs;this.timer=null;this.saving=false;
         for(const event of ["worldproject:company-founded","worldproject:company-loaded","worldproject:company-switched"])window.addEventListener(event,()=>this.start());
         window.addEventListener("world:server-balances-changed",()=>this.refreshBalances());
+        window.addEventListener("world:state-dirty",()=>this.save().catch(e=>console.warn("Sofortspeichern fehlgeschlagen",e)));
     }
 
     start(){if(this.timer)return;this.timer=setInterval(()=>this.save().catch(()=>{}),this.intervalMs);console.log("✅ SUPABASE-SPIELSTANDSYNCHRONISATION AKTIV");}
@@ -15,7 +16,7 @@ export class SupabaseGameStateSync {
         const out={};for(const[k,v]of Object.entries(value)){if(typeof v==="function")continue;if(["market","transportSystem","gigaTransportService","constructionManagers"].includes(k))continue;const clean=this.sanitize(v,seen);if(clean!==undefined)out[k]=clean;}return out;
     }
 
-    snapshot(){const company=window.worldPlayerCompany;if(!company)return null;const raw=this.sanitize(company)||{};for(const key of ["money","coins","name","industry","type","serverCompanyId","slotNo","setupPhase","buildingState"])delete raw[key];return raw;}
+    snapshot(){const company=window.worldPlayerCompany;if(!company)return null;const raw=this.sanitize(company)||{};for(const key of ["coins","name","industry","type","serverCompanyId","slotNo","setupPhase","buildingState"])delete raw[key];raw.money=Number(company.money||0);return raw;}
 
     async save(){
         if(this.saving||!window.worldPlayerCompany)return null;const company=window.worldPlayerCompany,state=this.snapshot();if(!state)return null;this.saving=true;
@@ -26,10 +27,12 @@ export class SupabaseGameStateSync {
         }finally{this.saving=false;}
     }
 
+    markDirty(){window.dispatchEvent(new CustomEvent("world:state-dirty"));}
+
     async refreshBalances(){
         try{
             const overview=await this.api.accountOverview();window.worldServerAccountOverview=overview;
-            const active=window.worldPlayerCompany;if(active){const server=overview.companies?.find(c=>c.id===active.serverCompanyId)||overview.company;if(server)active.money=Number(server.money||0);active.coins=Number(overview.wallet?.balance||0);}
+            const active=window.worldPlayerCompany;if(active){const server=overview.companies?.find(c=>c.id===active.serverCompanyId)||overview.company;if(server){const stored=server.game_state||{};active.money=Number(stored.money??server.money??0);}active.coins=Number(overview.wallet?.balance||0);}
         }catch(error){console.warn("Serverguthaben konnten nicht aktualisiert werden",error);}
     }
 }
