@@ -1,4 +1,6 @@
 // WorldProject - Account-/Multiplayer-Integration
+import "../content/GameContentData.js";
+import "./IndustryExtensionRegistry.js";
 import { AccountSystem, runAccountSystemTest } from "./AccountSystem.js";
 import { CoinMarketplaceSystem, runCoinMarketplaceTest } from "./CoinMarketplaceSystem.js";
 import { GuildSystem, runGuildSystemTest } from "./GuildSystem.js";
@@ -10,6 +12,7 @@ import { SupabaseGameStateSync } from "./SupabaseGameStateSync.js";
 import { runSupabaseSecurityTest } from "./SupabaseSecurityTest.js";
 import { BusinessPortfolioSystem } from "./BusinessPortfolioSystem.js";
 import { BusinessPortfolioDialog } from "./BusinessPortfolioDialog.js";
+import { worldContentRegistry } from "./ContentRegistry.js";
 
 export const accountSystem=new AccountSystem();
 export const coinMarketplace=new CoinMarketplaceSystem();
@@ -22,7 +25,7 @@ export const gameStateSync=new SupabaseGameStateSync({api:authApi});
 export const businessPortfolio=new BusinessPortfolioSystem({api:authApi});
 export const businessPortfolioDialog=new BusinessPortfolioDialog({portfolio:businessPortfolio});
 
-window.worldAccounts={accountSystem,coinMarketplace,guildSystem,antiAbuseRiskSystem,authApi,gameAccessGate,accountProfileDialog,gameStateSync,businessPortfolio,businessPortfolioDialog,runSupabaseSecurityTest:()=>runSupabaseSecurityTest(authApi)};
+window.worldAccounts={accountSystem,coinMarketplace,guildSystem,antiAbuseRiskSystem,authApi,gameAccessGate,accountProfileDialog,gameStateSync,businessPortfolio,businessPortfolioDialog,contentRegistry:worldContentRegistry,runSupabaseSecurityTest:()=>runSupabaseSecurityTest(authApi)};
 
 function mountAccountButton(){
     if(document.getElementById("world-account-button"))return;
@@ -45,5 +48,6 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 runAccountSystemTest();runCoinMarketplaceTest();runGuildSystemTest();runAntiAbuseRiskTest();
 console.log("✅ ACCOUNT-/MULTIPLAYER-GRUNDSYSTEM GELADEN");
 console.log("🔒 SPIELZUGANG: aktiver Supabase-Account ist Pflicht");
-console.log("✅ BIS ZU VIER BETRIEBE + SUPABASE-SPIELSTAND VERKNÜPFT");
+console.log("✅ BELIEBIG VIELE BETRIEBE + SUPABASE-SPIELSTAND VERKNÜPFT");
+console.log(`✅ ERWEITERBARE CONTENT-REGISTRY GELADEN: ${worldContentRegistry.list("industries").length} Branchen registriert`);
 console.log("🧪 RLS-Test nach Login: await worldAccounts.runSupabaseSecurityTest()");
