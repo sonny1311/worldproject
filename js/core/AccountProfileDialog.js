@@ -20,7 +20,6 @@ export class AccountProfileDialog {
         panel.append(this.button("Profil speichern",async()=>{try{await this.api.updateProfile({displayName:display.value,countryCode:country.value,languageCode:language.value});alert("Profil gespeichert.");await this.render(panel);}catch(e){alert(e.message);}}));
 
         panel.append(this.el("h3","🪙 Coin-Wallet"),this.el("div",`Kontostand: ${Number(wallet.balance||0).toLocaleString("de-DE")} Coins`));
-        panel.append(this.button("Tages-Coin abholen",async()=>{try{const r=await this.api.claimDailyCoin();alert(r.reward?.already_claimed?"Tagesbonus heute bereits abgeholt.":`+${r.reward?.awarded||0} Coin erhalten.`);window.dispatchEvent(new CustomEvent("world:server-balances-changed"));await this.render(panel);}catch(e){alert(e.message);}}));
         if(transactions.length){const list=this.el("div");transactions.slice(0,8).forEach(t=>list.append(this.el("div",`${new Date(t.created_at).toLocaleString("de-DE")} · ${Number(t.amount)>0?"+":""}${t.amount} · ${t.transaction_type}`)));panel.append(list);}else panel.append(this.el("div","Noch keine Coin-Transaktionen."));
 
         panel.append(this.el("h3","🏢 Unternehmen"));
