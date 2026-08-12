@@ -1,60 +1,65 @@
 // WorldProject - Branchenkatalog
 // Bestimmt, welche Rohstoffe, Maschinen und Produkte ein Betrieb verwenden darf.
 
-const GENERIC_STARTER = {
-    branchKey:"generic",
-    label:"Betrieb",
-    starterBuilding:{name:"Leeres Gewerbegebäude",areaM2:240,rooms:[{id:"hall",name:"Leere Halle",areaM2:180},{id:"storage",name:"Leerer Lagerbereich",areaM2:60}]},
-    equipment:[],requiredEquipment:[],allowedItems:[],products:[]
-};
+const profile=(branchKey,label,equipment,rooms=[{id:"production",name:"Arbeits-/Produktionsbereich",areaM2:170},{id:"storage",name:"Lager",areaM2:70},{id:"office",name:"Büro",areaM2:20}],allowedItems=[],products=[],recipes=[])=>({
+    branchKey,label,starterBuilding:{name:`Leerer Betrieb – ${label}`,areaM2:rooms.reduce((s,r)=>s+r.areaM2,0),rooms},equipment,requiredEquipment:equipment.filter(x=>x.required!==false).map(x=>x.id),allowedItems,products,recipes
+});
 
-export const IndustryProfiles = {
-    "Brauerei":{
-        branchKey:"brewery",label:"Brauerei",
-        starterBuilding:{name:"Leeres Brauereigebäude",areaM2:300,rooms:[{id:"production",name:"Produktionshalle",areaM2:190},{id:"storage",name:"Lager",areaM2:80},{id:"office",name:"Büro",areaM2:30}]},
-        equipment:[
-            {id:"brew_kettle",name:"Sudwerk",price:14500,required:true,room:"production"},
-            {id:"fermenter",name:"Gär-/Lagertank",price:9500,required:true,room:"production"},
-            {id:"filling_line",name:"Abfüllanlage",price:12000,required:true,room:"production"},
-            {id:"cold_storage",name:"Kühltechnik",price:6500,required:false,room:"storage"}
-        ],
-        requiredEquipment:["brew_kettle","fermenter","filling_line"],
-        allowedItems:["malt_kg","hops_kg","yeast_kg","water_l","bottle_033","crown_cap","label_033"],
-        products:["lager033_bottle","pils033_bottle"],recipes:["lager033","pils033"]
-    },
-    "Getränkehersteller":{
-        branchKey:"beverage",label:"Getränkehersteller",
-        starterBuilding:{name:"Leeres Getränkegebäude",areaM2:280,rooms:[{id:"production",name:"Produktionshalle",areaM2:170},{id:"storage",name:"Lager",areaM2:80},{id:"office",name:"Büro",areaM2:30}]},
-        equipment:[{id:"mixing_tank",name:"Mischtank",price:10000,required:true,room:"production"},{id:"filling_line",name:"Abfüllanlage",price:12000,required:true,room:"production"}],
-        requiredEquipment:["mixing_tank","filling_line"],
-        allowedItems:["water_l","bottle_033","crown_cap","label_033"],products:[],recipes:[]
-    },
-    "Mineralbrunnen":{
-        branchKey:"beverage",label:"Mineralbrunnen",
-        starterBuilding:{name:"Leeres Abfüllgebäude",areaM2:280,rooms:[{id:"production",name:"Abfüllhalle",areaM2:180},{id:"storage",name:"Lager",areaM2:100}]},
-        equipment:[{id:"water_treatment",name:"Wasseraufbereitung",price:15000,required:true,room:"production"},{id:"filling_line",name:"Abfüllanlage",price:12000,required:true,room:"production"}],
-        requiredEquipment:["water_treatment","filling_line"],allowedItems:["water_l","bottle_033","crown_cap","label_033"],products:[],recipes:[]
-    },
-    "Schreinerei":{
-        branchKey:"carpentry",label:"Schreinerei",
-        starterBuilding:{name:"Leere Schreinerei",areaM2:260,rooms:[{id:"workshop",name:"Werkstatt",areaM2:170},{id:"wood_storage",name:"Holzlager",areaM2:70},{id:"office",name:"Büro",areaM2:20}]},
-        equipment:[
-            {id:"panel_saw",name:"Formatkreissäge",price:9000,required:true,room:"workshop"},
-            {id:"planer",name:"Abricht-/Dickenhobel",price:7500,required:true,room:"workshop"},
-            {id:"workbench",name:"Werkbank",price:1800,required:true,room:"workshop"},
-            {id:"dust_extractor",name:"Absauganlage",price:4200,required:true,room:"workshop"},
-            {id:"edge_bander",name:"Kantenanleimmaschine",price:11000,required:false,room:"workshop"}
-        ],
-        requiredEquipment:["panel_saw","planer","workbench","dust_extractor"],
-        allowedItems:["timber_spruce_m3","timber_oak_m3","board_mdf_m2","glue_kg","fittings_set"],
-        products:["table_basic","cabinet_basic"],recipes:[]
-    },
-    "Tischlerei":null
-};
-IndustryProfiles["Tischlerei"]={...IndustryProfiles["Schreinerei"],label:"Tischlerei"};
+export const IndustryProfiles={
+    "Brauerei":profile("brewery","Brauerei",[
+        {id:"brew_kettle",name:"Sudwerk",price:14500,required:true,room:"production"},{id:"fermenter",name:"Gär-/Lagertank",price:9500,required:true,room:"production"},{id:"filling_line",name:"Abfüllanlage",price:12000,required:true,room:"production"},{id:"cold_storage",name:"Kühltechnik",price:6500,required:false,room:"storage"}
+    ],[{id:"production",name:"Produktionshalle",areaM2:190},{id:"storage",name:"Lager",areaM2:80},{id:"office",name:"Büro",areaM2:30}],["malt_kg","hops_kg","yeast_kg","water_l","bottle_033","crown_cap","label_033"],["lager033_bottle","pils033_bottle"],["lager033","pils033"]),
 
-const genericTypes=["Bäckerei","Metzgerei","Lebensmittelhersteller","Landwirtschaftsbetrieb","Tierhaltung","Obstbau","Maschinenbau","Metallverarbeitung","Kunststoffverarbeitung","Einzelhandel","Großhandel","Onlinehandel"];
-for(const type of genericTypes) IndustryProfiles[type]={...GENERIC_STARTER,label:type,branchKey:type.toLowerCase().replaceAll(" ","_")};
+    "Getränkehersteller":profile("beverage","Getränkehersteller",[
+        {id:"mixing_tank",name:"Mischtank",price:10000,required:true,room:"production"},{id:"filling_line",name:"Abfüllanlage",price:12000,required:true,room:"production"},{id:"cold_storage",name:"Kühltechnik",price:6500,required:false,room:"storage"}
+    ],undefined,["water_l","bottle_033","crown_cap","label_033"]),
+
+    "Mineralbrunnen":profile("beverage","Mineralbrunnen",[
+        {id:"water_treatment",name:"Wasseraufbereitung",price:15000,required:true,room:"production"},{id:"filling_line",name:"Abfüllanlage",price:12000,required:true,room:"production"}
+    ],undefined,["water_l","bottle_033","crown_cap","label_033"]),
+
+    "Schreinerei":profile("carpentry","Schreinerei",[
+        {id:"panel_saw",name:"Formatkreissäge",price:9000,required:true,room:"workshop"},{id:"planer",name:"Abricht-/Dickenhobel",price:7500,required:true,room:"workshop"},{id:"workbench",name:"Werkbank",price:1800,required:true,room:"workshop"},{id:"dust_extractor",name:"Absauganlage",price:4200,required:true,room:"workshop"},{id:"edge_bander",name:"Kantenanleimmaschine",price:11000,required:false,room:"workshop"}
+    ],[{id:"workshop",name:"Werkstatt",areaM2:170},{id:"wood_storage",name:"Holzlager",areaM2:70},{id:"office",name:"Büro",areaM2:20}],["timber_spruce_m3","timber_oak_m3","board_mdf_m2","glue_kg","fittings_set"],["table_basic","cabinet_basic"]),
+
+    "Bäckerei":profile("bakery","Bäckerei",[
+        {id:"bakery_oven",name:"Backofen",price:10500,required:true,room:"production"},{id:"dough_mixer",name:"Teigmaschine",price:5200,required:true,room:"production"},{id:"bakery_worktable",name:"Arbeitstisch",price:1600,required:true,room:"production"}
+    ]),
+    "Metzgerei":profile("butcher","Metzgerei",[
+        {id:"cold_room",name:"Kühlraum",price:9500,required:true,room:"storage"},{id:"meat_cutter",name:"Fleischkutter",price:7200,required:true,room:"production"},{id:"butcher_table",name:"Edelstahl-Arbeitstisch",price:1900,required:true,room:"production"}
+    ]),
+    "Lebensmittelhersteller":profile("food","Lebensmittelhersteller",[
+        {id:"food_mixer",name:"Produktionsmischer",price:9500,required:true,room:"production"},{id:"food_packaging",name:"Verpackungsanlage",price:11500,required:true,room:"production"}
+    ]),
+    "Landwirtschaftsbetrieb":profile("farm","Landwirtschaftsbetrieb",[
+        {id:"tractor",name:"Traktor",price:18000,required:true,room:"yard"},{id:"farm_storage",name:"Landwirtschaftliches Lager",price:6500,required:true,room:"storage"}
+    ],[{id:"yard",name:"Betriebshof",areaM2:250},{id:"storage",name:"Lager/Scheune",areaM2:180},{id:"office",name:"Büro",areaM2:20}]),
+    "Tierhaltung":profile("livestock","Tierhaltung",[
+        {id:"animal_barn",name:"Stalleinrichtung",price:14000,required:true,room:"production"},{id:"feed_storage",name:"Futterlager",price:6000,required:true,room:"storage"}
+    ]),
+    "Obstbau":profile("orchard","Obstbau",[
+        {id:"orchard_tractor",name:"Schmalspurtraktor",price:16000,required:true,room:"yard"},{id:"fruit_storage",name:"Obstlager",price:7500,required:true,room:"storage"}
+    ],[{id:"yard",name:"Betriebshof",areaM2:220},{id:"storage",name:"Obstlager",areaM2:120},{id:"office",name:"Büro",areaM2:20}]),
+    "Maschinenbau":profile("mechanical","Maschinenbau",[
+        {id:"cnc_mill",name:"CNC-Fräse",price:19000,required:true,room:"production"},{id:"assembly_station",name:"Montageplatz",price:5500,required:true,room:"production"},{id:"workshop_crane",name:"Werkstattkran",price:4800,required:true,room:"production"}
+    ]),
+    "Metallverarbeitung":profile("metal","Metallverarbeitung",[
+        {id:"metal_saw",name:"Metallbandsäge",price:7500,required:true,room:"production"},{id:"welder",name:"Schweißplatz",price:5800,required:true,room:"production"},{id:"press_brake",name:"Abkantpresse",price:13500,required:true,room:"production"}
+    ]),
+    "Kunststoffverarbeitung":profile("plastic","Kunststoffverarbeitung",[
+        {id:"injection_machine",name:"Spritzgießmaschine",price:20000,required:true,room:"production"},{id:"material_dryer",name:"Granulattrockner",price:5200,required:true,room:"production"}
+    ]),
+    "Einzelhandel":profile("retail","Einzelhandel",[
+        {id:"shop_shelves",name:"Ladeneinrichtung",price:6500,required:true,room:"sales"},{id:"pos_system",name:"Kassensystem",price:2200,required:true,room:"sales"}
+    ],[{id:"sales",name:"Verkaufsfläche",areaM2:140},{id:"storage",name:"Warenlager",areaM2:80},{id:"office",name:"Büro",areaM2:20}]),
+    "Großhandel":profile("wholesale","Großhandel",[
+        {id:"warehouse_racks",name:"Palettenregale",price:9000,required:true,room:"storage"},{id:"forklift",name:"Gabelstapler",price:12000,required:true,room:"storage"}
+    ],[{id:"storage",name:"Großlager",areaM2:300},{id:"office",name:"Büro",areaM2:30}]),
+    "Onlinehandel":profile("online_retail","Onlinehandel",[
+        {id:"packing_stations",name:"Packplätze",price:4200,required:true,room:"production"},{id:"warehouse_racks",name:"Lagerregale",price:6500,required:true,room:"storage"},{id:"shop_it",name:"Shop-/IT-Arbeitsplatz",price:2800,required:true,room:"office"}
+    ])
+};
+IndustryProfiles["Tischlerei"]={...IndustryProfiles["Schreinerei"],label:"Tischlerei",starterBuilding:{...IndustryProfiles["Schreinerei"].starterBuilding,name:"Leere Tischlerei"}};
 
 export const IndustryGroups={
     "Getränke":["Brauerei","Getränkehersteller","Mineralbrunnen"],
@@ -65,26 +70,10 @@ export const IndustryGroups={
     "Handel":["Einzelhandel","Großhandel","Onlinehandel"]
 };
 
-export function getIndustryProfile(companyOrType){
-    const type=typeof companyOrType==="string"?companyOrType:companyOrType?.type||companyOrType?.company_type;
-    return IndustryProfiles[type]||{...GENERIC_STARTER,label:type||"Betrieb"};
-}
-
-export function createStarterBuilding(companyOrType){
-    const p=getIndustryProfile(companyOrType),base=p.starterBuilding||GENERIC_STARTER.starterBuilding;
-    return {kind:"starter_shell",name:base.name,areaM2:base.areaM2,rooms:(base.rooms||[]).map(r=>({...r,equipment:[]})),equipment:[],ready:false};
-}
-
-export function allowedItem(company,itemId){
-    const p=getIndustryProfile(company);
-    return (p.allowedItems||[]).includes(itemId);
-}
-
-export function equipmentFor(company){ return [...(getIndustryProfile(company).equipment||[])]; }
-export function requiredEquipmentFor(company){ return [...(getIndustryProfile(company).requiredEquipment||[])]; }
-
-export function setupProgress(company){
-    const required=requiredEquipmentFor(company),owned=(company?.buildingState?.equipment||company?.building_state?.equipment||[]).map(x=>typeof x==="string"?x:x.id);
-    const missing=required.filter(id=>!owned.includes(id));
-    return {required,owned,missing,complete:required.length>0&&missing.length===0,percent:required.length?Math.round((required.length-missing.length)/required.length*100):0};
-}
+const FALLBACK=profile("generic","Betrieb",[{id:"basic_workstation",name:"Grundausstattung",price:5000,required:true,room:"production"}]);
+export function getIndustryProfile(companyOrType){const type=typeof companyOrType==="string"?companyOrType:companyOrType?.type||companyOrType?.company_type;return IndustryProfiles[type]||{...FALLBACK,label:type||"Betrieb"};}
+export function createStarterBuilding(companyOrType){const p=getIndustryProfile(companyOrType),base=p.starterBuilding;return{kind:"starter_shell",name:base.name,areaM2:base.areaM2,rooms:(base.rooms||[]).map(r=>({...r,equipment:[]})),equipment:[],ready:false};}
+export function allowedItem(company,itemId){return(getIndustryProfile(company).allowedItems||[]).includes(itemId);}
+export function equipmentFor(company){return[...(getIndustryProfile(company).equipment||[])];}
+export function requiredEquipmentFor(company){return[...(getIndustryProfile(company).requiredEquipment||[])];}
+export function setupProgress(company){const required=requiredEquipmentFor(company),owned=(company?.buildingState?.equipment||company?.building_state?.equipment||[]).map(x=>typeof x==="string"?x:x.id),missing=required.filter(id=>!owned.includes(id));return{required,owned,missing,complete:required.length>0&&missing.length===0,percent:required.length?Math.round((required.length-missing.length)/required.length*100):0};}
