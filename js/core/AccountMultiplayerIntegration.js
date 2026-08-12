@@ -12,6 +12,8 @@ import { SupabaseGameStateSync } from "./SupabaseGameStateSync.js";
 import { runSupabaseSecurityTest } from "./SupabaseSecurityTest.js";
 import { BusinessPortfolioSystem } from "./BusinessPortfolioSystem.js";
 import { BusinessPortfolioDialog } from "./BusinessPortfolioDialog.js";
+import { OperationalSupplyChainDialog } from "./OperationalSupplyChainDialog.js";
+import { runOperationalSupplyChainTest } from "./OperationalSupplyChainSystem.js";
 import { worldContentRegistry } from "./ContentRegistry.js";
 
 export const accountSystem=new AccountSystem();
@@ -24,8 +26,9 @@ export const accountProfileDialog=new AccountProfileDialog({api:authApi});
 export const gameStateSync=new SupabaseGameStateSync({api:authApi});
 export const businessPortfolio=new BusinessPortfolioSystem({api:authApi});
 export const businessPortfolioDialog=new BusinessPortfolioDialog({portfolio:businessPortfolio});
+export const operationalSupplyChainDialog=new OperationalSupplyChainDialog();
 
-window.worldAccounts={accountSystem,coinMarketplace,guildSystem,antiAbuseRiskSystem,authApi,gameAccessGate,accountProfileDialog,gameStateSync,businessPortfolio,businessPortfolioDialog,contentRegistry:worldContentRegistry,runSupabaseSecurityTest:()=>runSupabaseSecurityTest(authApi)};
+window.worldAccounts={accountSystem,coinMarketplace,guildSystem,antiAbuseRiskSystem,authApi,gameAccessGate,accountProfileDialog,gameStateSync,businessPortfolio,businessPortfolioDialog,operationalSupplyChainDialog,contentRegistry:worldContentRegistry,runSupabaseSecurityTest:()=>runSupabaseSecurityTest(authApi)};
 
 function mountAccountButton(){
     if(document.getElementById("world-account-button"))return;
@@ -42,12 +45,20 @@ function mountBusinessesButton(){
     b.addEventListener("click",()=>businessPortfolioDialog.open().catch(e=>alert(e.message)));document.body.append(b);
 }
 
-function mount(){mountAccountButton();mountBusinessesButton();}
+function mountOperationsButton(){
+    if(document.getElementById("world-operations-button"))return;
+    const b=document.createElement("button");b.id="world-operations-button";b.textContent="📦 Betrieb";
+    Object.assign(b.style,{position:"fixed",left:"270px",bottom:"18px",zIndex:"11000",border:"0",borderRadius:"10px",padding:"12px 16px",fontWeight:"800",cursor:"pointer",boxShadow:"0 5px 18px rgba(0,0,0,.35)"});
+    b.addEventListener("click",()=>operationalSupplyChainDialog.open().catch(e=>alert(e.message)));document.body.append(b);
+}
+
+function mount(){mountAccountButton();mountBusinessesButton();mountOperationsButton();}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",mount);else mount();
 
-runAccountSystemTest();runCoinMarketplaceTest();runGuildSystemTest();runAntiAbuseRiskTest();
+runAccountSystemTest();runCoinMarketplaceTest();runGuildSystemTest();runAntiAbuseRiskTest();runOperationalSupplyChainTest();
 console.log("✅ ACCOUNT-/MULTIPLAYER-GRUNDSYSTEM GELADEN");
 console.log("🔒 SPIELZUGANG: aktiver Supabase-Account ist Pflicht");
 console.log("✅ BELIEBIG VIELE BETRIEBE + SUPABASE-SPIELSTAND VERKNÜPFT");
 console.log(`✅ ERWEITERBARE CONTENT-REGISTRY GELADEN: ${worldContentRegistry.list("industries").length} Branchen registriert`);
+console.log("✅ DATENGETRIEBENER EINKAUF/LAGER/PRODUKTIONSKERN GELADEN");
 console.log("🧪 RLS-Test nach Login: await worldAccounts.runSupabaseSecurityTest()");
