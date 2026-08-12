@@ -7,6 +7,7 @@ import { AuthApiClient } from "./AuthApiClient.js";
 import { GameAccessGate } from "./GameAccessGate.js";
 import { AccountProfileDialog } from "./AccountProfileDialog.js";
 import { SupabaseGameStateSync } from "./SupabaseGameStateSync.js";
+import { runSupabaseSecurityTest } from "./SupabaseSecurityTest.js";
 
 export const accountSystem=new AccountSystem();
 export const coinMarketplace=new CoinMarketplaceSystem();
@@ -17,7 +18,7 @@ export const gameAccessGate=new GameAccessGate({accountSystem,api:authApi});
 export const accountProfileDialog=new AccountProfileDialog({api:authApi});
 export const gameStateSync=new SupabaseGameStateSync({api:authApi});
 
-window.worldAccounts={accountSystem,coinMarketplace,guildSystem,antiAbuseRiskSystem,authApi,gameAccessGate,accountProfileDialog,gameStateSync};
+window.worldAccounts={accountSystem,coinMarketplace,guildSystem,antiAbuseRiskSystem,authApi,gameAccessGate,accountProfileDialog,gameStateSync,runSupabaseSecurityTest:()=>runSupabaseSecurityTest(authApi)};
 
 function mountAccountButton(){
     if(document.getElementById("world-account-button")) return;
@@ -38,3 +39,4 @@ runAccountSystemTest(); runCoinMarketplaceTest(); runGuildSystemTest(); runAntiA
 console.log("✅ ACCOUNT-/MULTIPLAYER-GRUNDSYSTEM GELADEN");
 console.log("🔒 SPIELZUGANG: aktiver Supabase-Account ist Pflicht");
 console.log("✅ SUPABASE AUTH + PROFIL + WALLET + FIRMA + SPIELSTAND VERKNÜPFT");
+console.log("🧪 RLS-Test nach Login: await worldAccounts.runSupabaseSecurityTest()");
