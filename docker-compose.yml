@@ -1,0 +1,41 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: worldproject-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: worldproject
+      POSTGRES_USER: worldproject
+      POSTGRES_PASSWORD: worldproject-dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - worldproject_pgdata:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
+      - ./database/002_auth_security.sql:/docker-entrypoint-initdb.d/002_auth_security.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U worldproject -d worldproject"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: ./server
+    container_name: worldproject-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PORT: 3001
+      DATABASE_URL: postgres://worldproject:worldproject-dev@postgres:5432/worldproject
+      FRONTEND_ORIGIN: http://127.0.0.1:5500
+      NODE_ENV: development
+      TERMS_VERSION: "1.0"
+      PRIVACY_VERSION: "1.0"
+    ports:
+      - "3001:3001"
+
+volumes:
+  worldproject_pgdata:
