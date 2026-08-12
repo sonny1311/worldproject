@@ -1,0 +1,9 @@
+// WorldProject - frei waehlbare Produktionsmengen mit proportionalem Rohstoffbedarf
+export class VariableProductionQuantitySystem{
+ constructor({contentRegistry=null}={}){this.contentRegistry=contentRegistry;}
+ recipeBaseOutput(recipe){const out=Number(recipe?.output||0);if(out<=0)throw new Error("Rezept hat keine gueltige Ausgabemenge");return out;}
+ plan(recipe,targetOutput){const target=Math.max(0,Number(targetOutput||0));if(target<=0)throw new Error("Produktionsmenge muss groesser 0 sein");const base=this.recipeBaseOutput(recipe),factor=target/base,requirements={};for(const [material,qty] of Object.entries(recipe.materials||{}))requirements[material]=Number(qty)*factor;return{recipeId:recipe.id,targetOutput:target,outputUnit:recipe.outputUnit||recipe.unit||"Einheiten",factor,requirements,durationMinutes:Number(recipe.durationMinutes||0)*factor,estimatedVariableCost:Number(recipe.variableCost||0)*factor};}
+ missing(plan,warehouse){const missing={};for(const [material,qty] of Object.entries(plan.requirements)){const zone=warehouse.zoneFor(material),have=Number(warehouse.stock?.[zone]?.[material]||0);if(have<qty)missing[material]=qty-have;}return missing;}
+ formatMissing(missing,{registry=this.contentRegistry,locale="de-DE"}={}){return Object.entries(missing).map(([id,qty])=>{const item=registry?.get?.("materials",id)||{};const label=item.label||id,unit=item.unit||"";return `${label}: ${Number(qty).toLocaleString(locale,{maximumFractionDigits:2})}${unit?` ${unit}`:""}`;});}
+}
+export function runVariableProductionQuantityTest(){const s=new VariableProductionQuantitySystem(),recipe={id:"pils",output:1000,materials:{malt:55,hops:.45,water:360},durationMinutes:180,variableCost:90},p=s.plan(recipe,500);if(p.requirements.malt!==27.5||p.durationMinutes!==90)throw new Error("Variable Produktionsmenge fehlerhaft");console.log("🍺 VARIABLE PRODUKTIONSMENGE ERFOLGREICH");return true;}
