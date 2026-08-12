@@ -31,15 +31,18 @@ export const IndustryProfiles={
     "Lebensmittelhersteller":profile("food","Lebensmittelhersteller",[
         {id:"food_mixer",name:"Produktionsmischer",price:9500,required:true,room:"production"},{id:"food_packaging",name:"Verpackungsanlage",price:11500,required:true,room:"production"}
     ]),
-    "Landwirtschaftsbetrieb":profile("farm","Landwirtschaftsbetrieb",[
-        {id:"tractor",name:"Traktor",price:18000,required:true,room:"yard"},{id:"farm_storage",name:"Landwirtschaftliches Lager",price:6500,required:true,room:"storage"}
-    ],[{id:"yard",name:"Betriebshof",areaM2:250},{id:"storage",name:"Lager/Scheune",areaM2:180},{id:"office",name:"Büro",areaM2:20}]),
+    "Landwirtschaftsbetrieb":profile("farm","Landwirtschaft / Ackerbau",[
+        {id:"tractor",name:"Traktor",price:18000,required:true,room:"yard"},{id:"cultivator",name:"Bodenbearbeitungsgerät",price:8500,required:true,room:"yard"},{id:"seeder",name:"Sämaschine",price:10500,required:true,room:"yard"},{id:"combine_harvester",name:"Mähdrescher",price:42000,required:false,room:"yard"},{id:"farm_storage",name:"Landwirtschaftliches Lager",price:6500,required:true,room:"storage"},{id:"grain_silo",name:"Getreidesilo",price:12500,required:false,room:"storage"}
+    ],[{id:"yard",name:"Betriebshof",areaM2:250},{id:"fields",name:"Ackerflächen",areaM2:1000},{id:"storage",name:"Lager/Scheune",areaM2:180},{id:"office",name:"Büro",areaM2:20}],
+    ["seed_wheat","seed_barley","seed_corn","seed_rapeseed","seed_potato","fertilizer","diesel","animal_feed"],
+    ["wheat","barley","corn","rapeseed","potatoes","straw"],
+    ["grow_wheat","grow_barley","grow_corn","grow_rapeseed","grow_potatoes"]),
     "Tierhaltung":profile("livestock","Tierhaltung",[
         {id:"animal_barn",name:"Stalleinrichtung",price:14000,required:true,room:"production"},{id:"feed_storage",name:"Futterlager",price:6000,required:true,room:"storage"}
-    ]),
+    ],undefined,["animal_feed","straw","water_l"],["milk","cattle","pigs","eggs"]),
     "Obstbau":profile("orchard","Obstbau",[
         {id:"orchard_tractor",name:"Schmalspurtraktor",price:16000,required:true,room:"yard"},{id:"fruit_storage",name:"Obstlager",price:7500,required:true,room:"storage"}
-    ],[{id:"yard",name:"Betriebshof",areaM2:220},{id:"storage",name:"Obstlager",areaM2:120},{id:"office",name:"Büro",areaM2:20}]),
+    ],[{id:"yard",name:"Betriebshof",areaM2:220},{id:"storage",name:"Obstlager",areaM2:120},{id:"office",name:"Büro",areaM2:20}],[],["apples","pears","cherries"]),
     "Maschinenbau":profile("mechanical","Maschinenbau",[
         {id:"cnc_mill",name:"CNC-Fräse",price:19000,required:true,room:"production"},{id:"assembly_station",name:"Montageplatz",price:5500,required:true,room:"production"},{id:"workshop_crane",name:"Werkstattkran",price:4800,required:true,room:"production"}
     ]),
