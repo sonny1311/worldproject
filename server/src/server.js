@@ -145,9 +145,31 @@ app.post("/api/auth/password-reset/confirm",async(req,res)=>{
  try{const found=await query("SELECT * FROM password_reset_tokens WHERE token_hash=$1 AND used_at IS NULL AND expires_at>NOW() LIMIT 1",[sha(token)]); if(!found.rowCount)return res.status(400).json({success:false,error:"Reset-Code ungültig oder abgelaufen"}); const hash=await argon2.hash(password,{type:argon2.argon2id}); await withTransaction(async c=>{await c.query("UPDATE users SET password_hash=$2,failed_login_count=0,locked_until=NULL WHERE id=$1",[found.rows[0].user_id,hash]);await c.query("UPDATE password_reset_tokens SET used_at=NOW() WHERE id=$1",[found.rows[0].id]);await c.query("UPDATE auth_sessions SET revoked_at=NOW() WHERE user_id=$1 AND revoked_at IS NULL",[found.rows[0].user_id]);}); await audit(found.rows[0].user_id,"password_reset"); res.json({success:true});}catch{res.status(500).json({success:false,error:"Passwort konnte nicht geändert werden"});}
 });
 
+app.get("/api/account/overview",requireAuth,async(req,res)=>{
+ try{
+  const wallet=await query("SELECT balance,updated_at FROM coin_wallets WHERE user_id=$1",[req.user.id]);
+  const tx=await query("SELECT amount,transaction_type,note,created_at FROM coin_transactions WHERE user_id=$1 ORDER BY created_at DESC LIMIT 20",[req.user.id]);
+  const company=await query("SELECT id,name,industry,company_type,money,created_at FROM companies WHERE user_id=$1 LIMIT 1",[req.user.id]);
+  res.json({success:true,user:publicUser(req.user),wallet:{balance:Number(wallet.rows[0]?.balance||0),updatedAt:wallet.rows[0]?.updated_at||null,transactions:tx.rows.map(r=>({amount:Number(r.amount),type:r.transaction_type,note:r.note,createdAt:r.created_at}))},company:company.rows[0]||null});
+ }catch{res.status(500).json({success:false,error:"Accountübersicht konnte nicht geladen werden"});}
+});
+
 app.patch("/api/account/profile",requireAuth,async(req,res)=>{
  const displayName=String(req.body.displayName||req.user.username).trim().slice(0,80); const countryCode=String(req.body.countryCode||req.user.country_code||"DE").trim().slice(0,2).toUpperCase(); const languageCode=String(req.body.languageCode||req.user.language_code||"de").trim().slice(0,10);
  const updated=await query("UPDATE users SET display_name=$2,country_code=$3,language_code=$4 WHERE id=$1 RETURNING *",[req.user.id,displayName,countryCode,languageCode]); await audit(req.user.id,"profile_updated"); res.json({success:true,user:publicUser(updated.rows[0])});
+});
+
+app.post("/api/account/company",requireAuth,async(req,res)=>{
+ try{
+  const existing=await query("SELECT * FROM companies WHERE user_id=$1 LIMIT 1",[req.user.id]);
+  if(existing.rowCount)return res.json({success:true,company:existing.rows[0],created:false});
+  const name=String(req.body.name||`${req.user.username} GmbH`).trim().slice(0,120)||`${req.user.username} GmbH`;
+  const industry=String(req.body.industry||"Getränke").trim().slice(0,80);
+  const companyType=String(req.body.companyType||"Brauerei").trim().slice(0,80);
+  const inserted=await query("INSERT INTO companies(user_id,name,industry,company_type,money) VALUES($1,$2,$3,$4,50000) RETURNING *",[req.user.id,name,industry,companyType]);
+  await audit(req.user.id,"company_created",{companyId:inserted.rows[0].id,name});
+  res.status(201).json({success:true,company:inserted.rows[0],created:true});
+ }catch{res.status(500).json({success:false,error:"Unternehmen konnte nicht mit dem Account verbunden werden"});}
 });
 
 app.post("/api/account/delete-request",requireAuth,async(req,res)=>{await query("INSERT INTO account_deletion_requests(user_id,execute_after) VALUES($1,NOW()+INTERVAL '14 days')",[req.user.id]);await audit(req.user.id,"deletion_requested");res.json({success:true,executeAfterDays:14});});
