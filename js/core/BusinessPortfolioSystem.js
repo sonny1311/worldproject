@@ -1,4 +1,4 @@
-// WorldProject - bis zu vier Betriebe pro Spieler
+// WorldProject - beliebig viele Betriebe pro Spieler
 import { createStarterBuilding } from "./IndustryCatalog.js";
 
 export class BusinessPortfolioSystem {
@@ -35,11 +35,15 @@ export class BusinessPortfolioSystem {
         return target;
     }
 
-    nextFreeSlot(){for(let i=1;i<=4;i++)if(!this.companies.some(c=>Number(c.slot_no)===i))return i;return null;}
+    nextFreeSlot(){
+        const used=new Set(this.companies.map(c=>Number(c.slot_no)).filter(Number.isFinite));
+        let slot=1;
+        while(used.has(slot))slot++;
+        return slot;
+    }
 
     async createBusiness(data={}){
-        if(this.companies.length>=4)throw new Error("Maximal vier Betriebe möglich");
-        const slotNo=data.slotNo||this.nextFreeSlot();if(!slotNo)throw new Error("Kein freier Betriebsplatz");
+        const slotNo=data.slotNo||this.nextFreeSlot();
         const result=await this.api.createBusiness({...data,slotNo});
         const starter=createStarterBuilding({type:data.companyType||data.type,industry:data.industry});
         await this.api.updateBusinessSetup(result.company.id,"empty_building",starter);
