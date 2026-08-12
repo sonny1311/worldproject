@@ -4,7 +4,12 @@ export class SupabaseGameStateSync {
         this.api=api;this.intervalMs=intervalMs;this.timer=null;this.saving=false;
         for(const event of ["worldproject:company-founded","worldproject:company-loaded","worldproject:company-switched"])window.addEventListener(event,()=>this.start());
         window.addEventListener("world:server-balances-changed",()=>this.refreshBalances());
-        window.addEventListener("world:state-dirty",()=>this.save().catch(e=>console.warn("Sofortspeichern fehlgeschlagen",e)));
+        // Alle vorhandenen Spielsysteme verwenden einen dieser beiden Dirty-Events.
+        // Beide muessen auf denselben zentralen Supabase-Spielstand zeigen, damit
+        // Einkauf/Lager/Produktion ebenso sicher persistieren wie Personal/Maschinen.
+        for(const event of ["world:state-dirty","world:game-state-dirty"]){
+            window.addEventListener(event,()=>this.save().catch(e=>console.warn("Sofortspeichern fehlgeschlagen",e)));
+        }
     }
 
     start(){if(this.timer)return;this.timer=setInterval(()=>this.save().catch(()=>{}),this.intervalMs);console.log("✅ SUPABASE-SPIELSTANDSYNCHRONISATION AKTIV");}
