@@ -1,0 +1,8 @@
+// WorldProject - laufende Betriebskosten, Energie und Effizienz
+export class OperatingCostEnergySystem{
+ constructor(){this.entries=[];}
+ machineEnergy(machine,hours,energyPrice){const base=Math.max(0,Number(machine.energy||0))*Math.max(0,Number(hours)),eff=Math.max(.5,Number(machine.energyEfficiency||1));return{kwh:base/eff,cost:base/eff*Number(energyPrice||0)};}
+ daily({company,day=Date.now(),machines=[],machineHours={},energyPrice=.25,waterCost=0,heatingCost=0,rent=0,insurance=0,other=0}={}){let kwh=0,energyCost=0;for(const m of machines){const e=this.machineEnergy(m,Number(machineHours[m.id]||0),energyPrice);kwh+=e.kwh;energyCost+=e.cost;}const total=energyCost+Number(waterCost)+Number(heatingCost)+Number(rent)+Number(insurance)+Number(other);if(Number(company.money||0)<total)throw new Error("Betriebskonto reicht fuer laufende Kosten nicht");company.money-=total;const row={companyId:company.id,day,kwh,energyCost,waterCost:Number(waterCost),heatingCost:Number(heatingCost),rent:Number(rent),insurance:Number(insurance),other:Number(other),total};this.entries.push(row);return row;}
+ upgradeEfficiency(company,machine,{cost=0,gain=.03}={}){if(Number(company.money||0)<cost)throw new Error("Nicht genug Betriebsgeld");company.money-=cost;machine.energyEfficiency=Math.max(1,Number(machine.energyEfficiency||1)+Number(gain));return machine.energyEfficiency;}
+}
+export function runOperatingCostEnergyTest(){const s=new OperatingCostEnergySystem(),c={id:1,money:1000},m={id:1,energy:10,energyEfficiency:1};const r=s.daily({company:c,machines:[m],machineHours:{1:8},energyPrice:.25,rent:10});if(r.kwh!==80||r.total!==30||c.money!==970)throw new Error("Betriebskosten-Test fehlgeschlagen");console.log("⚡ BETRIEBSKOSTEN/ENERGIE ERFOLGREICH");return true;}
