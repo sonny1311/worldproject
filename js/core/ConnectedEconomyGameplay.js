@@ -14,7 +14,7 @@ export class ConnectedEconomyGameplay {
     constructor(){this.economy=new EconomyGameplaySystem();this.advanced=new AdvancedEconomySystem();this.setup=new BusinessSetupSystem();this.fleet=new FleetManagementSystem();this.fleetCosts=new FleetOperatingCostSystem();this.market=new SupplierMarketSystem();this.missions=new MissionSystem();this.salePrice=0.95;}
 
     ensureCompany(company){
-        company.money??=50000;company.coins??=0;company.vehicles??=[];company.inventory??={};company.finishedGoods??={};company.production??={capacity:1000,active:false};company.missions??=[];company.completedMissions??=[];
+        company.money??=0;company.coins??=0;company.vehicles??=[];company.inventory??={};company.finishedGoods??={};company.production??={capacity:1000,active:false};company.missions??=[];company.completedMissions??=[];
         this.advanced.ensureCompany(company);
         if(company.setupPhase)this.setup.ensure(company);
         if(!company.salesPrices.lager033_bottle)company.salesPrices.lager033_bottle=this.salePrice;
