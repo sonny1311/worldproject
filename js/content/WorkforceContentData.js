@@ -3,6 +3,7 @@ import { registerWorldContent } from "../core/ContentRegistry.js";
 
 export const WorkforceContent={
  jobs:[
+  {id:"brew_master",label:"Braumeister",industries:["brewery"],baseWageMonthly:4100,skills:["brewhouse","fermentation","brewery_quality","production_release"],requiredFor:["beer_production"],mandatoryForIndustry:true},
   {id:"brewer",label:"Brauer",industries:["brewery"],baseWageMonthly:3200,skills:["brewhouse","fermentation"]},
   {id:"machine_operator",label:"Maschinenfuehrer",industries:["brewery","carpentry","bakery","butcher","food","mechanical","metal","plastic"],baseWageMonthly:3000,skills:["machine"]},
   {id:"warehouse_worker",label:"Lagerist",industries:["*"],baseWageMonthly:2850,skills:["warehouse"]},
