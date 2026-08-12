@@ -1,12 +1,16 @@
 // WorldProject - sichtbare Wirtschaftsspiel-Oberfläche
 import { UnifiedOperationsOverviewSystem } from "./UnifiedOperationsOverviewSystem.js";
+import { i18n } from "./InternationalizationSystem.js";
 
 export class EconomyDashboard {
     constructor({controller,company,parent=document.body}={}){this.controller=controller;this.company=company;this.parent=parent;this.overlay=null;this.operationsOverview=new UnifiedOperationsOverviewSystem({companyProvider:()=>this.company});}
     el(tag,text=null){const e=document.createElement(tag);if(text!==null)e.textContent=text;return e;}
-    money(v){return Number(v||0).toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2});}
-    amount(v){return Number(v||0).toLocaleString("de-DE",{maximumFractionDigits:2});}
-    label(id){return({malt_kg:"Malz",hops_kg:"Hopfen",yeast_kg:"Hefe",water_l:"Wasser",bottle_033:"0,33-l-Flaschen",crown_cap:"Kronkorken",label_033:"Etiketten 0,33 l",lager033_bottle:"Lagerbier 0,33 l",pils033_bottle:"Pils 0,33 l",timber_spruce_m3:"Fichtenholz",timber_oak_m3:"Eichenholz",board_mdf_m2:"MDF-Platten",glue_kg:"Holzleim",fittings_set:"Beschlagsatz"})[id]||id;}
+    money(v){return Number(v||0).toLocaleString(i18n.locale,{minimumFractionDigits:2,maximumFractionDigits:2});}
+    amount(v){return Number(v||0).toLocaleString(i18n.locale,{maximumFractionDigits:2});}
+    label(id){const materialAliases={malt_kg:"malt",hops_kg:"hops",yeast_kg:"yeast",water_l:"water",bottle_033:"bottles",crown_cap:"caps",label_033:"labels"};const materialId=materialAliases[id]||id,translated=i18n.materialLabel(materialId);if(translated!==`materials.${materialId}`)return translated;return({lager033_bottle:"Lagerbier 0,33 l",pils033_bottle:"Pils 0,33 l",lager033:"Lagerbier",pils:"Pils",timber_spruce_m3:"Fichtenholz",timber_oak_m3:"Eichenholz",board_mdf_m2:"MDF-Platten",glue_kg:"Holzleim",fittings_set:"Beschlagsatz"})[id]||id;}
+    productionStatus(status){const key=`status.production.${status||"queued"}`,text=i18n.t(key);return text===key?String(status||""):text;}
+    validTimestamp(value){if(value instanceof Date)return Number.isFinite(value.getTime())?value.getTime():null;const direct=Number(value);if(Number.isFinite(direct)&&direct>0)return direct;const parsed=Date.parse(value);return Number.isFinite(parsed)&&parsed>0?parsed:null;}
+    remaining(value){const ts=this.validTimestamp(value);if(!ts)return i18n.t("time.unknown");const ms=Math.max(0,ts-Date.now());if(ms<=0)return i18n.t("time.arrived");const mins=Math.ceil(ms/60000),h=Math.floor(mins/60),m=mins%60;return`${h?`${h} Std. `:""}${m} Min.`;}
     open(){if(this.overlay)return;const overlay=this.el("div");Object.assign(overlay.style,{position:"fixed",inset:0,zIndex:12000,background:"rgba(0,0,0,.72)",display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"});const panel=this.el("div");Object.assign(panel.style,{width:"min(1320px,97vw)",maxHeight:"94vh",overflow:"auto",background:"#1d232b",color:"#fff",borderRadius:"14px",padding:"22px",fontFamily:"Arial,sans-serif",boxShadow:"0 20px 70px rgba(0,0,0,.5)"});overlay.append(panel);this.overlay=overlay;this.parent.append(overlay);this.render(panel);}
     close(){this.overlay?.remove();this.overlay=null;}
     card(title){const c=this.el("div");Object.assign(c.style,{background:"rgba(255,255,255,.075)",borderRadius:"10px",padding:"16px",minWidth:"260px",flex:"1"});const h=this.el("div",title);Object.assign(h.style,{fontWeight:700,marginBottom:"10px",fontSize:"17px"});c.append(h);return c;}
@@ -42,10 +46,10 @@ export class EconomyDashboard {
     }
 
     renderSuppliers(grid){
-        const profile=this.controller.getIndustryProfile(this.company),suppliers=this.anchorCard(this.card("📦 Lieferungen & Einkauf"),"dashboard-deliveries");
+        const profile=this.controller.getIndustryProfile(this.company),suppliers=this.anchorCard(this.card(i18n.t("operations.supply_title")),"dashboard-deliveries");
         const items=profile.allowedItems||[];
         if(!items.length){suppliers.append(this.el("div","Für diese Branche wird der Lieferantenkatalog noch ergänzt."));grid.append(suppliers);return;}
-        suppliers.append(this.button("📦 Lieferungen & Einkauf",()=>this.openOperationalSupplyChain()));
+        suppliers.append(this.small(i18n.t("operations.manage_hint")),this.button(i18n.t("operations.open"),()=>this.openOperationalSupplyChain()));
         const openOrders=this.operationsOverview.openDeliveries();
         if(openOrders.length)suppliers.append(this.el("strong",`${openOrders.length} offene Lieferung${openOrders.length===1?"":"en"}`));
         else suppliers.append(this.small("Keine offenen Lieferungen."));
@@ -62,13 +66,12 @@ export class EconomyDashboard {
         this.renderSuppliers(grid);
 
         const profile=this.controller.getIndustryProfile(this.company);
-        const production=this.anchorCard(this.card("🏗️ Produktion"),"dashboard-production");
+        const production=this.anchorCard(this.card(i18n.t("operations.production_title")),"dashboard-production");
         if(profile.branchKey==="brewery"){
-            production.append(this.small("Lagerbier 0,33 l · Produktionsmenge wird auf freie Mengeneingabe umgestellt."));
-            production.append(this.button("1 Charge starten",()=>{const r=this.controller.produce(this.company,"lager033",1);alert(r.success?`Produktion läuft · ${Math.round(r.order.productionMinutes)} Min.`:r.reason);this.render(panel);}));
-            production.append(this.button("2 Chargen einplanen",()=>{const r=this.controller.queueProduction(this.company,"lager033",2);alert(r.success?"2 Chargen in Warteschlange.":r.reason);this.render(panel);}));
-            const machine=this.company.productionMachines?.[0];if(machine)production.append(this.small(`${machine.name} · Stufe ${machine.upgradeLevel} · Zustand ${Number(machine.condition||100).toFixed(1)} % · ${machine.status}`));
-            const q=this.operationsOverview.activeProduction();if(q.length){production.append(this.el("strong",`${q.length} laufende/geplante Produktion${q.length===1?"":"en"}`));q.forEach(j=>production.append(this.small(`${this.label(j.productId||j.product||j.recipeId||"Produktion")} · ${this.amount(j.quantity||j.output||j.plan?.output||j.batches||1)} · ${j.status||"geplant"}`)));}
+            production.append(this.small(i18n.t("operations.manage_hint")),this.button(i18n.t("operations.open"),()=>this.openOperationalSupplyChain()));
+            const machines=this.company.workforceState?.machines||this.company.workforceOperationsState?.machines||this.company.productionMachines||[];
+            const machine=machines[0];if(machine)production.append(this.small(`${machine.name||machine.label||machine.type} · Zustand ${Number(machine.condition||100).toFixed(1)} %`));
+            const q=this.operationsOverview.activeProduction();if(q.length){production.append(this.el("strong",`${q.length} laufende/geplante Produktion${q.length===1?"":"en"}`));q.forEach(j=>{const product=j.recipe?.label||this.label(j.recipe?.product||j.productId||j.product||j.recipeId||"Produktion"),quantity=j.plan?.output??j.quantity??j.output??j.batches??1,unit=j.recipe?.outputUnit||j.recipe?.unit||"",rest=j.status==="running"?` · Restzeit ${this.remaining(j.finishAt)}`:"";production.append(this.small(`${product} · ${this.amount(quantity)}${unit?` ${unit}`:""} · ${this.productionStatus(j.status)}${rest}`));});}
         }else if(profile.branchKey==="carpentry")production.append(this.small("Schreinerei ist eingerichtet. Möbel-/Holzrezepte werden als nächster Produktionskatalog ergänzt."));
         else production.append(this.small("Branchenspezifische Produktionsrezepte werden noch ergänzt."));
         grid.append(production);
@@ -76,7 +79,7 @@ export class EconomyDashboard {
         const customerCard=this.anchorCard(this.card("📋 Kundenaufträge"),"dashboard-customer-orders");
         const customerOrders=this.operationsOverview.openCustomerOrders();
         if(!customerOrders.length)customerCard.append(this.small("Keine offenen Kundenaufträge."));
-        for(const o of customerOrders){const due=o.dueAt||o.deadline||o.deliveryDueAt,qty=o.quantity||o.amount||0,done=o.deliveredQuantity||o.fulfilledQuantity||o.deliveredAmount||0,product=this.label(o.product||o.productId||o.itemId||"Produkt"),customer=o.customerName||o.customer?.name||o.customerId||o.customer||"Kunde",price=o.unitPrice!=null?` · ${this.money(o.unitPrice)} €/Einheit`:"",deadline=due?` · Frist ${new Date(due).toLocaleString("de-DE")}`:"";customerCard.append(this.el("strong",`${customer} · ${product}`),this.small(`${this.amount(done)} / ${this.amount(qty)} erfüllt${price}${deadline} · Status ${o.status||"offen"}`));}
+        for(const o of customerOrders){const due=o.dueAt||o.deadline||o.deliveryDueAt,qty=o.quantity||o.amount||0,done=o.deliveredQuantity||o.fulfilledQuantity||o.deliveredAmount||0,product=this.label(o.product||o.productId||o.itemId||"Produkt"),customer=o.customerName||o.customer?.name||o.customerId||o.customer||"Kunde",price=o.unitPrice!=null?` · ${this.money(o.unitPrice)} €/Einheit`:"",deadline=due?` · Frist ${new Date(due).toLocaleString(i18n.locale)}`:"";customerCard.append(this.el("strong",`${customer} · ${product}`),this.small(`${this.amount(done)} / ${this.amount(qty)} erfüllt${price}${deadline} · Status ${o.status||"offen"}`));}
         grid.append(customerCard);
 
         const fleet=this.card("🚛 Fuhrpark, Tank & Wartung");const first=this.company.vehicles?.[0];fleet.append(this.el("div",first?`${first.name} · ${first.status} · ${Math.round(first.odometerKm||0)} km · Tank ${this.amount(first.fuelLiters)} l · Zustand ${Number(first.condition||100).toFixed(1)} %`:"Noch kein Fahrzeug"));fleet.append(this.button("18-Tonner kaufen (35.000 €)",()=>{const r=this.controller.buyVehicle(this.company,"truck18",35000);alert(r.success?"18-Tonner gekauft.":r.reason);this.render(panel);}));if(first)fleet.append(this.button("Wartung 1.200 €",()=>{const r=this.controller.serviceVehicle(this.company,first);alert(r.success?"Fahrzeug gewartet.":r.reason);this.render(panel);}));grid.append(fleet);
