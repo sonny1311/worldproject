@@ -1,6 +1,8 @@
 // WorldProject - sichtbare Wirtschaftsspiel-Oberfläche
+import { UnifiedOperationsOverviewSystem } from "./UnifiedOperationsOverviewSystem.js";
+
 export class EconomyDashboard {
-    constructor({controller,company,parent=document.body}={}){this.controller=controller;this.company=company;this.parent=parent;this.overlay=null;}
+    constructor({controller,company,parent=document.body}={}){this.controller=controller;this.company=company;this.parent=parent;this.overlay=null;this.operationsOverview=new UnifiedOperationsOverviewSystem({companyProvider:()=>this.company});}
     el(tag,text=null){const e=document.createElement(tag);if(text!==null)e.textContent=text;return e;}
     money(v){return Number(v||0).toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2});}
     amount(v){return Number(v||0).toLocaleString("de-DE",{maximumFractionDigits:2});}
@@ -44,7 +46,7 @@ export class EconomyDashboard {
         const items=profile.allowedItems||[];
         if(!items.length){suppliers.append(this.el("div","Für diese Branche wird der Lieferantenkatalog noch ergänzt."));grid.append(suppliers);return;}
         suppliers.append(this.button("📦 Lieferungen & Einkauf",()=>this.openOperationalSupplyChain()));
-        const openOrders=(this.company.supplierOrders||[]).filter(o=>!["delivered","stored","cancelled"].includes(o.status));
+        const openOrders=this.operationsOverview.openDeliveries();
         if(openOrders.length)suppliers.append(this.el("strong",`${openOrders.length} offene Lieferung${openOrders.length===1?"":"en"}`));
         else suppliers.append(this.small("Keine offenen Lieferungen."));
         grid.append(suppliers);
@@ -54,7 +56,7 @@ export class EconomyDashboard {
         this.controller.processTime(this.company,new Date());panel.innerHTML="";this.header(panel);
         if(this.company.setupPhase&&this.company.setupPhase!=="operating"){this.renderSetup(panel);return;}
         this.controller.ensureCustomerOrders(this.company);
-        const storage=this.controller.getStorageStatus(this.company),mission=this.controller.missions.getActiveMission(this.company),report=this.controller.getReport(this.company,168);
+        const storage=this.controller.getStorageStatus(this.company),mission=this.controller.missions.getActiveMission(this.company),report=this.controller.getReport(this.company,168),operationCounters=this.operationsOverview.counters();
         const summary=this.el("div");Object.assign(summary.style,{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:"10px",margin:"18px 0"});for(const[t,v]of[["💶 Firmenkonto",`${this.money(this.company.money)} €`],["🪙 Coins",`${this.company.coins||0}`],["🚚 Fuhrpark",`${this.company.vehicles?.length||0} Fahrzeuge`],["🏬 Lager",`${this.amount(storage.used)} / ${this.amount(storage.capacity)}`],["📈 Wochengewinn",`${this.money(report.profit)} €`],["🎯 Aufgabe",mission?`${mission.deliveredAmount}/${mission.targetAmount}`:"Keine"]]){const c=this.card(t);c.append(this.el("div",v));summary.append(c);}panel.append(summary);
         const grid=this.el("div");Object.assign(grid.style,{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(315px,1fr))",gap:"12px"});
         this.renderSuppliers(grid);
@@ -66,15 +68,15 @@ export class EconomyDashboard {
             production.append(this.button("1 Charge starten",()=>{const r=this.controller.produce(this.company,"lager033",1);alert(r.success?`Produktion läuft · ${Math.round(r.order.productionMinutes)} Min.`:r.reason);this.render(panel);}));
             production.append(this.button("2 Chargen einplanen",()=>{const r=this.controller.queueProduction(this.company,"lager033",2);alert(r.success?"2 Chargen in Warteschlange.":r.reason);this.render(panel);}));
             const machine=this.company.productionMachines?.[0];if(machine)production.append(this.small(`${machine.name} · Stufe ${machine.upgradeLevel} · Zustand ${Number(machine.condition||100).toFixed(1)} % · ${machine.status}`));
-            const q=(this.company.productionQueue||[]).filter(x=>!["finished","cancelled"].includes(x.status));if(q.length){production.append(this.el("strong",`${q.length} laufende/geplante Produktion${q.length===1?"":"en"}`));q.forEach(j=>production.append(this.small(`${this.label(j.productId||j.product||j.recipeId||"Produktion")} · ${this.amount(j.quantity||j.output||j.batches||1)} · ${j.status||"geplant"}`)));}
+            const q=this.operationsOverview.activeProduction();if(q.length){production.append(this.el("strong",`${q.length} laufende/geplante Produktion${q.length===1?"":"en"}`));q.forEach(j=>production.append(this.small(`${this.label(j.productId||j.product||j.recipeId||"Produktion")} · ${this.amount(j.quantity||j.output||j.plan?.output||j.batches||1)} · ${j.status||"geplant"}`)));}
         }else if(profile.branchKey==="carpentry")production.append(this.small("Schreinerei ist eingerichtet. Möbel-/Holzrezepte werden als nächster Produktionskatalog ergänzt."));
         else production.append(this.small("Branchenspezifische Produktionsrezepte werden noch ergänzt."));
         grid.append(production);
 
         const customerCard=this.anchorCard(this.card("📋 Kundenaufträge"),"dashboard-customer-orders");
-        const customerOrders=(this.company.customerOrders||this.company.orders||[]).filter(o=>!["fulfilled","delivered","cancelled"].includes(o.status));
+        const customerOrders=this.operationsOverview.openCustomerOrders();
         if(!customerOrders.length)customerCard.append(this.small("Keine offenen Kundenaufträge."));
-        for(const o of customerOrders){const due=o.dueAt||o.deadline||o.deliveryDueAt,qty=o.quantity||o.amount||0,done=o.deliveredQuantity||o.fulfilledQuantity||o.deliveredAmount||0,product=this.label(o.product||o.productId||o.itemId||"Produkt"),customer=o.customerName||o.customer?.name||o.customerId||"Kunde",price=o.unitPrice!=null?` · ${this.money(o.unitPrice)} €/Einheit`:"",deadline=due?` · Frist ${new Date(due).toLocaleString("de-DE")}`:"";customerCard.append(this.el("strong",`${customer} · ${product}`),this.small(`${this.amount(done)} / ${this.amount(qty)} erfüllt${price}${deadline} · Status ${o.status||"offen"}`));}
+        for(const o of customerOrders){const due=o.dueAt||o.deadline||o.deliveryDueAt,qty=o.quantity||o.amount||0,done=o.deliveredQuantity||o.fulfilledQuantity||o.deliveredAmount||0,product=this.label(o.product||o.productId||o.itemId||"Produkt"),customer=o.customerName||o.customer?.name||o.customerId||o.customer||"Kunde",price=o.unitPrice!=null?` · ${this.money(o.unitPrice)} €/Einheit`:"",deadline=due?` · Frist ${new Date(due).toLocaleString("de-DE")}`:"";customerCard.append(this.el("strong",`${customer} · ${product}`),this.small(`${this.amount(done)} / ${this.amount(qty)} erfüllt${price}${deadline} · Status ${o.status||"offen"}`));}
         grid.append(customerCard);
 
         const fleet=this.card("🚛 Fuhrpark, Tank & Wartung");const first=this.company.vehicles?.[0];fleet.append(this.el("div",first?`${first.name} · ${first.status} · ${Math.round(first.odometerKm||0)} km · Tank ${this.amount(first.fuelLiters)} l · Zustand ${Number(first.condition||100).toFixed(1)} %`:"Noch kein Fahrzeug"));fleet.append(this.button("18-Tonner kaufen (35.000 €)",()=>{const r=this.controller.buyVehicle(this.company,"truck18",35000);alert(r.success?"18-Tonner gekauft.":r.reason);this.render(panel);}));if(first)fleet.append(this.button("Wartung 1.200 €",()=>{const r=this.controller.serviceVehicle(this.company,first);alert(r.success?"Fahrzeug gewartet.":r.reason);this.render(panel);}));grid.append(fleet);
@@ -83,7 +85,7 @@ export class EconomyDashboard {
 
         const finance=this.card("📊 Tages-/Wochenübersicht");finance.append(this.stockRow("Einnahmen 7 Tage",`${this.money(report.income)} €`),this.stockRow("Kosten 7 Tage",`${this.money(report.costs)} €`),this.stockRow("Gewinn 7 Tage",`${this.money(report.profit)} €`));
         const nav=this.el("div");Object.assign(nav.style,{display:"flex",gap:"6px",flexWrap:"wrap",marginTop:"10px"});
-        nav.append(this.button(`🚚 ${report.openSupplierOrders} Lieferungen`,()=>this.jumpTo("dashboard-deliveries")),this.button(`🏗️ ${report.queuedProduction} Produktion`,()=>this.jumpTo("dashboard-production")),this.button(`📋 ${report.openCustomerOrders} Kundenaufträge`,()=>this.jumpTo("dashboard-customer-orders")));finance.append(nav);grid.append(finance);
+        nav.append(this.button(`🚚 ${operationCounters.deliveries} Lieferungen`,()=>this.jumpTo("dashboard-deliveries")),this.button(`🏗️ ${operationCounters.production} Produktion`,()=>this.jumpTo("dashboard-production")),this.button(`📋 ${operationCounters.customerOrders} Kundenaufträge`,()=>this.jumpTo("dashboard-customer-orders")));finance.append(nav);grid.append(finance);
 
         const coins=this.card("🪙 Coins");coins.append(this.small("Keine kostenlosen Tages-Coins. Coins können durch gezielte Erfolge/Missionen verdient oder später gekauft und am Spielermarkt gegen Spielgeld gehandelt werden."));this.controller.getCoinStoreCatalog().forEach(p=>coins.append(this.small(`${p.label} · vorgesehen ${this.money(p.priceEUR)} €`)));grid.append(coins);
 
