@@ -222,11 +222,6 @@ export class AuthApiClient {
         return { success:true, company:Array.isArray(result) ? result[0] : result };
     }
 
-    async claimDailyCoin() {
-        const result = await this.rpc("claim_daily_coin_reward");
-        return { success:true, reward:Array.isArray(result) ? result[0] : result };
-    }
-
     async listCoinOrders() {
         return this.rest("coin_market_orders?status=eq.open&select=id,seller_user_id,original_amount,remaining_amount,price_per_coin,status,created_at&order=price_per_coin.asc,created_at.asc");
     }
