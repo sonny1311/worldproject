@@ -21,6 +21,9 @@ const engine = new Engine();
 // Seitenstart nicht durch ein neues 50.000-EUR-Startobjekt ersetzt werden:
 // vorhandene Server-/Spielstandsdaten werden von CompanySetup in genau diese
 // Instanz hydriert und bleiben damit die gemeinsame Quelle fuer alle Ansichten.
+// Bis die Serverdaten geladen sind, ist 0 der sichere neutrale Runtime-Wert;
+// echtes Start-/Firmenkapital kommt ausschliesslich aus dem Server-Spielstand.
+engine.company.money = 0;
 window.worldEngine = engine;
 
 // ============================================
