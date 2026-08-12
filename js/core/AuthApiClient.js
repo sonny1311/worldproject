@@ -1,4 +1,4 @@
-// WorldProject - API-Client fuer Accounts und Registrierung
+// WorldProject - API-Client fuer Accounts, Profil, Firma und Wallet
 export class AuthApiClient {
     constructor({ baseUrl = "http://localhost:3001" } = {}) {
         this.baseUrl = baseUrl.replace(/\/$/, "");
@@ -24,7 +24,9 @@ export class AuthApiClient {
     async resendVerification(email) { return this.request("/api/auth/resend-verification", { method:"POST", body:JSON.stringify({email}) }); }
     async requestPasswordReset(email) { return this.request("/api/auth/password-reset/request", { method:"POST", body:JSON.stringify({email}) }); }
     async resetPassword(token,password) { return this.request("/api/auth/password-reset/confirm", { method:"POST", body:JSON.stringify({token,password}) }); }
+    async accountOverview() { return this.request("/api/account/overview"); }
     async updateProfile(data) { return this.request("/api/account/profile", { method:"PATCH", body:JSON.stringify(data) }); }
+    async ensureCompany(data={}) { return this.request("/api/account/company", { method:"POST", body:JSON.stringify(data) }); }
     async requestDeletion() { return this.request("/api/account/delete-request", { method:"POST", body:"{}" }); }
     async cancelDeletion() { return this.request("/api/account/delete-request/cancel", { method:"POST", body:"{}" }); }
 }
