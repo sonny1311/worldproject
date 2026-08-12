@@ -6,6 +6,7 @@ import { AntiAbuseRiskSystem, runAntiAbuseRiskTest } from "./AntiAbuseRiskSystem
 import { AuthApiClient } from "./AuthApiClient.js";
 import { GameAccessGate } from "./GameAccessGate.js";
 import { AccountProfileDialog } from "./AccountProfileDialog.js";
+import { SupabaseGameStateSync } from "./SupabaseGameStateSync.js";
 
 export const accountSystem=new AccountSystem();
 export const coinMarketplace=new CoinMarketplaceSystem();
@@ -14,37 +15,26 @@ export const antiAbuseRiskSystem=new AntiAbuseRiskSystem();
 export const authApi=new AuthApiClient();
 export const gameAccessGate=new GameAccessGate({accountSystem,api:authApi});
 export const accountProfileDialog=new AccountProfileDialog({api:authApi});
+export const gameStateSync=new SupabaseGameStateSync({api:authApi});
 
-window.worldAccounts={accountSystem,coinMarketplace,guildSystem,antiAbuseRiskSystem,authApi,gameAccessGate,accountProfileDialog};
+window.worldAccounts={accountSystem,coinMarketplace,guildSystem,antiAbuseRiskSystem,authApi,gameAccessGate,accountProfileDialog,gameStateSync};
 
 function mountAccountButton(){
     if(document.getElementById("world-account-button")) return;
-    const button=document.createElement("button");
-    button.id="world-account-button";
-    button.textContent="👤 Account";
+    const button=document.createElement("button"); button.id="world-account-button"; button.textContent="👤 Account";
     Object.assign(button.style,{position:"fixed",left:"18px",bottom:"18px",zIndex:"11000",border:"0",borderRadius:"10px",padding:"12px 16px",fontWeight:"800",cursor:"pointer",boxShadow:"0 5px 18px rgba(0,0,0,.35)"});
     button.addEventListener("click",async()=>{
         const user=window.worldCurrentUser;
-        if(user){
-            try{await accountProfileDialog.open();}
-            catch(error){alert(`Profil konnte nicht geöffnet werden: ${error.message}`);}
-        } else gameAccessGate.openRequiredLogin();
+        if(user){ try{ await accountProfileDialog.open(); }catch(error){ alert(`Profil konnte nicht geöffnet werden: ${error.message}`); } }
+        else gameAccessGate.openRequiredLogin();
     });
     const refresh=()=>{ const user=window.worldCurrentUser; button.textContent=user?`👤 ${user.username}`:"👤 Account"; };
-    window.addEventListener("world:user-login",refresh);
-    window.addEventListener("world:access-granted",refresh);
-    document.body.append(button);
-    refresh();
+    window.addEventListener("world:user-login",refresh); window.addEventListener("world:access-granted",refresh); document.body.append(button); refresh();
 }
 
-if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",mountAccountButton);
-else mountAccountButton();
+if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",mountAccountButton); else mountAccountButton();
 
-runAccountSystemTest();
-runCoinMarketplaceTest();
-runGuildSystemTest();
-runAntiAbuseRiskTest();
-
+runAccountSystemTest(); runCoinMarketplaceTest(); runGuildSystemTest(); runAntiAbuseRiskTest();
 console.log("✅ ACCOUNT-/MULTIPLAYER-GRUNDSYSTEM GELADEN");
-console.log("🔒 SPIELZUGANG: Registrierung/Login ist Pflicht");
-console.log("✅ SERVERPROFIL + COIN-WALLET VERKNÜPFT");
+console.log("🔒 SPIELZUGANG: aktiver Supabase-Account ist Pflicht");
+console.log("✅ SUPABASE AUTH + PROFIL + WALLET + FIRMA + SPIELSTAND VERKNÜPFT");
