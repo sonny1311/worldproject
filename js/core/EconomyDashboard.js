@@ -14,6 +14,15 @@ export class EconomyDashboard {
     small(text){const e=this.el("div",text);Object.assign(e.style,{fontSize:"12px",opacity:.78,margin:"3px 0"});return e;}
     anchorCard(card,id){card.id=id;return card;}
     jumpTo(id){const target=this.overlay?.querySelector?.(`#${id}`);if(target){target.scrollIntoView({behavior:"smooth",block:"center"});const old=target.style.outline;target.style.outline="2px solid #ffd54a";setTimeout(()=>target.style.outline=old,1400);}}
+    async openOperationalSupplyChain(){
+        const company=window.worldPlayerCompany||window.worldEconomyGameplay?.company||window.worldEngine?.company||this.company;
+        if(window.worldEconomyGameplay)window.worldEconomyGameplay.company=company;
+        if(!window.worldOperationalSupplyChainDialog){
+            const {OperationalSupplyChainDialog}=await import("./OperationalSupplyChainDialog.js");
+            window.worldOperationalSupplyChainDialog=new OperationalSupplyChainDialog({companyProvider:()=>window.worldPlayerCompany||window.worldEconomyGameplay?.company||window.worldEngine?.company||null,parent:document.body});
+        }
+        return window.worldOperationalSupplyChainDialog.open();
+    }
 
     header(panel){const head=this.el("div");Object.assign(head.style,{display:"flex",justifyContent:"space-between",gap:"10px",alignItems:"center"});const title=this.el("div",`🏭 ${this.company.name||"WorldProject"} · Betrieb ${this.company.slotNo||1} · ${this.company.type||""}`);Object.assign(title.style,{fontSize:"24px",fontWeight:800});head.append(title,this.button("✕",()=>this.close()));panel.append(head);}
 
@@ -34,13 +43,10 @@ export class EconomyDashboard {
         const profile=this.controller.getIndustryProfile(this.company),suppliers=this.anchorCard(this.card("📦 Lieferungen & Einkauf"),"dashboard-deliveries");
         const items=profile.allowedItems||[];
         if(!items.length){suppliers.append(this.el("div","Für diese Branche wird der Lieferantenkatalog noch ergänzt."));grid.append(suppliers);return;}
-        // Alter Dropdown-Einkauf bleibt vorerst technisch erhalten, bis der neue zentrale Einkaufsdialog vollständig verdrahtet ist.
-        const select=this.el("select");Object.assign(select.style,{padding:"8px",margin:"4px",maxWidth:"180px"});for(const id of items){const o=this.el("option",this.label(id));o.value=id;select.append(o);}const qty=this.input("50","number");qty.min="0.01";suppliers.append(this.el("div","Rohstoff und Menge:"),select,qty);
-        const offersBox=this.el("div");suppliers.append(offersBox);
-        const draw=()=>{offersBox.innerHTML="";const amount=Math.max(Number(qty.value)||1,.01),offers=this.controller.getSupplierComparison(this.company,select.value,amount);if(!offers.length){offersBox.append(this.small("Kein passendes Angebot verfügbar."));return;}offers.slice(0,6).forEach((o,i)=>{const line=this.el("div");Object.assign(line.style,{borderTop:"1px solid rgba(255,255,255,.12)",padding:"8px 0"});line.append(this.el("strong",`${i===0?"★ ":""}${o.supplierName} · gesamt ${this.money(o.totalCost)} €`),this.small(`${this.money(o.effectiveUnitPrice)} je Einheit · Bestellung ${this.amount(o.orderAmount)} · Transport ${this.money(o.transportCost)} € · ${o.distanceKm} km · ${o.deliveryHours} h · Zuverlässigkeit ${(o.reliability*100).toFixed(0)} % · Qualität ${o.quality} · Rabatt ${o.discountPercent.toFixed(1)} %`),this.button("Bei diesem Lieferanten kaufen",()=>{const r=this.controller.buyInput(this.company,select.value,amount,{offerId:o.id});alert(r.success?`Bei ${o.supplierName} bestellt · ${this.money(r.totalCost)} €.`:r.reason);this.render(this.overlay.firstChild);}));offersBox.append(line);});};select.addEventListener("change",draw);qty.addEventListener("change",draw);draw();
-        suppliers.append(this.button("Marktpreise neu berechnen",()=>{this.controller.market.fluctuatePrices();draw();}));
+        suppliers.append(this.button("📦 Lieferungen & Einkauf",()=>this.openOperationalSupplyChain()));
         const openOrders=(this.company.supplierOrders||[]).filter(o=>!["delivered","stored","cancelled"].includes(o.status));
-        if(openOrders.length){suppliers.append(this.el("strong",`${openOrders.length} offene Lieferung${openOrders.length===1?"":"en"}`));openOrders.forEach(o=>{const eta=o.eta||o.arrivalAt||o.expectedAt;let rest="";if(eta){const ms=Math.max(0,new Date(eta).getTime()-Date.now()),mins=Math.ceil(ms/60000),h=Math.floor(mins/60),m=mins%60;rest=ms<=0?"angekommen":`${h?`${h} Std. `:""}${m} Min.`;}suppliers.append(this.small(`${o.supplierName||"Lieferant"} · ${this.label(o.itemId||o.material)} · ${this.amount(o.amount||o.quantity)} ${o.unit||""} · ${o.status||"offen"}${rest?` · Restzeit ${rest}`:""}`));});}else suppliers.append(this.small("Keine offenen Lieferungen."));
+        if(openOrders.length)suppliers.append(this.el("strong",`${openOrders.length} offene Lieferung${openOrders.length===1?"":"en"}`));
+        else suppliers.append(this.small("Keine offenen Lieferungen."));
         grid.append(suppliers);
     }
 
