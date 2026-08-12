@@ -13,7 +13,8 @@ export class BusinessPortfolioSystem {
         target.money=Number(serverCompany.money||0);
         target.coins=Number(wallet?.balance||0);
         target.setupPhase=serverCompany.setup_phase||"empty_building";
-        target.buildingState=serverCompany.building_state||createStarterBuilding(target);
+        const stored=serverCompany.building_state;
+        target.buildingState=stored?.rooms?.length ? stored : createStarterBuilding(target);
         const state=serverCompany.game_state||{};
         for(const[key,value]of Object.entries(state)){
             if(["money","coins","name","industry","type","serverCompanyId","slotNo","setupPhase","buildingState"].includes(key))continue;
@@ -39,7 +40,12 @@ export class BusinessPortfolioSystem {
     async createBusiness(data={}){
         if(this.companies.length>=4)throw new Error("Maximal vier Betriebe möglich");
         const slotNo=data.slotNo||this.nextFreeSlot();if(!slotNo)throw new Error("Kein freier Betriebsplatz");
-        const result=await this.api.createBusiness({...data,slotNo});await this.refresh();return result;
+        const result=await this.api.createBusiness({...data,slotNo});
+        const starter=createStarterBuilding({type:data.companyType||data.type,industry:data.industry});
+        await this.api.updateBusinessSetup(result.company.id,"empty_building",starter);
+        await this.refresh();
+        const company=this.companies.find(c=>c.id===result.company.id)||{...result.company,building_state:starter,setup_phase:"empty_building"};
+        return {success:true,company};
     }
 
     async transferMoney(fromCompanyId,toCompanyId,amount){const result=await this.api.transferBusinessMoney(fromCompanyId,toCompanyId,amount);await this.refresh();window.dispatchEvent(new CustomEvent("world:server-balances-changed"));return result;}
