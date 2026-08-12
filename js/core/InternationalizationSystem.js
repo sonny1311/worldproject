@@ -26,6 +26,10 @@ const dictionaries={
     "production.required_for":"Benötigt für {quantity} {unit} {product}",
     "production.start":"Produktion starten",
     "production.take_order_quantity":"Fehlmenge aus Auftrag übernehmen",
+    "status.order.ordered":"Bestellt","status.order.in_transit":"Unterwegs","status.order.arrived":"Angekommen","status.order.stored":"Eingelagert","status.order.delayed":"Verspätet","status.order.cancelled":"Storniert",
+    "status.production.queued":"Geplant","status.production.available":"Bereit","status.production.running":"In Produktion","status.production.paused":"Pausiert","status.production.finished":"Fertig","status.production.cancelled":"Abgebrochen",
+    "time.arrived":"angekommen","time.unknown":"unbekannt",
+    "storage.raw":"Rohstofflager","storage.packaging":"Verpackungslager","storage.finished":"Fertigwarenlager","storage.cold":"Kühllager",
     "materials.malt":"Malz","materials.hops":"Hopfen","materials.yeast":"Hefe","materials.water":"Wasser",
     "materials.bottles":"0,33-l-Flaschen","materials.clean_bottles":"Gereinigte 0,33-l-Flaschen","materials.caps":"Kronkorken","materials.labels":"Etiketten",
     "units.kg":"kg","units.l":"l","units.pcs":"Stück","units.m2":"m²","units.m3":"m³"
@@ -36,6 +40,10 @@ const dictionaries={
     "production.required_for":"Required for {quantity} {unit} of {product}",
     "production.start":"Start production",
     "production.take_order_quantity":"Use missing quantity from order",
+    "status.order.ordered":"Ordered","status.order.in_transit":"In transit","status.order.arrived":"Arrived","status.order.stored":"Stored","status.order.delayed":"Delayed","status.order.cancelled":"Cancelled",
+    "status.production.queued":"Planned","status.production.available":"Ready","status.production.running":"In production","status.production.paused":"Paused","status.production.finished":"Finished","status.production.cancelled":"Cancelled",
+    "time.arrived":"arrived","time.unknown":"unknown",
+    "storage.raw":"Raw materials","storage.packaging":"Packaging","storage.finished":"Finished goods","storage.cold":"Cold storage",
     "materials.malt":"Malt","materials.hops":"Hops","materials.yeast":"Yeast","materials.water":"Water",
     "materials.bottles":"0.33 l bottles","materials.clean_bottles":"Clean 0.33 l bottles","materials.caps":"Bottle caps","materials.labels":"Labels",
     "units.kg":"kg","units.l":"l","units.pcs":"pcs","units.m2":"m²","units.m3":"m³"
@@ -46,6 +54,10 @@ const dictionaries={
     "production.required_for":"Necesario para {quantity} {unit} de {product}",
     "production.start":"Iniciar producción",
     "production.take_order_quantity":"Usar la cantidad pendiente del pedido",
+    "status.order.ordered":"Pedido","status.order.in_transit":"En tránsito","status.order.arrived":"Llegado","status.order.stored":"Almacenado","status.order.delayed":"Retrasado","status.order.cancelled":"Cancelado",
+    "status.production.queued":"Planificado","status.production.available":"Listo","status.production.running":"En producción","status.production.paused":"Pausado","status.production.finished":"Finalizado","status.production.cancelled":"Cancelado",
+    "time.arrived":"llegado","time.unknown":"desconocido",
+    "storage.raw":"Materias primas","storage.packaging":"Embalaje","storage.finished":"Productos terminados","storage.cold":"Almacén frigorífico",
     "materials.malt":"Malta","materials.hops":"Lúpulo","materials.yeast":"Levadura","materials.water":"Agua",
     "materials.bottles":"Botellas de 0,33 l","materials.clean_bottles":"Botellas limpias de 0,33 l","materials.caps":"Chapas","materials.labels":"Etiquetas",
     "units.kg":"kg","units.l":"l","units.pcs":"uds.","units.m2":"m²","units.m3":"m³"
@@ -56,6 +68,10 @@ const dictionaries={
     "production.required_for":"生产 {quantity} {unit} {product} 所需",
     "production.start":"开始生产",
     "production.take_order_quantity":"采用订单缺口数量",
+    "status.order.ordered":"已下单","status.order.in_transit":"运输中","status.order.arrived":"已到达","status.order.stored":"已入库","status.order.delayed":"延误","status.order.cancelled":"已取消",
+    "status.production.queued":"已计划","status.production.available":"可开始","status.production.running":"生产中","status.production.paused":"已暂停","status.production.finished":"已完成","status.production.cancelled":"已取消",
+    "time.arrived":"已到达","time.unknown":"未知",
+    "storage.raw":"原料仓库","storage.packaging":"包装仓库","storage.finished":"成品仓库","storage.cold":"冷藏库",
     "materials.malt":"麦芽","materials.hops":"啤酒花","materials.yeast":"酵母","materials.water":"水",
     "materials.bottles":"0.33升玻璃瓶","materials.clean_bottles":"已清洗0.33升玻璃瓶","materials.caps":"瓶盖","materials.labels":"标签",
     "units.kg":"公斤","units.l":"升","units.pcs":"件","units.m2":"平方米","units.m3":"立方米"
