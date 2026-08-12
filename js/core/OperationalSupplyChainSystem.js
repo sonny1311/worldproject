@@ -3,16 +3,21 @@
 
 export const IndustryMaterials={
  brewery:["malt","hops","yeast","water","bottles","caps","labels"],
+ beverage:["water","sugar","flavour","bottles","caps","labels"],
+ carpentry:["softwood","hardwood","plywood","glue","screws","varnish","packaging"],
  carpenter:["softwood","hardwood","plywood","glue","screws","varnish","packaging"],
  bakery:["flour","yeast","sugar","salt","butter","packaging"],
- butcher:["meat","spices","salt","packaging","labels"]
+ butcher:["meat","spices","salt","packaging","labels"],
+ farm:["seed_wheat","seed_barley","seed_corn","seed_rapeseed","seed_potato","fertilizer","diesel"],
+ livestock:["animal_feed","straw","water"],
+ orchard:["fertilizer","diesel","packaging"]
 };
 
 export const StorageZones={raw:{label:"Rohstofflager"},packaging:{label:"Verpackungslager"},finished:{label:"Fertigwarenlager"},cold:{label:"Kuehllager"}};
 export const OrderStatuses={ordered:"Bestellt",in_transit:"Unterwegs",arrived:"Angekommen",stored:"Eingelagert",delayed:"Verspaetet",cancelled:"Storniert"};
 
 export function materialsForIndustry(industry=""){return [...(IndustryMaterials[industry]||[])];}
-export function supplierAllowed(company,supplier){const allowed=new Set(materialsForIndustry(company?.industry));return (supplier?.materials||[]).some(x=>allowed.has(x));}
+export function supplierAllowed(company,supplier){const key=company?.industry||company?.branchKey||company?.branch_key||"";const allowed=new Set(materialsForIndustry(key));return (supplier?.materials||[]).some(x=>allowed.has(x));}
 export function marketPrice(basePrice,{demand=1,availability=1,seed=1}={}){const fluctuation=.94+((Math.abs(Number(seed)||1)%13)/100);return Math.max(.01,Number(basePrice||0)*Math.max(.75,Number(demand||1))/Math.max(.65,Number(availability||1))*fluctuation);}
 export function quantityDiscount(quantity=0){const q=Number(quantity||0);if(q>=10000)return .10;if(q>=5000)return .07;if(q>=1000)return .04;if(q>=250)return .02;return 0;}
 export function contractDiscount(contract){if(!contract)return 0;return Math.min(.12,Math.max(0,Number(contract.discount||0)));}
