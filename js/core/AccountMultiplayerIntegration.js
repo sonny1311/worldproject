@@ -1,6 +1,7 @@
 // WorldProject - Account-/Multiplayer-Integration
 import "../content/GameContentData.js";
 import "../content/WorkforceContentData.js";
+import "../content/MarketAndFleetContentData.js";
 import "./IndustryExtensionRegistry.js";
 import { AccountSystem, runAccountSystemTest } from "./AccountSystem.js";
 import { CoinMarketplaceSystem, runCoinMarketplaceTest } from "./CoinMarketplaceSystem.js";
@@ -17,6 +18,9 @@ import { OperationalSupplyChainDialog } from "./OperationalSupplyChainDialog.js"
 import { runOperationalSupplyChainTest } from "./OperationalSupplyChainSystem.js";
 import { WorkforceOperationsDialog } from "./WorkforceOperationsDialog.js";
 import { runWorkforceOperationsTest } from "./WorkforceOperationsSystem.js";
+import { MarketFleetDialog } from "./MarketFleetDialog.js";
+import { runMarketSalesTest } from "./MarketSalesSystem.js";
+import { runTempAgencyFleetTest } from "./TempAgencyAndFleetUpgradeSystem.js";
 import { worldContentRegistry } from "./ContentRegistry.js";
 
 export const accountSystem=new AccountSystem();
@@ -31,22 +35,18 @@ export const businessPortfolio=new BusinessPortfolioSystem({api:authApi});
 export const businessPortfolioDialog=new BusinessPortfolioDialog({portfolio:businessPortfolio});
 export const operationalSupplyChainDialog=new OperationalSupplyChainDialog();
 export const workforceOperationsDialog=new WorkforceOperationsDialog();
+export const marketFleetDialog=new MarketFleetDialog();
+window.worldAccounts={accountSystem,coinMarketplace,guildSystem,antiAbuseRiskSystem,authApi,gameAccessGate,accountProfileDialog,gameStateSync,businessPortfolio,businessPortfolioDialog,operationalSupplyChainDialog,workforceOperationsDialog,marketFleetDialog,contentRegistry:worldContentRegistry,runSupabaseSecurityTest:()=>runSupabaseSecurityTest(authApi)};
 
-window.worldAccounts={accountSystem,coinMarketplace,guildSystem,antiAbuseRiskSystem,authApi,gameAccessGate,accountProfileDialog,gameStateSync,businessPortfolio,businessPortfolioDialog,operationalSupplyChainDialog,workforceOperationsDialog,contentRegistry:worldContentRegistry,runSupabaseSecurityTest:()=>runSupabaseSecurityTest(authApi)};
-
-function mountAccountButton(){if(document.getElementById("world-account-button"))return;const button=document.createElement("button");button.id="world-account-button";button.textContent="👤 Account";Object.assign(button.style,{position:"fixed",left:"18px",bottom:"18px",zIndex:"11000",border:"0",borderRadius:"10px",padding:"12px 16px",fontWeight:"800",cursor:"pointer",boxShadow:"0 5px 18px rgba(0,0,0,.35)"});button.addEventListener("click",async()=>{const user=window.worldCurrentUser;if(user){try{await accountProfileDialog.open();}catch(error){alert(`Profil konnte nicht geöffnet werden: ${error.message}`);}}else gameAccessGate.openRequiredLogin();});const refresh=()=>{const user=window.worldCurrentUser;button.textContent=user?`👤 ${user.username}`:"👤 Account";};window.addEventListener("world:user-login",refresh);window.addEventListener("world:access-granted",refresh);document.body.append(button);refresh();}
-function mountBusinessesButton(){if(document.getElementById("world-businesses-button"))return;const b=document.createElement("button");b.id="world-businesses-button";b.textContent="🏢 Betriebe";Object.assign(b.style,{position:"fixed",left:"150px",bottom:"18px",zIndex:"11000",border:"0",borderRadius:"10px",padding:"12px 16px",fontWeight:"800",cursor:"pointer",boxShadow:"0 5px 18px rgba(0,0,0,.35)"});b.addEventListener("click",()=>businessPortfolioDialog.open().catch(e=>alert(e.message)));document.body.append(b);}
-function mountOperationsButton(){if(document.getElementById("world-operations-button"))return;const b=document.createElement("button");b.id="world-operations-button";b.textContent="📦 Betrieb";Object.assign(b.style,{position:"fixed",left:"270px",bottom:"18px",zIndex:"11000",border:"0",borderRadius:"10px",padding:"12px 16px",fontWeight:"800",cursor:"pointer",boxShadow:"0 5px 18px rgba(0,0,0,.35)"});b.addEventListener("click",()=>operationalSupplyChainDialog.open().catch(e=>alert(e.message)));document.body.append(b);}
-function mountWorkforceButton(){if(document.getElementById("world-workforce-button"))return;const b=document.createElement("button");b.id="world-workforce-button";b.textContent="👷 Personal";Object.assign(b.style,{position:"fixed",left:"382px",bottom:"18px",zIndex:"11000",border:"0",borderRadius:"10px",padding:"12px 16px",fontWeight:"800",cursor:"pointer",boxShadow:"0 5px 18px rgba(0,0,0,.35)"});b.addEventListener("click",()=>workforceOperationsDialog.open().catch(e=>alert(e.message)));document.body.append(b);}
-function mount(){mountAccountButton();mountBusinessesButton();mountOperationsButton();mountWorkforceButton();}
+function button(id,text,left,fn){if(document.getElementById(id))return;const b=document.createElement("button");b.id=id;b.textContent=text;Object.assign(b.style,{position:"fixed",left,bottom:"18px",zIndex:"11000",border:"0",borderRadius:"10px",padding:"12px 16px",fontWeight:"800",cursor:"pointer",boxShadow:"0 5px 18px rgba(0,0,0,.35)"});b.onclick=fn;document.body.append(b);return b;}
+function mount(){const a=button("world-account-button","👤 Account","18px",async()=>{const user=window.worldCurrentUser;if(user){try{await accountProfileDialog.open();}catch(e){alert(`Profil konnte nicht geöffnet werden: ${e.message}`);}}else gameAccessGate.openRequiredLogin();});const refresh=()=>{if(a)a.textContent=window.worldCurrentUser?`👤 ${window.worldCurrentUser.username}`:"👤 Account";};window.addEventListener("world:user-login",refresh);window.addEventListener("world:access-granted",refresh);refresh();button("world-businesses-button","🏢 Betriebe","150px",()=>businessPortfolioDialog.open().catch(e=>alert(e.message)));button("world-operations-button","📦 Betrieb","270px",()=>operationalSupplyChainDialog.open().catch(e=>alert(e.message)));button("world-workforce-button","👷 Personal","382px",()=>workforceOperationsDialog.open().catch(e=>alert(e.message)));button("world-market-fleet-button","💶 Markt & Fuhrpark","500px",()=>marketFleetDialog.open().catch(e=>alert(e.message)));}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",mount);else mount();
-
-runAccountSystemTest();runCoinMarketplaceTest();runGuildSystemTest();runAntiAbuseRiskTest();runOperationalSupplyChainTest();runWorkforceOperationsTest();
+runAccountSystemTest();runCoinMarketplaceTest();runGuildSystemTest();runAntiAbuseRiskTest();runOperationalSupplyChainTest();runWorkforceOperationsTest();runMarketSalesTest();runTempAgencyFleetTest();
 console.log("✅ ACCOUNT-/MULTIPLAYER-GRUNDSYSTEM GELADEN");
 console.log("🔒 SPIELZUGANG: aktiver Supabase-Account ist Pflicht");
 console.log("✅ BELIEBIG VIELE BETRIEBE + SUPABASE-SPIELSTAND VERKNÜPFT");
 console.log(`✅ ERWEITERBARE CONTENT-REGISTRY GELADEN: ${worldContentRegistry.list("industries").length} Branchen registriert`);
 console.log("✅ DATENGETRIEBENER EINKAUF/LAGER/PRODUKTIONSKERN GELADEN");
-console.log("✅ PERSONAL-/SCHICHT-/MASCHINEN-/KOSTENKERN GELADEN");
-console.log("✅ SICHTBARE PERSONAL-/SCHICHT-/MASCHINENSTEUERUNG GELADEN");
+console.log("✅ PERSONAL-/SCHICHT-/SCHULUNGS-/MASCHINEN-/KOSTENKERN GELADEN");
+console.log("✅ KUNDEN-/MARKT-/VERTRAGS-/ZEITARBEITS-/FUHRPARKKERN GELADEN");
 console.log("🧪 RLS-Test nach Login: await worldAccounts.runSupabaseSecurityTest()");
