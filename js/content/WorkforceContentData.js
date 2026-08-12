@@ -1,4 +1,4 @@
-// WorldProject - erweiterbare Personal-, Energie- und Wartungsdaten
+// WorldProject - erweiterbare Personal-, Energie-, Wartungs- und Schulungsdaten
 import { registerWorldContent } from "../core/ContentRegistry.js";
 
 export const WorkforceContent={
@@ -18,6 +18,14 @@ export const WorkforceContent={
   {id:"early",label:"Fruehschicht",startHour:6,endHour:14,wageFactor:1},
   {id:"late",label:"Spaetschicht",startHour:14,endHour:22,wageFactor:1.08},
   {id:"night",label:"Nachtschicht",startHour:22,endHour:6,wageFactor:1.2}
+ ],
+ trainingCourses:[
+  {id:"machine_basic",label:"Maschinen-Fortbildung",industries:["*"],skills:["machine"],weeks:4,schoolDaysPerWeek:1,schoolWeekday:3,costPerSchoolDay:220,qualificationGain:.08},
+  {id:"quality_course",label:"Qualitaetssicherung",industries:["*"],skills:["quality"],weeks:6,schoolDaysPerWeek:1,schoolWeekday:2,costPerSchoolDay:260,qualificationGain:.10},
+  {id:"maintenance_course",label:"Instandhaltung Aufbaukurs",industries:["*"],skills:["maintenance"],weeks:6,schoolDaysPerWeek:1,schoolWeekday:4,costPerSchoolDay:310,qualificationGain:.12},
+  {id:"leadership_course",label:"Schichtleitung / Fuehrung",industries:["*"],skills:["leadership"],weeks:6,schoolDaysPerWeek:1,schoolWeekday:1,costPerSchoolDay:340,qualificationGain:.10},
+  {id:"brewery_advanced",label:"Brautechnik Fortbildung",industries:["brewery"],skills:["brewhouse","fermentation"],weeks:6,schoolDaysPerWeek:1,schoolWeekday:3,costPerSchoolDay:290,qualificationGain:.12},
+  {id:"farm_advanced",label:"Landwirtschaftliche Fortbildung",industries:["farm","livestock","orchard"],skills:["field_line"],weeks:4,schoolDaysPerWeek:1,schoolWeekday:2,costPerSchoolDay:250,qualificationGain:.09}
  ],
  energyTypes:[
   {id:"electricity",label:"Strom",unit:"kWh",pricePerUnit:.28},
