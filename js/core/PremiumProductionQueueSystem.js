@@ -8,6 +8,11 @@ export class PremiumProductionQueueSystem{
  pausedPremium(){return this.entries.filter(e=>e.status==="paused_premium");}
  normalizePositions(){this.queued().forEach((e,i)=>e.position=i+1);}
  add({account,recipe,batches=1,metadata={}}={}){const limit=this.premium.productionQueueLimit(account);if(limit<=0)throw new Error("Produktionswarteschlange ist nur mit Premium verfuegbar");if(this.queued().length>=limit)throw new Error(`Maximal ${limit} vorausgeplante Produktionen erlaubt`);const e={id:this.seq++,recipe,batches:Math.max(1,Number(batches||1)),metadata,status:"queued",position:this.queued().length+1,createdAt:Date.now(),lastBlockReason:null,startedJobId:null};this.entries.push(e);return e;}
+
+ // Rueckwaertskompatibilitaet fuer aeltere Integrationsmodule (u.a. Block18).
+ // Alte API: enqueue(account, {recipe,batches,...})
+ enqueue(account,payload={}){return this.add({account,...payload});}
+
  remove(id){const e=this.entries.find(x=>x.id===id&&["queued","paused_premium"].includes(x.status));if(!e)return false;e.status="removed";e.removedAt=Date.now();this.normalizePositions();return true;}
  move(id,direction){const q=this.queued(),i=q.findIndex(e=>e.id===id),j=i+Number(direction);if(i<0||j<0||j>=q.length)return false;[q[i].position,q[j].position]=[q[j].position,q[i].position];this.normalizePositions();return true;}
  moveUp(id){return this.move(id,-1);}moveDown(id){return this.move(id,1);}
@@ -16,6 +21,15 @@ export class PremiumProductionQueueSystem{
  canStartEntry(entry,context={}){if(typeof this.workforceCheck==="function"){const r=this.workforceCheck(entry,context);if(r===false)return {ok:false,reason:"Personal nicht verfuegbar",code:"staff_missing"};if(r&&r.ok===false)return r;}return {ok:true};}
  process({account,now=Date.now(),context={}}={}){this.syncPremium(account);if(this.premium.productionQueueLimit(account)<=0)return {started:null,reason:"premium_inactive"};if(!this.planner)throw new Error("ProductionPlanner fehlt");const running=this.planner.queue?.find(j=>j.status==="running");if(running)return {started:null,reason:"production_running",running};const entry=this.queued()[0];if(!entry)return {started:null,reason:"queue_empty"};const staff=this.canStartEntry(entry,context);if(!staff.ok){entry.lastBlockReason=staff.reason||"Personal fehlt";entry.lastBlockCode=staff.code||"staff_missing";return {started:null,reason:entry.lastBlockReason};}try{const job=this.planner.start(entry.recipe,entry.batches,now);entry.status="started";entry.startedAt=now;entry.startedJobId=job.id;entry.lastBlockReason=null;entry.lastBlockCode=null;this.normalizePositions();return {started:job,entry};}catch(e){entry.lastBlockReason=e.message;entry.lastBlockCode=/rohstoff/i.test(e.message)?"materials_missing":/maschine/i.test(e.message)?"machine_busy":"production_blocked";return {started:null,reason:e.message,entry};}}
  advance({account,now=Date.now(),context={}}={}){if(!this.planner)throw new Error("ProductionPlanner fehlt");this.planner.advance(now);for(const e of this.entries.filter(x=>x.status==="started")){const job=this.planner.queue.find(j=>j.id===e.startedJobId);if(job?.status==="finished"){e.status="finished";e.finishedAt=now;}}return this.process({account,now,context});}
+
+ // Alte API: tick({account,planner,now,staffingCheck}).
+ // Adapter uebernimmt Planner/Personalpruefung und nutzt danach die neue advance-Logik.
+ tick({account,planner=null,now=Date.now(),staffingCheck=null,context={}}={}){
+  if(planner)this.planner=planner;
+  if(typeof staffingCheck==="function")this.workforceCheck=(entry,ctx)=>staffingCheck(entry,ctx);
+  return this.advance({account,now,context});
+ }
+
  view(account){const limit=this.premium.productionQueueLimit(account),active=this.premium.state(account).active;return {active,limit,slots:Array.from({length:Math.max(3,limit)},(_,i)=>{const e=this.queued()[i];return {slot:i+1,entry:e||null,label:e?(e.recipe?.label||e.recipe?.id||"Produktion"):"Frei",batches:e?.batches||0,status:e?.status||"empty",blockReason:e?.lastBlockReason||null};}),paused:this.pausedPremium()};}
 }
 
