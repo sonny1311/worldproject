@@ -1,6 +1,7 @@
 // WorldProject – gemeinsame Section-Registry für bestehende Betriebsoberflächen.
 // Keine Parallel-UI: liefert nur konsistente Daten/Aktionen an vorhandene Views.
 import './Sixth1000SmokeHealth.js';
+import './Seventh1000SmokeHealth.js';
 import { operationalDashboardVM } from './IndustryOperationalDashboardVM.js';
 import { contextualActions } from './ContextualPlayerActions.js';
 import { resolvePlayerError } from './PlayerFacingErrorResolver.js';
