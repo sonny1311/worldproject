@@ -6,9 +6,12 @@ import { operationalStockAmount,consumeOperationalStock,syncOperationalWarehouse
 const n=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;
 const branch=c=>c?.branchKey||getIndustryProfile(c).branchKey;
 const list=(t,k)=>worldContentRegistry.list(t).filter(x=>(x.industries||[]).includes(k));
+const materialAlternatives=id=>id==="bottles"?["bottles","clean_bottles"]:id==="bottles_050"?["bottles_050","clean_bottles_050"]:[id];
 export function ensureIndustryState(c={}){c.inventory??={};c.finishedGoods??={};c.productionJobs??=[];c.salesLedger??=[];c.costLedger??=[];c.operationRequestIds??=[];if(c.operationalSupplyState?.warehouseStock)syncOperationalWarehouse(c);return c;}
-function materialHave(c,id){const op=operationalStockAmount(c,id);return op===null?n(c.inventory[id])+n(c.finishedGoods[id]):op+n(c.finishedGoods[id]);}
-function consumeMaterial(c,id,q){let left=Math.max(0,n(q));const op=operationalStockAmount(c,id);if(op!==null){const take=Math.min(left,op);if(take>0&&!consumeOperationalStock(c,id,take)?.success)return false;left-=take;}else{const take=Math.min(left,n(c.inventory[id]));c.inventory[id]=n(c.inventory[id])-take;left-=take;}if(left>1e-9){const take=Math.min(left,n(c.finishedGoods[id]));c.finishedGoods[id]=n(c.finishedGoods[id])-take;left-=take;}return left<=1e-9;}
+function exactMaterialHave(c,id){const op=operationalStockAmount(c,id);return op===null?n(c.inventory[id])+n(c.finishedGoods[id]):op+n(c.finishedGoods[id]);}
+function materialHave(c,id){return materialAlternatives(id).reduce((sum,key)=>sum+exactMaterialHave(c,key),0);}
+function consumeExactMaterial(c,id,q){let left=Math.max(0,n(q));const op=operationalStockAmount(c,id);if(op!==null){const take=Math.min(left,op);if(take>0&&!consumeOperationalStock(c,id,take)?.success)return left;left-=take;}else{const take=Math.min(left,n(c.inventory[id]));c.inventory[id]=n(c.inventory[id])-take;left-=take;}if(left>1e-9){const take=Math.min(left,n(c.finishedGoods[id]));c.finishedGoods[id]=n(c.finishedGoods[id])-take;left-=take;}return left;}
+function consumeMaterial(c,id,q){let left=Math.max(0,n(q));for(const key of materialAlternatives(id)){left=consumeExactMaterial(c,key,left);if(left<=1e-9)return true;}return false;}
 export function industryRecipes(c){return list("recipes",branch(c)).filter(r=>!r.deprecated);}
 export function industryProducts(c){return list("products",branch(c));}
 export function industrySuppliers(c){return list("suppliers",branch(c));}
