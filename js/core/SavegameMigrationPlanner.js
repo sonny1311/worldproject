@@ -1,0 +1,8 @@
+// WorldProject – planbare, prüfbare Savegame-Migrationen.
+export const CURRENT_SAVE_VERSION=4;
+export function saveVersion(snapshot){return Number(snapshot?.version||1);}
+export function migrationPath(from,to=CURRENT_SAVE_VERSION){const path=[];for(let v=Math.max(1,Number(from)||1);v<to;v++)path.push({from:v,to:v+1,id:`v${v}-to-v${v+1}`});return path;}
+export function previewMigration(snapshot,{to=CURRENT_SAVE_VERSION}={}){const from=saveVersion(snapshot),path=migrationPath(from,to);return{from,to,path,steps:path.length,required:path.length>0,rollbackMarker:`rollback-${Date.now()}`,estimatedRisk:path.length>2?'medium':'low'};}
+export function applyMigrationPlan(snapshot,handlers={},opts={}){const copy=JSON.parse(JSON.stringify(snapshot||{})),preview=previewMigration(copy,opts),log=[];for(const step of preview.path){const fn=handlers[step.id];if(typeof fn!=='function')throw new Error(`Migration fehlt: ${step.id}`);fn(copy);copy.version=step.to;log.push({...step,at:Date.now()});}copy.migrationHistory=[...(copy.migrationHistory||[]),...log];copy.lastMigrationRollbackMarker=preview.rollbackMarker;return{snapshot:copy,preview,log};}
+export function dryRunMigration(snapshot,handlers={},opts={}){try{const result=applyMigrationPlan(snapshot,handlers,opts);return{success:true,preview:result.preview,finalVersion:result.snapshot.version,log:result.log};}catch(error){return{success:false,error:error.message,preview:previewMigration(snapshot,opts)};}}
+if(typeof window!=='undefined')window.worldSavegameMigration={current:CURRENT_SAVE_VERSION,version:saveVersion,path:migrationPath,preview:previewMigration,apply:applyMigrationPlan,dryRun:dryRunMigration};
