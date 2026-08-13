@@ -4,10 +4,18 @@ import { ensureMicroBusiness } from "./MicroBusinessStarterSystem.js";
 import { microEquipmentFor, microEquipmentCoverage } from "./MicroEquipmentCatalog.js";
 import { generateStarterParcels, buyLand, assignLandToCompany, canBuildBusiness, grandfatherExistingBusiness } from "./LandPropertySystem.js";
 
+const MICRO_PHASES=new Set(["land_search","land_owned","furnishing","ready"]);
+
 export class BusinessSetupSystem {
     ensure(company){
-        const hadExistingSetup=Boolean(company.buildingState||company.building_state||company.setupPhase||company.setup_phase||company.landProperty||company.landPropertyId);
-        if(hadExistingSetup){
+        const phase=company.setupPhase??company.setup_phase??null;
+        const microFlow=MICRO_PHASES.has(phase)||company.microBusiness?.stage==="micro";
+        const hadExistingSetup=Boolean(company.buildingState||company.building_state||phase||company.landProperty||company.landPropertyId);
+        if(microFlow){
+            ensureMicroBusiness(company);
+            company.setupPhase=phase||"land_search";
+            company.propertyMarket??=generateStarterParcels(company,company.regionId||company.location?.regionId||"default");
+        }else if(hadExistingSetup){
             grandfatherExistingBusiness(company);
             company.setupPhase ??= company.setup_phase ?? "empty_building";
         }else{
@@ -103,7 +111,8 @@ export function runBusinessSetupTest(){
     for(const e of s.getState(c).equipmentCatalog)s.buyEquipment(c,e.id);
     const ready=s.startOperations(c);
     const spent=50000-c.money;
-    const success=before&&land.success&&ready.success&&s.canUseEconomy(c)&&c.buildingState.equipment.length>=4&&spent<50000&&c.money>0;
-    console[success?"log":"error"](success?"✅ MIKRO-GRÜNDUNGSTEST ERFOLGREICH":"❌ MIKRO-GRÜNDUNGSTEST FEHLGESCHLAGEN",{company:c,land,ready,spent});
-    return {success,company:c,land,ready,spent};
+    const restored={type:"Schreinerei",serverCompanyId:"new-1",setupPhase:"land_search",money:50000,buildingState:createStarterBuilding("Schreinerei")};s.ensure(restored);
+    const success=before&&land.success&&ready.success&&s.canUseEconomy(c)&&c.buildingState.equipment.length>=4&&spent<50000&&c.money>0&&restored.microBusiness?.stage==="micro"&&!restored.landLegacyGrandfathered&&restored.propertyMarket?.length>0;
+    console[success?"log":"error"](success?"✅ MIKRO-GRÜNDUNGSTEST ERFOLGREICH":"❌ MIKRO-GRÜNDUNGSTEST FEHLGESCHLAGEN",{company:c,land,ready,spent,restored});
+    return {success,company:c,land,ready,spent,restored};
 }
