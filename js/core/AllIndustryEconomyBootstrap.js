@@ -1,4 +1,4 @@
-// Lädt ausschließlich Diagnosen/Tests. Keine zweite Oberfläche, keine parallelen Spielsysteme.
+// Lädt ausschließlich Diagnosen/Tests und gemeinsame Integrationsbrücken. Keine zweite Oberfläche.
 import { runIndustryContentCoverageAudit } from "./IndustryContentCoverageAudit.js";
 import { runAllIndustryEconomyRegression } from "./AllIndustryEconomyRegression.js";
 import { runAllIndustryLifecycleRegression } from "./AllIndustryLifecycleRegression.js";
@@ -12,6 +12,9 @@ import "./InboundInventoryAndLogistics.js";
 import "./WorkforceOrganizationSystem.js";
 import "./CorporateStrategyAndExpansion.js";
 import "./ExistingUIIntegrationAdapters.js";
+import "./IndustryEquipmentMarketplace.js";
+import "./ProductionReadinessAssistant.js";
+import "./OperationsActionBridge.js";
 import "./AdvancedMachineProductionControl.js";
 import "./AdvancedWorkforceScheduling.js";
 import "./AdvancedProcurementWorkflow.js";
