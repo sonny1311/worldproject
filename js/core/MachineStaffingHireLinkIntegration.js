@@ -1,9 +1,14 @@
 import { EconomyDashboard } from './EconomyDashboard.js';
+import { PremiumEntitlementSystem } from './PremiumEntitlementSystem.js';
+
+const premium = new PremiumEntitlementSystem();
+const accountFor = dashboard => dashboard?.account || window.worldCurrentUser || window.worldAccount || {};
 
 function findPersonnelArea(root){
   const nodes=[...root.querySelectorAll('div,section,article')];
   return nodes.filter(el=>{const t=(el.textContent||'').toLowerCase();return (t.includes('personal')||t.includes('mitarbeiter')||t.includes('belegschaft'))&&el.querySelector('select,button,input');}).sort((a,b)=>(a.textContent||'').length-(b.textContent||'').length)[0]||null;
 }
+
 function jumpToPersonnel(dashboard,label){
   const root=dashboard.overlay||document,target=findPersonnelArea(root);
   if(!target){alert(`Bitte öffne den Personalbereich und stelle dort „${label}“ ein.`);return;}
@@ -15,6 +20,7 @@ function jumpToPersonnel(dashboard,label){
     if(option){select.value=option.value;select.dispatchEvent(new Event('change',{bubbles:true}));break;}
   }
 }
+
 const proto=EconomyDashboard.prototype;
 if(!proto.__machineStaffingHireLinks){
   proto.__machineStaffingHireLinks=true;
@@ -23,15 +29,23 @@ if(!proto.__machineStaffingHireLinks){
     const result=original.call(this,panel);
     const box=panel.querySelector('.world-machine-staffing-overview');
     if(!box)return result;
+
+    const guided = premium.canUseGuidedSetupNavigation(accountFor(this));
     for(const strong of box.querySelectorAll('strong')){
       const text=(strong.textContent||'').trim();
       if(!text.startsWith('❌'))continue;
       const label=text.replace(/^❌\s*/,'').replace(/\s+einstellen$/i,'').trim();
-      if(strong.parentElement?.querySelector('.staff-hire-link'))continue;
-      const button=this.button('👤 Jetzt einstellen',()=>jumpToPersonnel(this,label));
-      button.classList.add('staff-hire-link');
-      Object.assign(button.style,{display:'block',margin:'5px 0 0',padding:'6px 9px',fontSize:'11px'});
-      strong.parentElement?.append(button);
+      if(strong.parentElement?.querySelector('.staff-hire-link,.staff-premium-hint'))continue;
+      if(guided){
+        const button=this.button('⭐ Jetzt einstellen',()=>jumpToPersonnel(this,label));
+        button.classList.add('staff-hire-link');
+        Object.assign(button.style,{display:'block',margin:'5px 0 0',padding:'6px 9px',fontSize:'11px'});
+        strong.parentElement?.append(button);
+      }else{
+        const hint=this.small('Mit Premium: direkt zur passenden Personalstelle springen.');
+        hint.classList.add('staff-premium-hint');
+        strong.parentElement?.append(hint);
+      }
     }
     return result;
   };
