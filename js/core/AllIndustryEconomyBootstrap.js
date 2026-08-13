@@ -15,6 +15,8 @@ import "./ExistingUIIntegrationAdapters.js";
 import "./IndustryEquipmentMarketplace.js";
 import "./ProductionReadinessAssistant.js";
 import "./OperationsActionBridge.js";
+import "./OperationsPersistenceCoordinator.js";
+import "./IndustryOperationalDashboardVM.js";
 import "./AdvancedMachineProductionControl.js";
 import "./AdvancedWorkforceScheduling.js";
 import "./AdvancedProcurementWorkflow.js";
