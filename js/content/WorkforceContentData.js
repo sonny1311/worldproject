@@ -3,9 +3,9 @@ import { registerWorldContent } from "../core/ContentRegistry.js";
 
 export const WorkforceContent={
  jobs:[
-  {id:"brew_master",label:"Braumeister",industries:["brewery"],baseWageMonthly:4100,skills:["brewhouse","fermentation","brewery_quality","production_release"],requiredFor:["beer_production"],mandatoryForIndustry:true},
-  {id:"brewer",label:"Brauer",industries:["brewery"],baseWageMonthly:3200,skills:["brewhouse","fermentation"]},
-  {id:"machine_operator",label:"Maschinenfuehrer",industries:["brewery","carpentry","bakery","butcher","food","mechanical","metal","plastic"],baseWageMonthly:3000,skills:["machine"]},
+  {id:"brew_master",label:"Braumeister",industries:["brewery","Getränke"],baseWageMonthly:4100,skills:["brewhouse","fermentation","brewery_quality","production_release"],requiredFor:["beer_production"],mandatoryForIndustry:true},
+  {id:"brewer",label:"Brauer",industries:["brewery","Getränke"],baseWageMonthly:3200,skills:["brewhouse","fermentation"]},
+  {id:"machine_operator",label:"Maschinenfuehrer",industries:["brewery","Getränke","carpentry","bakery","butcher","food","mechanical","metal","plastic"],baseWageMonthly:3000,skills:["machine"]},
   {id:"warehouse_worker",label:"Lagerist",industries:["*"],baseWageMonthly:2850,skills:["warehouse"]},
   {id:"driver",label:"Fahrer",industries:["*"],baseWageMonthly:3000,skills:["transport"]},
   {id:"carpenter",label:"Schreiner",industries:["carpentry"],baseWageMonthly:3150,skills:["woodshop"]},
@@ -25,7 +25,7 @@ export const WorkforceContent={
   {id:"quality_course",label:"Qualitaetssicherung",industries:["*"],skills:["quality"],weeks:6,schoolDaysPerWeek:1,schoolWeekday:2,costPerSchoolDay:260,qualificationGain:.10},
   {id:"maintenance_course",label:"Instandhaltung Aufbaukurs",industries:["*"],skills:["maintenance"],weeks:6,schoolDaysPerWeek:1,schoolWeekday:4,costPerSchoolDay:310,qualificationGain:.12},
   {id:"leadership_course",label:"Schichtleitung / Fuehrung",industries:["*"],skills:["leadership"],weeks:6,schoolDaysPerWeek:1,schoolWeekday:1,costPerSchoolDay:340,qualificationGain:.10},
-  {id:"brewery_advanced",label:"Brautechnik Fortbildung",industries:["brewery"],skills:["brewhouse","fermentation"],weeks:6,schoolDaysPerWeek:1,schoolWeekday:3,costPerSchoolDay:290,qualificationGain:.12},
+  {id:"brewery_advanced",label:"Brautechnik Fortbildung",industries:["brewery","Getränke"],skills:["brewhouse","fermentation"],weeks:6,schoolDaysPerWeek:1,schoolWeekday:3,costPerSchoolDay:290,qualificationGain:.12},
   {id:"farm_advanced",label:"Landwirtschaftliche Fortbildung",industries:["farm","livestock","orchard"],skills:["field_line"],weeks:4,schoolDaysPerWeek:1,schoolWeekday:2,costPerSchoolDay:250,qualificationGain:.09}
  ],
  energyTypes:[
