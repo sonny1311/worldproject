@@ -1,0 +1,5 @@
+// WorldProject – findet sichtbare interne IDs/Statuscodes vor Release.
+const suspicious=/^[a-z0-9]+(?:_[a-z0-9]+)+$/;
+export function localizationCoverageAudit(values=[]){const rows=values.flatMap(group=>Array.isArray(group)?group:[group]).filter(v=>typeof v==='string'&&v.trim()).map(value=>({value,internal:suspicious.test(value)||value.includes('.undefined')||value==='undefined'||value==='NaN'}));const failed=rows.filter(x=>x.internal);return{success:failed.length===0,total:rows.length,failed,rows};}
+export function collectVisibleStrings(company){const out=[];for(const bag of [company.inventory,company.finishedGoods])for(const key of Object.keys(bag||{}))out.push(key);for(const row of company.productionJobs||[])out.push(row.status,row.product,row.recipeId);for(const row of company.inboundDeliveries||company.deliveries||[])out.push(row.status,row.materialId,row.item);return out.filter(Boolean);}
+if(typeof window!=='undefined')window.worldLocalizationCoverage={audit:localizationCoverageAudit,collect:collectVisibleStrings};
