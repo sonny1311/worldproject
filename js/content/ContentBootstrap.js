@@ -1,6 +1,7 @@
 // WorldProject - zentrale Initialisierung aller spielbaren Inhaltsdaten.
 // Diese Datei muss beim Spielstart genau einmal importiert werden.
 import "./GameContentData.js";
+import "./AllIndustryEconomyContent.js";
 import "./MarketAndFleetContentData.js";
 import "./WorkforceContentData.js";
 import { registerWorldContent, worldContentRegistry } from "../core/ContentRegistry.js";
@@ -19,32 +20,24 @@ registerWorldContent({
     { id:"Obstbau", branchKey:"orchard", label:"Obstbau" },
     { id:"Bäckerei", branchKey:"bakery", label:"Bäckerei" },
     { id:"Metzgerei", branchKey:"butcher", label:"Metzgerei" },
+    { id:"Lebensmittelhersteller", branchKey:"food", label:"Lebensmittelhersteller" },
+    { id:"Maschinenbau", branchKey:"mechanical", label:"Maschinenbau" },
+    { id:"Metallverarbeitung", branchKey:"metal", label:"Metallverarbeitung" },
+    { id:"Kunststoffverarbeitung", branchKey:"plastic", label:"Kunststoffverarbeitung" },
     { id:"Einzelhandel", branchKey:"retail", label:"Einzelhandel" },
     { id:"Großhandel", branchKey:"wholesale", label:"Großhandel" },
     { id:"Onlinehandel", branchKey:"online_retail", label:"Onlinehandel" }
   ]
 });
 
-// Ein Betrieb speichert zwei verschiedene Angaben:
-// company.industry = Obergruppe (z. B. "Getränke")
-// company.type     = konkreter Betriebstyp (z. B. "Brauerei")
-// Die operative Lieferkette prueft branchKey vor industry. Deshalb wird der
-// branchKey beim Laden aus dem konkreten Betriebstyp gesetzt. Ohne diese
-// Bruecke wurde "Getränke" als branchKey verwendet und es gab 0 Lieferanten.
 function applyCompanyBranchKey(company){
   if(!company)return null;
   const type=company.type||company.company_type||"";
   const typeEntry=worldContentRegistry.get("industries",type);
-  if(typeEntry?.branchKey){
-    company.branchKey=typeEntry.branchKey;
-    return company.branchKey;
-  }
+  if(typeEntry?.branchKey){company.branchKey=typeEntry.branchKey;return company.branchKey;}
   const industry=company.industry||"";
   const industryEntry=worldContentRegistry.get("industries",industry);
-  if(industryEntry?.branchKey){
-    company.branchKey=industryEntry.branchKey;
-    return company.branchKey;
-  }
+  if(industryEntry?.branchKey){company.branchKey=industryEntry.branchKey;return company.branchKey;}
   return company.branchKey||null;
 }
 
@@ -55,8 +48,5 @@ for(const eventName of ["worldproject:company-loaded","worldproject:company-foun
     if(branchKey)console.log("✅ BETRIEBSZWEIG AUFGELÖST",{type:company?.type,industry:company?.industry,branchKey});
   });
 }
-
-// Falls der Betrieb bereits vor diesem Modul gesetzt wurde.
 applyCompanyBranchKey(window.worldPlayerCompany);
-
 console.log("✅ WORLDPROJECT-CONTENT GELADEN");
