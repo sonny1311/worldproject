@@ -1,0 +1,9 @@
+// WorldProject – gemeinsamer UI-Zustand für Betriebsansichten ohne Parallel-UI.
+export function ensureOperationsUIState(world=window){world.worldOperationsUIState??={companyId:null,activeView:'overview',activeTab:null,filters:{},dialogs:{},badges:{},revision:0};return world.worldOperationsUIState;}
+export function setActiveOperationsCompany(company){const s=ensureOperationsUIState(),id=company?.serverCompanyId||company?.id||null;if(s.companyId!==id){s.companyId=id;s.activeView='overview';s.activeTab=null;s.filters={};s.dialogs={};s.badges={};s.revision++;}return s;}
+export function setOperationsView(view,{tab=null}={}){const s=ensureOperationsUIState();s.activeView=view||'overview';s.activeTab=tab;s.revision++;return s;}
+export function setOperationsFilter(key,value){const s=ensureOperationsUIState();if(value==null||value==='')delete s.filters[key];else s.filters[key]=value;s.revision++;return s;}
+export function setDialogState(id,open,payload=null){const s=ensureOperationsUIState();if(open)s.dialogs[id]={open:true,payload,openedAt:Date.now()};else delete s.dialogs[id];s.revision++;return s;}
+export function setOperationBadges(badges={}){const s=ensureOperationsUIState();s.badges={...badges};s.revision++;return s;}
+export function operationsUIState(){return JSON.parse(JSON.stringify(ensureOperationsUIState()));}
+if(typeof window!=='undefined'){window.worldOperationsUI={ensure:ensureOperationsUIState,company:setActiveOperationsCompany,view:setOperationsView,filter:setOperationsFilter,dialog:setDialogState,badges:setOperationBadges,state:operationsUIState};window.addEventListener('worldproject:company-switched',e=>setActiveOperationsCompany(e.detail?.company||window.worldPlayerCompany));}
