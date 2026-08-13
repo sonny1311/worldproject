@@ -2,12 +2,11 @@
 // Diese Datei muss beim Spielstart genau einmal importiert werden.
 import "./GameContentData.js";
 import "./AllIndustryEconomyContent.js";
+import "./BrewerySupplySupplement.js";
 import "./MarketAndFleetContentData.js";
 import "./WorkforceContentData.js";
 import { registerWorldContent, worldContentRegistry } from "../core/ContentRegistry.js";
 
-// Bruecke zwischen sichtbaren deutschen Betriebstypen und den internen
-// branchKeys, die Lieferanten, Rezepte und Produktionssysteme verwenden.
 registerWorldContent({
   industries: [
     { id:"Brauerei", branchKey:"brewery", label:"Brauerei" },
@@ -29,7 +28,6 @@ registerWorldContent({
     { id:"Onlinehandel", branchKey:"online_retail", label:"Onlinehandel" }
   ]
 });
-
 function applyCompanyBranchKey(company){
   if(!company)return null;
   const type=company.type||company.company_type||"";
@@ -40,7 +38,6 @@ function applyCompanyBranchKey(company){
   if(industryEntry?.branchKey){company.branchKey=industryEntry.branchKey;return company.branchKey;}
   return company.branchKey||null;
 }
-
 for(const eventName of ["worldproject:company-loaded","worldproject:company-founded","worldproject:company-switched","worldproject:company-activated"]){
   window.addEventListener(eventName,event=>{
     const company=event?.detail?.company||window.worldPlayerCompany;
