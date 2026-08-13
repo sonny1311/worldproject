@@ -15,6 +15,7 @@ import "./core/ProductionProgressIntegration.js";
 import "./core/ProductionStatusBannerIntegration.js";
 import "./core/MachineStaffingOverviewIntegration.js";
 import "./core/DashboardSummaryNavigationIntegration.js";
+import "./core/ProductionQueueLimitIntegration.js";
 import "./core/CommercialFulfillmentGameplayBridge.js";
 import "./core/CoreRegressionSuite.js";
 import { runAllIndustryPlayabilityAudit } from "./core/AllIndustryPlayabilityAudit.js";
