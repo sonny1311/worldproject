@@ -15,9 +15,24 @@ export class SupabaseGameStateSync {
         if(value===null||["string","number","boolean"].includes(typeof value))return value;
         if(value instanceof Date)return Number.isFinite(value.getTime())?value.getTime():null;
         if(typeof value!=="object")return undefined;
-        if(seen.has(value))return undefined;seen.add(value);
-        if(Array.isArray(value))return value.map(v=>this.sanitize(v,seen)).filter(v=>v!==undefined);
-        const out={};for(const[k,v]of Object.entries(value)){if(typeof v==="function")continue;if(["market","transportSystem","gigaTransportService","constructionManagers"].includes(k))continue;const clean=this.sanitize(v,seen);if(clean!==undefined)out[k]=clean;}return out;
+        if(seen.has(value))return undefined;
+        seen.add(value);
+        try{
+            if(Array.isArray(value))return value.map(v=>this.sanitize(v,seen)).filter(v=>v!==undefined);
+            const out={};
+            for(const[k,v]of Object.entries(value)){
+                if(typeof v==="function")continue;
+                if(["market","transportSystem","gigaTransportService","constructionManagers"].includes(k))continue;
+                const clean=this.sanitize(v,seen);
+                if(clean!==undefined)out[k]=clean;
+            }
+            return out;
+        }finally{
+            // Only treat references on the current recursion path as cycles.
+            // Shared state arrays/objects used by multiple legacy/current views must
+            // be serialized at every required path so reloads restore consistent data.
+            seen.delete(value);
+        }
     }
 
     snapshot(){const company=window.worldPlayerCompany;if(!company)return null;const raw=this.sanitize(company)||{};for(const key of ["coins","name","industry","type","serverCompanyId","slotNo","setupPhase","buildingState"])delete raw[key];raw.money=Number(company.money||0);return raw;}
