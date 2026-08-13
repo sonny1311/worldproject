@@ -66,13 +66,14 @@ import { runIntegrated1000Health } from "./Integrated1000Health.js";
 import { runIntegratedThird1000Health } from "./IntegratedThird1000Health.js";
 import { runIntegratedFourth1000Health } from "./IntegratedFourth1000Health.js";
 import { runIntegratedFifth1000Health } from "./IntegratedFifth1000Health.js";
+import { runIntegrated2500CompletionHealth } from "./Integrated2500CompletionHealth.js";
 import { runLongTermAllIndustrySimulation } from "./LongTermCompanySimulator.js";
 export function runAllIndustryEconomyHealth(){
  const coverage=runIndustryContentCoverageAudit();
  const regression=runAllIndustryEconomyRegression();
  const lifecycle=runAllIndustryLifecycleRegression();
  const deepSimulation=runIndustryDeepSimulationRegression();
- const report={success:coverage.success&&regression.success&&lifecycle.success&&deepSimulation.success,coverage,regression,lifecycle,deepSimulation,runIntegratedGameplayHealth:()=>runIntegratedGameplayHealthCheck(),runIntegrated1000Health:(options={})=>runIntegrated1000Health(options),runThird1000Health:()=>runIntegratedThird1000Health(),runFourth1000Health:()=>runIntegratedFourth1000Health(),runFifth1000Health:()=>runIntegratedFifth1000Health(),runLongTermSimulation:(years=5)=>runLongTermAllIndustrySimulation({years}),ranAt:Date.now()};
+ const report={success:coverage.success&&regression.success&&lifecycle.success&&deepSimulation.success,coverage,regression,lifecycle,deepSimulation,runIntegratedGameplayHealth:()=>runIntegratedGameplayHealthCheck(),runIntegrated1000Health:(options={})=>runIntegrated1000Health(options),runThird1000Health:()=>runIntegratedThird1000Health(),runFourth1000Health:()=>runIntegratedFourth1000Health(),runFifth1000Health:()=>runIntegratedFifth1000Health(),run2500CompletionHealth:()=>runIntegrated2500CompletionHealth(),runLongTermSimulation:(years=5)=>runLongTermAllIndustrySimulation({years}),ranAt:Date.now()};
  if(typeof window!=="undefined")window.worldAllIndustryEconomyHealth=report;
  console[report.success?"log":"error"](`WORLDPROJECT ALLE-GEWERBE HEALTH ${report.success?'GRÜN':'FEHLER'} · DEEP ${deepSimulation.passed}/250`,report);
  return report;
