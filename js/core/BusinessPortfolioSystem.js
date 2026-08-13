@@ -8,7 +8,7 @@ export class BusinessPortfolioSystem {
     hydrateCompany(target,serverCompany,wallet={}){
         const state=serverCompany.game_state||{};
         target.serverCompanyId=serverCompany.id;target.slotNo=Number(serverCompany.slot_no||1);target.name=serverCompany.name||"";target.industry=serverCompany.industry||"";target.type=serverCompany.company_type||"";target.money=Number(state.money??serverCompany.money??0);target.coins=Number(wallet?.balance||0);target.setupPhase=serverCompany.setup_phase||"empty_building";
-        const stored=serverCompany.building_state;target.buildingState=stored?.rooms?.length?stored:createStarterBuilding(target);
+        const stored=serverCompany.building_state;const hasStoredBuilding=stored&&typeof stored==="object"&&!Array.isArray(stored)&&Object.keys(stored).length>0;target.buildingState=hasStoredBuilding?stored:createStarterBuilding(target);
         for(const[key,value]of Object.entries(state)){if(["money","coins","name","industry","type","serverCompanyId","slotNo","setupPhase","buildingState"].includes(key))continue;target[key]=value;}return target;
     }
     async refresh(){const overview=await this.api.accountOverview();this.companies=overview.companies||[];window.worldServerAccountOverview=overview;return overview;}
