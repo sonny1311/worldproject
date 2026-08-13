@@ -1,0 +1,8 @@
+// WorldProject – passt NPCs, Nachfrage und Marktliquidität an reale Spieleraktivität an.
+const n=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+export function ensurePopulationState(world={}){world.populationState??={activePlayers:0,npcCompanies:0,targetNpcCompanies:20,marketLiquidityFactor:1,orderFactor:1,competitionFactor:1,history:[]};return world.populationState;}
+export function populationTargets(world,{activePlayers=0}={}){const p=ensurePopulationState(world),players=Math.max(0,n(activePlayers)),targetNpc=Math.round(clamp(24-players*.6,8,30)),liquidity=clamp(players<10?1.4:1.15-players/250,.8,1.4),orders=clamp(players<10?1.35:1.1,1,1.35),competition=clamp(.75+players/100,.75,1.15);return{activePlayers:players,targetNpcCompanies:targetNpc,marketLiquidityFactor:liquidity,orderFactor:orders,competitionFactor:competition};}
+export function applyPopulationScale(world,opts={}){const p=ensurePopulationState(world),t=populationTargets(world,opts);Object.assign(p,t);p.history.push({...t,at:Date.now()});if(p.history.length>365)p.history.shift();return p;}
+export function npcSpawnDelta(world){const p=ensurePopulationState(world);return p.targetNpcCompanies-n(p.npcCompanies);}
+export function worldPopulationKpis(world){const p=ensurePopulationState(world);return{activePlayers:p.activePlayers,npcCompanies:p.npcCompanies,targetNpcCompanies:p.targetNpcCompanies,spawnDelta:npcSpawnDelta(world),marketLiquidityFactor:p.marketLiquidityFactor,orderFactor:p.orderFactor,competitionFactor:p.competitionFactor};}
+if(typeof window!=='undefined')window.worldPopulationScaler={ensure:ensurePopulationState,targets:populationTargets,apply:applyPopulationScale,delta:npcSpawnDelta,kpis:worldPopulationKpis};
