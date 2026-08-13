@@ -1,0 +1,11 @@
+// WorldProject – verbindet operative Zahlungen, Buchhaltung und Liquidität.
+import { postEntry, incomeStatement, balanceSheet } from './IndustryAccountingLedger.js';
+import { postReceivable, collectReceivable, postPayable, payPayable, liquidityForecast } from './IndustryFinanceAndTax.js';
+import { financingKpis } from './BusinessFinancingSystem.js';
+const n=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;
+export function ensureIntegratedFinance(c={}){c.integratedFinance??={events:[]};return c.integratedFinance;}
+export function invoiceCustomer(c,{customerId,amount,dueAt,reference}={}){ensureIntegratedFinance(c);const ar=postReceivable(c,{customerId,amount,dueAt,reference});postEntry(c,{debit:'receivables',credit:'revenue',amount:n(amount),memo:'Kundenrechnung',reference});c.integratedFinance.events.push({kind:'invoice',id:ar.id,amount:n(amount),at:Date.now()});return ar;}
+export function collectCustomerInvoice(c,receivableId,{now=Date.now()}={}){ensureIntegratedFinance(c);const before=n(c.money),r=collectReceivable(c,receivableId,{now});if(!r.idempotent)postEntry(c,{debit:'cash',credit:'receivables',amount:n(r.amount),memo:'Zahlungseingang',reference:receivableId,at:now});c.integratedFinance.events.push({kind:'collect',id:receivableId,amount:n(r.amount),at:now});return{...r,cashDelta:n(c.money)-before};}
+export function recordSupplierInvoice(c,{supplierId,amount,dueAt,reference}={}){ensureIntegratedFinance(c);const ap=postPayable(c,{supplierId,amount,dueAt,reference});postEntry(c,{debit:'expense',credit:'payables',amount:n(amount),memo:'Lieferantenrechnung',reference});c.integratedFinance.events.push({kind:'supplier_invoice',id:ap.id,amount:n(amount),at:Date.now()});return ap;}
+export function paySupplierInvoice(c,payableId,{now=Date.now()}={}){ensureIntegratedFinance(c);const before=n(c.money),r=payPayable(c,payableId,{now});if(!r.idempotent)postEntry(c,{debit:'payables',credit:'cash',amount:n(r.amount),memo:'Lieferantenzahlung',reference:payableId,at:now});c.integratedFinance.events.push({kind:'pay_supplier',id:payableId,amount:n(r.amount),at:now});return{...r,cashDelta:n(c.money)-before};}
+export function financeControlKpis(c){return{income:incomeStatement(c),balance:balanceSheet(c),liquidity:liquidityForecast(c),financing:financingKpis(c),cash:n(c.money),events:ensureIntegratedFinance(c).events.length};}
