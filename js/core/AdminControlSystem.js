@@ -1,66 +1,26 @@
 // WorldProject - zentrale Admin-Grundstruktur
-// Noch keine sichtbare Admin-UI. Diese Schicht definiert bewusst die
-// Verwaltungsbereiche, damit Balancing, Spielerpruefung und Weltsteuerung
-// spaeter nicht ueber verstreute Debug-Schalter erfolgen.
-
-export const AdminSections = Object.freeze({
-  OVERVIEW: "overview",
-  PLAYERS: "players",
-  COMPANIES: "companies",
-  ECONOMY: "economy",
-  MARKET: "market",
-  PRODUCTS: "products",
-  SUPPLIERS: "suppliers",
-  PRODUCTION: "production",
-  TRANSPORT: "transport",
-  PREMIUM: "premium",
-  COINS: "coins",
-  AWARDS: "awards",
-  LANGUAGES: "languages",
-  NPC: "npc",
-  SYSTEM: "system",
-  AUDIT: "audit"
-});
-
-export class AdminControlSystem {
-  constructor(){
-    this.settings={
-      marketFeeRate:0.005,
-      npcLiquidityEnabled:true,
-      npcMinDelayMinutes:60,
-      npcMaxDelayMinutes:2880,
-      premiumEnabled:true,
-      maintenanceMode:false
-    };
-    this.auditLog=[];
-  }
-
-  requireAdmin(actor){
-    if(!actor || !["admin","owner"].includes(actor.role)) throw new Error("Admin-Berechtigung erforderlich");
-  }
-
-  getSettings(actor){
-    this.requireAdmin(actor);
-    return structuredClone ? structuredClone(this.settings) : JSON.parse(JSON.stringify(this.settings));
-  }
-
-  updateSetting(actor,key,value){
-    this.requireAdmin(actor);
-    if(!(key in this.settings)) throw new Error(`Unbekannte Admin-Einstellung: ${key}`);
-    const before=this.settings[key];
-    this.settings[key]=value;
-    this.log(actor,"setting_changed",{key,before,after:value});
-    return {success:true,key,value};
-  }
-
-  log(actor,action,details={}){
-    const entry={id:Date.now()+Math.random(),at:new Date().toISOString(),actorId:actor?.id||null,actorName:actor?.username||actor?.name||"admin",action,details};
-    this.auditLog.push(entry);
-    return entry;
-  }
-
-  audit(actor,{limit=200}={}){
-    this.requireAdmin(actor);
-    return this.auditLog.slice(-Math.max(1,Number(limit)||200)).reverse();
-  }
+export const AdminSections=Object.freeze({OVERVIEW:"overview",PLAYERS:"players",COMPANIES:"companies",ECONOMY:"economy",MARKET:"market",PRODUCTS:"products",SUPPLIERS:"suppliers",PRODUCTION:"production",TRANSPORT:"transport",ALLIANCES:"alliances",PREMIUM:"premium",COINS:"coins",AWARDS:"awards",LANGUAGES:"languages",NPC:"npc",SUPPORT:"support",MODERATION:"moderation",LIVEOPS:"liveops",SYSTEM:"system",AUDIT:"audit"});
+export const AdminRoles=Object.freeze({owner:["*"],admin:["players.read","players.write","companies.read","companies.write","economy.write","market.write","production.write","transport.write","alliances.write","support.write","moderation.write","liveops.write","system.write","audit.read"],moderator:["players.read","companies.read","support.write","moderation.write","audit.read"],support:["players.read","companies.read","support.write"],economy:["companies.read","economy.write","market.write","products.write","suppliers.write"]});
+const n=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;
+export class AdminControlSystem{
+ constructor(){this.settings={marketFeeRate:.005,npcLiquidityEnabled:true,npcMinDelayMinutes:60,npcMaxDelayMinutes:2880,premiumEnabled:true,maintenanceMode:false,alliancesEnabled:false,globalChatEnabled:false,registrationEnabled:true};this.auditLog=[];this.staff=[];}
+ registerStaff(actor,{id,name="",role="admin"}={}){this.requirePermission(actor,"system.write");if(!AdminRoles[role])throw new Error("Unbekannte Adminrolle");let s=this.staff.find(x=>x.id===id);if(!s){s={id,name,role,active:true};this.staff.push(s);}else Object.assign(s,{name,role,active:true});this.log(actor,"staff_updated",{id,role});return s;}
+ resolveActor(actor){if(!actor)return null;if(["owner","admin","moderator","support","economy"].includes(actor.role))return actor;const staff=this.staff.find(x=>x.id===actor.id&&x.active);return staff?{...actor,role:staff.role}:actor;}
+ requireAdmin(actor){const a=this.resolveActor(actor);if(!a||!AdminRoles[a.role])throw new Error("Admin-Berechtigung erforderlich");return a;}
+ can(actor,permission){const a=this.resolveActor(actor);if(!a)return false;const p=AdminRoles[a.role]||[];return p.includes("*")||p.includes(permission);}
+ requirePermission(actor,permission){const a=this.requireAdmin(actor);if(!this.can(a,permission))throw new Error(`Admin-Berechtigung fehlt: ${permission}`);return a;}
+ getSettings(actor){this.requireAdmin(actor);return typeof structuredClone==="function"?structuredClone(this.settings):JSON.parse(JSON.stringify(this.settings));}
+ updateSetting(actor,key,value){this.requirePermission(actor,"system.write");if(!(key in this.settings))throw new Error(`Unbekannte Admin-Einstellung: ${key}`);const before=this.settings[key];this.settings[key]=value;this.log(actor,"setting_changed",{key,before,after:value});return{success:true,key,value};}
+ setCompanyMoney(actor,company,amount,{reason=""}={}){this.requirePermission(actor,"economy.write");const before=n(company.money),after=Math.max(0,n(amount));company.money=after;this.log(actor,"company_money_set",{companyId:company.id||company.companyId,before,after,reason});return after;}
+ adjustCompanyMoney(actor,company,delta,opts={}){return this.setCompanyMoney(actor,company,n(company.money)+n(delta),opts);}
+ setInventory(actor,company,item,quantity,{finished=false,reason=""}={}){this.requirePermission(actor,"economy.write");const bag=finished?(company.finishedGoods??={}):(company.inventory??={}),before=n(bag[item]),after=Math.max(0,n(quantity));bag[item]=after;this.log(actor,"inventory_set",{companyId:company.id||company.companyId,item,finished,before,after,reason});return after;}
+ repairMachine(actor,company,machineId,{reason=""}={}){this.requirePermission(actor,"companies.write");const m=(company.buildingState?.equipment||[]).find(x=>(x.instanceId||x.id)===machineId||x.id===machineId);if(!m)throw new Error("Maschine fehlt");const before={condition:m.condition,status:m.status};Object.assign(m,{condition:100,status:"available",busyUntil:0,maintenanceEndsAt:null});this.log(actor,"machine_repaired",{machineId,before,after:{condition:100,status:"available"},reason});return m;}
+ setEmployeeStatus(actor,company,employeeId,status,{reason=""}={}){this.requirePermission(actor,"companies.write");const e=(company.employees||[]).find(x=>(x.id||x.employeeId)===employeeId);if(!e)throw new Error("Mitarbeiter fehlt");const before=e.status;e.status=status;this.log(actor,"employee_status_set",{employeeId,before,after:status,reason});return e;}
+ cancelProduction(actor,company,jobId,{reason=""}={}){this.requirePermission(actor,"production.write");const j=(company.productionJobs||[]).find(x=>x.id===jobId);if(!j)throw new Error("Produktionsauftrag fehlt");const before=j.status;j.status="admin_cancelled";j.adminCancelledAt=Date.now();this.log(actor,"production_cancelled",{jobId,before,after:j.status,reason});return j;}
+ moderatePlayer(actor,player,action,{reason="",until=null}={}){this.requirePermission(actor,"moderation.write");player.moderation??={};const before={...player.moderation};if(action==="suspend"){player.moderation.suspended=true;player.moderation.suspendedUntil=until;}else if(action==="unsuspend"){player.moderation.suspended=false;player.moderation.suspendedUntil=null;}else if(action==="mute"){player.moderation.muted=true;player.moderation.mutedUntil=until;}else if(action==="unmute"){player.moderation.muted=false;player.moderation.mutedUntil=null;}else throw new Error("Moderationsaktion unbekannt");this.log(actor,`player_${action}`,{playerId:player.id||player.userId,before,after:{...player.moderation},reason});return player.moderation;}
+ log(actor,action,details={}){const entry={id:`admin-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,at:new Date().toISOString(),actorId:actor?.id||null,actorName:actor?.username||actor?.name||"admin",role:this.resolveActor(actor)?.role||null,action,details};this.auditLog.push(entry);if(this.auditLog.length>20000)this.auditLog.splice(0,this.auditLog.length-20000);return entry;}
+ audit(actor,{limit=200,action=null,actorId=null}={}){this.requirePermission(actor,"audit.read");return this.auditLog.filter(x=>(!action||x.action===action)&&(!actorId||x.actorId===actorId)).slice(-Math.max(1,Number(limit)||200)).reverse();}
+ snapshot(actor,{players=[],companies=[]}={}){this.requirePermission(actor,"players.read");return{players:players.length,companies:companies.length,suspended:players.filter(p=>p.moderation?.suspended).length,muted:players.filter(p=>p.moderation?.muted).length,totalCompanyMoney:companies.reduce((s,c)=>s+n(c.money),0),maintenanceMode:this.settings.maintenanceMode,alliancesEnabled:this.settings.alliancesEnabled,staff:this.staff.filter(x=>x.active).length,auditEntries:this.auditLog.length};}
 }
+export const adminControlSystem=new AdminControlSystem();
+if(typeof window!=="undefined")window.worldAdminControlSystem=adminControlSystem;
