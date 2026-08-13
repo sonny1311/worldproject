@@ -1,10 +1,11 @@
 // WorldProject – eindeutiger Produktionsstatus im Wirtschaftsdashboard.
+import './ProductionQueueClarityIntegration.js';
 import { EconomyDashboard } from './EconomyDashboard.js';
 
 function ts(v){if(v instanceof Date)return v.getTime();const n=Number(v);if(Number.isFinite(n)&&n>0)return n;const p=Date.parse(v);return Number.isFinite(p)?p:null;}
 function pct(j){const s=String(j?.status||'').toLowerCase();if(!['running','paused'].includes(s))return null;const a=ts(j.startedAt||j.startAt),b=ts(j.finishAt||j.completeAt);if(!a||!b||b<=a)return 0;return Math.max(0,Math.min(100,Math.floor((Date.now()-a)/(b-a)*100)));}
 function name(d,j){return j?.recipe?.label||d.label(j?.productId||j?.product||j?.recipeId)||'Produktion';}
-function text(d,jobs){const running=jobs.find(j=>String(j?.status||'').toLowerCase()==='running');if(running)return `🟢 LÄUFT: ${name(d,running)} · ${pct(running)??0} %`;const paused=jobs.find(j=>String(j?.status||'').toLowerCase()==='paused');if(paused)return `🟠 PAUSIERT: ${name(d,paused)} · ${pct(paused)??0} %`;const planned=jobs.filter(j=>['queued','planned','scheduled'].includes(String(j?.status||'').toLowerCase())).length;return planned?`🟡 KEINE PRODUKTION AKTIV · ${planned} geplant`:'⚪ KEINE PRODUKTION AKTIV';}
+function text(d,jobs){const running=jobs.find(j=>String(j?.status||'').toLowerCase()==='running');if(running)return running.storageBlocked?`🔴 FERTIG: ${name(d,running)} · wartet auf Lagerplatz`:`🟢 LÄUFT: ${name(d,running)} · ${pct(running)??0} %`;const paused=jobs.find(j=>String(j?.status||'').toLowerCase()==='paused');if(paused)return `🟠 PAUSIERT: ${name(d,paused)} · ${pct(paused)??0} %`;const planned=jobs.filter(j=>['queued','planned','scheduled'].includes(String(j?.status||'').toLowerCase())).length;return planned?`🟡 KEINE PRODUKTION AKTIV · ${planned} geplant`:'⚪ KEINE PRODUKTION AKTIV';}
 
 const p=EconomyDashboard.prototype;
 if(!p.__worldProductionStatusBanner){
