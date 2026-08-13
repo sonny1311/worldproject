@@ -8,7 +8,8 @@ export const PremiumConfig={
   storageMultiplier:{standard:1,premium:1.20,label:"Lagerkapazitaet"},
   productionQueue:{standard:0,premium:3,label:"Produktionswarteschlange"},
   automaticReorder:{standard:false,premium:true,label:"Automatische Mindestbestaende/Nachbestellung"},
-  advancedAnalytics:{standard:false,premium:true,label:"Erweiterte Unternehmensauswertungen"}
+  advancedAnalytics:{standard:false,premium:true,label:"Erweiterte Unternehmensauswertungen"},
+  guidedSetupNavigation:{standard:false,premium:true,label:"Direkte Hilfe zu fehlenden Voraussetzungen"}
  }
 };
 
@@ -23,10 +24,11 @@ export class PremiumEntitlementSystem{
  storageCapacity(account,baseCapacity){return Math.floor(Number(baseCapacity||0)*Number(this.benefit(account,"storageMultiplier")));}
  canStartConstruction(account,runningCount){return Number(runningCount||0)<this.constructionLimit(account);}
  canQueueProduction(account,queuedCount){return Number(queuedCount||0)<this.productionQueueLimit(account);}
+ canUseGuidedSetupNavigation(account,now=Date.now()){return Boolean(this.benefit(account,"guidedSetupNavigation",now));}
  // Beim Ablauf wird nichts geloescht oder abgebrochen. Laufende Premium-Inhalte bleiben gespeichert,
  // neue Premiumaktionen werden nur solange blockiert, bis wieder Berechtigung besteht.
  overCapacityState(account,{baseStorage=0,currentStored=0,runningConstruction=0,queuedProduction=0}={}){const storage=this.storageCapacity(account,baseStorage),constructionLimit=this.constructionLimit(account),queueLimit=this.productionQueueLimit(account);return {storageCapacity:storage,storageOverfilled:Number(currentStored)>storage,constructionLimit,constructionOverLimit:Number(runningConstruction)>constructionLimit,productionQueueLimit:queueLimit,productionQueueOverLimit:Number(queuedProduction)>queueLimit};}
  listBenefits(account,now=Date.now()){const active=this.state(account,now).active;return Object.entries(this.config.benefits).map(([id,cfg])=>({id,label:cfg.label,value:active?cfg.premium:cfg.standard,premiumValue:cfg.premium,standardValue:cfg.standard,active}));}
 }
 
-export function runPremiumEntitlementTest(){const p=new PremiumEntitlementSystem(),a={premiumUntil:Date.now()+86400000};if(p.constructionLimit(a)!==5||p.productionQueueLimit(a)!==3||p.storageCapacity(a,10000)!==12000)throw new Error("Premiumvorteile fehlerhaft");a.premiumUntil=Date.now()-1;const expired=p.overCapacityState(a,{baseStorage:10000,currentStored:11500,runningConstruction:5,queuedProduction:3});if(!expired.storageOverfilled||!expired.constructionOverLimit||!expired.productionQueueOverLimit||p.storageCapacity(a,10000)!==10000)throw new Error("Premium-Ablauflogik fehlerhaft");console.log("✅ PREMIUM: 3→5 BAU, +20% LAGER, 0→3 PRODUKTIONSQUEUE, DATENERHALT BEI ABLAUF ERFOLGREICH",expired);return true;}
+export function runPremiumEntitlementTest(){const p=new PremiumEntitlementSystem(),a={premiumUntil:Date.now()+86400000};if(p.constructionLimit(a)!==5||p.productionQueueLimit(a)!==3||p.storageCapacity(a,10000)!==12000||!p.canUseGuidedSetupNavigation(a))throw new Error("Premiumvorteile fehlerhaft");a.premiumUntil=Date.now()-1;const expired=p.overCapacityState(a,{baseStorage:10000,currentStored:11500,runningConstruction:5,queuedProduction:3});if(!expired.storageOverfilled||!expired.constructionOverLimit||!expired.productionQueueOverLimit||p.storageCapacity(a,10000)!==10000||p.canUseGuidedSetupNavigation(a))throw new Error("Premium-Ablauflogik fehlerhaft");console.log("✅ PREMIUM: 3→5 BAU, +20% LAGER, 0→3 PRODUKTIONSQUEUE, DIREKTHILFE UND DATENERHALT BEI ABLAUF ERFOLGREICH",expired);return true;}
