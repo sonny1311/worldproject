@@ -7,6 +7,7 @@ import { SupplyOrderSystem, WarehouseSystem } from "./OperationalSupplyChainSyst
 import { runOperationalSupplyChainRegressionTest } from "./OperationalSupplyChainRegressionTest.js";
 import { runOperationalSupplyTransactionTest } from "./OperationalSupplyTransactions.js";
 import { runExtendedCoreRegression } from "./ExtendedCoreRegression.js";
+import { persistenceReloadHealth } from "./PersistenceReloadHealth.js";
 import { worldContentRegistry } from "./ContentRegistry.js";
 
 export function runCoreRegressionSuite(){
@@ -16,6 +17,8 @@ export function runCoreRegressionSuite(){
  run("Operational Supply 25",()=>runOperationalSupplyChainRegressionTest());
  run("Supply Transactions",()=>runOperationalSupplyTransactionTest({SupplyOrderSystem,WarehouseSystem,supplier:worldContentRegistry.get("suppliers","brew_malt_regional")}));
  run("Extended Core",()=>runExtendedCoreRegression());
+ const activeCompany=window.worldPlayerCompany;
+ if(activeCompany&&typeof activeCompany==="object"&&Object.keys(activeCompany).length>0)run("Persistence Reload",()=>persistenceReloadHealth(activeCompany));
  const failed=results.filter(r=>!r.success),success=failed.length===0,passed=results.length-failed.length,score=Math.round(passed/Math.max(1,results.length)*100);
  const summary={success,score,passed,total:results.length,failed:failed.map(x=>({name:x.name,error:x.error||x.value?.failed||null})),results,ranAt:Date.now()};
  console[success?"log":"error"](success?`✅ WORLDPROJECT CORE HEALTH ${score}/100`:`❌ WORLDPROJECT CORE HEALTH ${score}/100`,summary);
@@ -25,3 +28,6 @@ export function runCoreRegressionSuite(){
 
 // Der Test ist rein logisch und oeffnet keine UI. Ein Lauf beim Bootstrap macht Regressionen sofort sichtbar.
 runCoreRegressionSuite();
+// Der echte Persistenztest braucht eine bereits aus dem Serverzustand hydrierte Firma.
+// Nach einem Firmenwechsel/Ladevorgang wird die Suite deshalb erneut ausgefuehrt.
+window.addEventListener("worldproject:company-switched",()=>setTimeout(()=>runCoreRegressionSuite(),0));
