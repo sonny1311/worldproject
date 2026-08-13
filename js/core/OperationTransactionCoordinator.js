@@ -1,0 +1,8 @@
+// WorldProject – atomare Betriebsaktionen über Geld/Lager/Aufträge mit Rollback.
+const clone=v=>JSON.parse(JSON.stringify(v));
+const KEYS=['money','inventory','finishedGoods','operationalInventory','productionJobs','customerOrders','inboundDeliveries','deliveries','salesLedger','costLedger'];
+export function transactionSnapshot(company){const snap={};for(const k of KEYS)if(company&&k in company)snap[k]=clone(company[k]);return snap;}
+export function restoreTransactionSnapshot(company,snapshot){for(const k of Object.keys(snapshot||{}))company[k]=clone(snapshot[k]);return company;}
+export async function runOperationTransaction(company,fn,{name='operation',requestId=null}={}){if(!company)throw new Error('Betrieb fehlt');company.completedTransactionIds??=[];if(requestId&&company.completedTransactionIds.includes(requestId))return{success:true,idempotent:true,name};const before=transactionSnapshot(company);try{const result=await fn();if(requestId)company.completedTransactionIds.push(requestId);company.transactionHistory??=[];company.transactionHistory.push({name,requestId,status:'committed',at:Date.now()});return{success:true,result};}catch(error){restoreTransactionSnapshot(company,before);company.transactionHistory??=[];company.transactionHistory.push({name,requestId,status:'rolled_back',error:error.message,at:Date.now()});throw error;}}
+export function transactionKpis(company){const h=company?.transactionHistory||[];return{total:h.length,committed:h.filter(x=>x.status==='committed').length,rolledBack:h.filter(x=>x.status==='rolled_back').length};}
+if(typeof window!=='undefined')window.worldOperationTransactions={snapshot:transactionSnapshot,restore:restoreTransactionSnapshot,run:runOperationTransaction,kpis:transactionKpis};
