@@ -2,6 +2,9 @@
 import { EconomyDashboard } from './EconomyDashboard.js';
 import { OperationalSupplyChainDialog } from './OperationalSupplyChainDialog.js';
 import { founderCanCoverJob } from './MicroBusinessStarterSystem.js';
+import { recipesForCompany } from './OperationalSupplyChainSystem.js';
+import { compatibleMachineIds } from './IndustryMachineCompatibility.js';
+import { worldContentRegistry } from './ContentRegistry.js';
 
 function timestamp(value){if(value instanceof Date)return Number.isFinite(value.getTime())?value.getTime():null;const n=Number(value);if(Number.isFinite(n)&&n>0)return n;const p=Date.parse(value);return Number.isFinite(p)?p:null;}
 function progress(job,now=Date.now()){if(!job)return null;const status=String(job.status||'').toLowerCase();if(['finished','completed'].includes(status))return 100;if(!['running','paused'].includes(status))return null;const start=timestamp(job.startedAt||job.startAt),finish=timestamp(job.finishAt||job.completeAt||job.completedAt);if(!start||!finish||finish<=start)return 0;return Math.max(0,Math.min(100,Math.floor(((now-start)/(finish-start))*100)));}
@@ -11,6 +14,20 @@ const roleOf=e=>e?.jobId||e?.role||e?.profession||null;
 const requiredRole=r=>r?.requiredRole||(r?.productionStage==='brewing'?'brew_master':null);
 
 function staffingAllows(company,recipe){const role=requiredRole(recipe);if(!role)return true;const staff=(company?.workforceState?.employees||company?.workforceOperationsState?.employees||company?.employees||[]).filter(activeEmployee);return staff.some(e=>roleOf(e)===role||(e.roles||[]).includes(role))||founderCanCoverJob(company,role);}
+function normalizedMachines(company){
+ const workforce=[...(company?.workforceState?.machines||[]),...(company?.workforceOperationsState?.machines||[]),...(company?.machines||[])];
+ const equipment=[...(company?.buildingState?.equipment||[]),...(company?.building_state?.equipment||[])];
+ const recipes=recipesForCompany(company),seen=new Set(),out=[];
+ for(const raw of [...workforce,...equipment]){
+  if(!raw)continue;const source=typeof raw==='string'?{id:raw,type:raw}:{...raw};if(source.status==='sold')continue;
+  const physicalType=source.sourceType||source.type||source.equipmentId||source.id;if(!physicalType)continue;
+  const key=String(source.id??physicalType);if(seen.has(key))continue;seen.add(key);
+  const def=worldContentRegistry.get('machines',physicalType)||worldContentRegistry.get('machines',source.id)||{};
+  const recipe=recipes.find(r=>r.machineType===physicalType||(compatibleMachineIds(company,r.machineType)||[]).includes(physicalType));
+  out.push({...source,id:source.id??physicalType,physicalType,type:recipe?.machineType||physicalType,label:source.label||def.label||physicalType,status:source.status||'available',busy:false,capacity:Number(source.capacity||def.capacity||0),capacityUnit:source.capacityUnit||def.capacityUnit});
+ }
+ return out;
+}
 function tryAutoStart(dialog){if(!dialog?.planner)return null;const company=dialog.companyProvider?.();if(!company)return null;dialog.ensureMachines?.(company);dialog.planner.advance?.(Date.now());const active=(dialog.planner.queue||[]).some(j=>['running','paused'].includes(String(j?.status||'').toLowerCase()));if(active)return null;const queued=(dialog.planner.queue||[]).find(j=>String(j?.status||'').toLowerCase()==='queued');if(!queued||!staffingAllows(company,queued.recipe))return null;const started=dialog.planner.startQueued?.(queued.id,Date.now());if(!started)return null;dialog.ensureMachines?.(company);dialog.saveState?.(company);try{window.dispatchEvent(new CustomEvent('world:game-state-dirty',{detail:{reason:'production-auto-start',jobId:started.id}}));}catch{}return started;}
 function refocusProduction(dialog){const overlay=dialog?.overlay;if(!overlay)return;overlay.querySelectorAll('section').forEach(sec=>{const h=sec.querySelector('h3')?.textContent||'';sec.style.display=h.includes('Produktionsplanung')||h.startsWith('Produktionswarteschlange')?'':'none';});const title=overlay.querySelector('h2');if(title)title.textContent='🏗️ Produktion';}
 
@@ -19,10 +36,17 @@ if(!dashProto.__worldProductionProgressIntegrated){dashProto.__worldProductionPr
 
 const opProto=OperationalSupplyChainDialog.prototype;
 if(!opProto.__worldProductionProgressIntegrated){
- opProto.__worldProductionProgressIntegrated=true;opProto.tryAutoStartNextProduction=function(){return tryAutoStart(this);};opProto.staffingAllows=function(company,recipe){return staffingAllows(company,recipe);};
+ opProto.__worldProductionProgressIntegrated=true;
+ opProto.ensureMachines=function(company){
+  const machines=normalizedMachines(company);
+  for(const job of this.planner.queue||[]){if(String(job.status)!=='running')continue;let machine=machines.find(m=>job.machine?.id!=null&&String(m.id)===String(job.machine.id));if(!machine)machine=machines.find(m=>m.type===job.recipe?.machineType&&!m.busy);if(machine){machine.busy=true;job.machine=machine;}}
+  this.planner.machines=machines;return machines;
+ };
+ opProto.tryAutoStartNextProduction=function(){return tryAutoStart(this);};opProto.staffingAllows=function(company,recipe){return staffingAllows(company,recipe);};
  const originalCard=opProto.renderProductionCard;
  opProto.renderProductionCard=function(parent,recipe,company,recipes,panel){originalCard.call(this,parent,recipe,company,recipes,panel);const row=parent.lastElementChild;if(!row)return;const queueButton=[...row.querySelectorAll('button')].find(b=>(b.textContent||'').includes('Produktion einplanen'));if(queueButton)queueButton.textContent='Einplanen';if(row.querySelector('.world-start-now'))return;const start=this.btn('▶ Jetzt produzieren',()=>{try{this.ensureMachines(company);if(!staffingAllows(company,recipe))throw new Error(`Fachkraft fehlt: ${requiredRole(recipe)||'Personal'}`);const input=row.querySelector('input[type="number"]'),amount=Number(input?.value)||0;if(!(amount>0))throw new Error('Bitte eine Produktionsmenge eingeben.');if(recipe.productionStage==='bottling'&&Number(recipe.bottleSizeLiters)>0){const p=this.planner.planForVolume(recipe,amount);if(!p.ready)throw new Error(Object.keys(p.missing||{}).length?'Rohstoffe/Verpackung fehlen.':'Maschine nicht frei oder nicht betriebsbereit.');const j=this.planner.start(recipe,p.batches);j.plan={...j.plan,requestedVolumeLiters:amount,bottleSizeLiters:Number(recipe.bottleSizeLiters),bottleCount:p.bottleCount};}else{const p=this.planner.planForOutput(recipe,amount);if(!p.ready)throw new Error(Object.keys(p.missing||{}).length?'Rohstoffe fehlen.':'Maschine nicht frei oder nicht betriebsbereit.');this.planner.startForOutput(recipe,amount);}this.ensureMachines(company);this.saveState(company);this.render(panel);refocusProduction(this);}catch(e){alert(e?.message||String(e));}});start.classList.add('world-start-now');Object.assign(start.style,{marginTop:'10px',padding:'9px 13px',fontWeight:'700',background:'#e6f6e6',borderColor:'#5b9b5b'});if(queueButton)row.insertBefore(start,queueButton);else row.append(start);};
  const originalRenderQueue=opProto.renderQueue;opProto.renderQueue=function(panel,company,recipes){const result=originalRenderQueue.call(this,panel,company,recipes),sections=[...panel.querySelectorAll('section')],queue=sections.find(s=>s.querySelector('h3')?.textContent?.startsWith('Produktionswarteschlange'));if(queue){const rows=[...queue.children].filter(el=>el.tagName==='DIV');for(const job of this.planner.queue||[]){if(!['running','paused'].includes(String(job.status||'').toLowerCase()))continue;const row=rows.find(el=>el.textContent?.startsWith(`#${job.id} ·`));if(!row)continue;const p=progress(job),badge=this.el('strong',` · Fortschritt ${p??0} %`);badge.dataset.productionProgressId=String(job.id);badge.style.marginLeft='8px';row.append(badge);}}return result;};
+ const originalRender=opProto.render;opProto.render=function(panel){const result=originalRender.call(this,panel);const head=panel?.firstElementChild;if(head){Object.assign(head.style,{position:'sticky',top:'0',zIndex:'50',background:'#fff',padding:'6px 0',boxShadow:'0 2px 6px rgba(0,0,0,.08)'});const close=[...head.querySelectorAll('button')].find(b=>(b.textContent||'').trim()==='✕');if(close)Object.assign(close.style,{position:'sticky',top:'6px',zIndex:'51',fontSize:'18px',minWidth:'38px',minHeight:'38px'});}return result;};
  const originalOpen=opProto.open;opProto.open=async function(...args){const result=await originalOpen.apply(this,args),firstStarted=tryAutoStart(this);if(firstStarted&&this.overlay?.firstElementChild)this.render(this.overlay.firstElementChild);clearInterval(this.productionProgressUiTimer);this.productionProgressUiTimer=setInterval(()=>{if(!this.overlay?.isConnected)return;const before=(this.planner.queue||[]).map(j=>`${j.id}:${j.status}`).join('|');this.planner.advance?.(Date.now());const started=tryAutoStart(this),after=(this.planner.queue||[]).map(j=>`${j.id}:${j.status}`).join('|');if(started||before!==after){const company=this.companyProvider?.();if(company)this.saveState?.(company);const panel=this.overlay.firstElementChild;if(panel){this.render(panel);refocusProduction(this);}return;}for(const el of this.overlay.querySelectorAll('[data-production-progress-id]')){const job=this.planner.queue.find(j=>String(j.id)===el.dataset.productionProgressId);if(!job)continue;const p=progress(job);el.textContent=el.textContent.includes('Fortschritt')?` · Fortschritt ${p??0} %`:label(job);}},2000);return result;};const originalClose=opProto.close;opProto.close=function(...args){clearInterval(this.productionProgressUiTimer);this.productionProgressUiTimer=null;return originalClose.apply(this,args);};
 }
 export { progress as productionProgressPercent };
