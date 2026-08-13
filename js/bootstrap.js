@@ -11,6 +11,7 @@ import "./core/TransportFuelTimeIntegration.js";
 import "./core/TransportGameplayIntegration.js";
 import "./core/CompanyEconomyIntegration.js";
 import "./core/ConnectedEconomyGameplay.js";
+import "./core/CommercialFulfillmentGameplayBridge.js";
 import "./core/CoreRegressionSuite.js";
 import { gameAccessGate } from "./core/AccountMultiplayerIntegration.js";
 
