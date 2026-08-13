@@ -16,7 +16,7 @@ import "./core/BottlingSizeSelectionIntegration.js";
 import "./core/ProductionStatusBannerIntegration.js";
 import "./core/MachineStaffingOverviewIntegration.js";
 import "./core/ProductionReadinessChecklistView.js";
-import "./core/ProductionReadinessPremiumNavigation.js";
+import "./core/ProductionReadinessPremiumNavigationV2.js";
 import "./core/DashboardSummaryNavigationIntegration.js";
 import "./core/ProductionQueueLimitIntegration.js";
 import "./core/CommercialFulfillmentGameplayBridge.js";
