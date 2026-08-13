@@ -20,7 +20,7 @@ export const BaseGameContent={
   {id:"farm_inputs",industries:["farm"],label:"Landhandel Mitte",materials:["fertilizer","diesel"],prices:{fertilizer:.55,diesel:1.45},distanceKm:24,deliveryBase:28,deliveryPerKm:.40,deliveryHours:5,quality:.94,reliability:.99}
  ],
  machines:[
-  {id:"brewhouse",industries:["brewery"],label:"Sudhaus"},{id:"filling_line",industries:["brewery","beverage"],label:"Abfülllinie"},{id:"bottle_washer",industries:["brewery"],label:"Flaschenwaschanlage"},{id:"woodshop",industries:["carpentry"],label:"Werkstattlinie"},{id:"field_line",industries:["farm"],label:"Ackerbau-Maschinenkette"}
+  {id:"brewhouse",industries:["brewery"],label:"Sudhaus",capacity:500,capacityUnit:"l/h"},{id:"filling_line",industries:["brewery","beverage"],label:"Abfülllinie",capacity:1200,capacityUnit:"bottles/h"},{id:"bottle_washer",industries:["brewery"],label:"Flaschenwaschanlage",capacity:1000,capacityUnit:"bottles/h"},{id:"woodshop",industries:["carpentry"],label:"Werkstattlinie",capacity:1,capacityUnit:"unit/h"},{id:"field_line",industries:["farm"],label:"Ackerbau-Maschinenkette",capacity:1000,capacityUnit:"kg/h"}
  ],
  recipes:[
   {id:"wash_bottles",industries:["brewery"],label:"Leergut reinigen",materials:{bottles:1000,bottle_wash_chem:1,water:250},machineType:"bottle_washer",durationMinutes:60,output:1000,outputUnit:"Stk",product:"clean_bottles",variableCost:12},
