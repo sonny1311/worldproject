@@ -1,0 +1,4 @@
+// WorldProject – konsolidierte Vertriebsdaten für die bestehende UI.
+const num=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;
+export function salesPanelState(company){const leads=company.leads||[];const quotes=company.quotes||[];const orders=company.customerOrders||[];const complaints=company.complaints||[];const active=x=>!['completed','cancelled','rejected','paid'].includes(x.status);return{leads,quotes,orders,complaints,kpis:{openLeads:leads.filter(active).length,openQuotes:quotes.filter(active).length,openOrders:orders.filter(active).length,openComplaints:complaints.filter(active).length,openOrderValue:orders.filter(active).reduce((sum,row)=>sum+num(row.quantity)*num(row.unitPrice),0),overdue:orders.filter(row=>active(row)&&row.dueAt&&new Date(row.dueAt).getTime()<Date.now()).length}};}
+if(typeof window!=='undefined')window.worldSalesPanel={state:salesPanelState};
