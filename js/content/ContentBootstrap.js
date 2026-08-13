@@ -2,6 +2,7 @@
 // Diese Datei muss beim Spielstart genau einmal importiert werden.
 import "./GameContentData.js";
 import "./AllIndustryEconomyContent.js";
+import "./AgricultureCropContent.js";
 import "./BrewerySupplySupplement.js";
 import "./MarketAndFleetContentData.js";
 import "./WorkforceContentData.js";
