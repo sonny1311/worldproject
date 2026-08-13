@@ -18,9 +18,9 @@ export function purchaseSupplyOrder({orders,company,supplier,material,quantity,t
 
 export function receiveSupplyOrder({warehouse,order,quantity=null,now=Date.now()}={}){
  if(!warehouse?.receive)throw new Error("Lagersystem fehlt");if(!order)throw new Error("Lieferung fehlt");
- if(!["arrived","partially_stored"].includes(order.status))throw new Error("Lieferung ist noch nicht angekommen");
  const total=positive(order.quantity,"Liefermenge"),already=Math.max(0,Number(order.receivedQuantity)||0),remaining=Math.max(0,total-already);
- if(remaining<=1e-9){order.status="stored";return{success:true,deduplicated:true,received:0,remaining:0};}
+ if(order.status==="stored"||remaining<=1e-9){order.status="stored";order.receivedQuantity=Math.max(already,total);order.remainingQuantity=0;return{success:true,deduplicated:true,received:0,remaining:0,status:"stored"};}
+ if(!["arrived","partially_stored"].includes(order.status))throw new Error("Lieferung ist noch nicht angekommen");
  const requested=quantity===null?remaining:positive(quantity,"Wareneingangsmenge"),received=Math.min(requested,remaining);
  const zone=warehouse.zoneFor(order.material),free=warehouse.free(zone),accepted=Math.min(received,free);
  if(!(accepted>0))throw new Error("Nicht genug Lagerplatz fuer Teil-Wareneingang");
