@@ -1,6 +1,7 @@
 // WorldProject - harter Spielzugang: ohne aktiven Supabase-Account kein Spiel
 import { AccountAuthDialog } from "./AccountAuthDialog.js";
 import { AuthApiClient } from "./AuthApiClient.js";
+import { applyPlayerMoneyContext } from "./CurrencyPresentationBridge.js";
 
 export class GameAccessGate {
     constructor({ accountSystem, api = new AuthApiClient() } = {}) {
@@ -13,7 +14,7 @@ export class GameAccessGate {
         if(!user) return false;
         if(user.status!=="active") return false;
         this.user=user; window.worldCurrentUser=user;
-        try{ window.worldServerAccountOverview=await this.api.accountOverview(); }catch(error){ console.warn("Serverübersicht konnte noch nicht geladen werden",error); }
+        try{ window.worldServerAccountOverview=await this.api.accountOverview();const profile=window.worldServerAccountOverview?.user||user;applyPlayerMoneyContext(profile);window.dispatchEvent(new CustomEvent("worldproject:profile-loaded",{detail:{profile}})); }catch(error){ console.warn("Serverübersicht konnte noch nicht geladen werden",error);applyPlayerMoneyContext(user); }
         window.dispatchEvent(new CustomEvent("world:access-granted",{detail:{user}}));
         if(this._resolver){ const resolve=this._resolver; this._resolver=null; resolve(user); }
         return true;
