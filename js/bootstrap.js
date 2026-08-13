@@ -10,6 +10,7 @@ import "./core/OperationalSupplyChainEquipmentIntegration.js";
 import "./core/UniversalOperationsDialog.js";
 import "./core/EconomyDashboardSetupIntegration.js";
 import "./core/ConnectedEconomyGameplay.js";
+import "./core/CustomerOrderPricingIntegration.js";
 import "./core/CommercialFulfillmentGameplayBridge.js";
 import "./core/CoreRegressionSuite.js";
 import { runAllIndustryPlayabilityAudit } from "./core/AllIndustryPlayabilityAudit.js";
