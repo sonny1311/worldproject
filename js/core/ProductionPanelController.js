@@ -1,0 +1,8 @@
+// WorldProject – Produktionsansicht: Wunschmenge -> Bedarf -> Blocker -> Start.
+import { industryRecipes } from './UniversalIndustryCycle.js';
+import { productionReadinessVM,recommendedProductionFixes } from './ProductionReadinessAssistant.js';
+import { startProductionAction } from './OperationsActionBridge.js';
+const n=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;
+export function productionPanelState(company,{amountByRecipe={}}={}){const recipes=industryRecipes(company).map(r=>{const amount=Math.max(.001,n(amountByRecipe[r.id],r.output||1)),readiness=productionReadinessVM(company,r.id,amount),fixes=recommendedProductionFixes(company,r.id,amount);return{recipe:r,amount,readiness,fixes:fixes.actions,canStart:readiness.ready};});return{recipes,running:(company.productionJobs||[]).filter(x=>x.status==='running'),queued:(company.productionJobs||[]).filter(x=>x.status==='queued'),finished:(company.productionJobs||[]).filter(x=>x.status==='finished')};}
+export async function startFromProductionPanel(company,recipeId,amount){return startProductionAction(recipeId,amount,{company,requestId:`panel-production-${recipeId}-${Date.now()}`});}
+if(typeof window!=='undefined')window.worldProductionPanel={state:productionPanelState,start:startFromProductionPanel};
