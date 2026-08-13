@@ -2,7 +2,7 @@
 import { SupabaseGameStateSync } from './SupabaseGameStateSync.js';
 const clone=v=>JSON.parse(JSON.stringify(v));
 export function persistenceReloadHealth(company){
- const sync=new SupabaseGameStateSync({api:{}});const previous=window.worldPlayerCompany;window.worldPlayerCompany=company;
+ const sync=Object.create(SupabaseGameStateSync.prototype),previous=window.worldPlayerCompany;window.worldPlayerCompany=company;
  try{
   const snapshot=sync.snapshot()||{},checks=[];
   const want=[
