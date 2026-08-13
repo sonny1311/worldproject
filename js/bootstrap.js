@@ -13,6 +13,7 @@ import "./core/ConnectedEconomyGameplay.js";
 import "./core/CustomerOrderPricingIntegration.js";
 import "./core/ProductionProgressIntegration.js";
 import "./core/ProductionStatusBannerIntegration.js";
+import "./core/MachineStaffingOverviewIntegration.js";
 import "./core/CommercialFulfillmentGameplayBridge.js";
 import "./core/CoreRegressionSuite.js";
 import { runAllIndustryPlayabilityAudit } from "./core/AllIndustryPlayabilityAudit.js";
