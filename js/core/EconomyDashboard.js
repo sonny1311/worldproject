@@ -4,6 +4,7 @@ import { i18n } from "./InternationalizationSystem.js";
 
 export class EconomyDashboard {
     constructor({controller,company,parent=document.body}={}){this.controller=controller;this.company=company;this.parent=parent;this.overlay=null;this.operationsOverview=new UnifiedOperationsOverviewSystem({companyProvider:()=>this.company});}
+    syncCompanyReference(){const active=window.worldPlayerCompany||window.worldEconomyGameplay?.company||window.worldEngine?.company;if(active&&active!==this.company)this.company=active;return this.company;}
     el(tag,text=null){const e=document.createElement(tag);if(text!==null)e.textContent=text;return e;}
     money(v){return Number(v||0).toLocaleString(i18n.locale,{minimumFractionDigits:2,maximumFractionDigits:2});}
     amount(v){return Number(v||0).toLocaleString(i18n.locale,{maximumFractionDigits:2});}
@@ -65,7 +66,7 @@ export class EconomyDashboard {
     renderSuppliers(grid){const profile=this.controller.getIndustryProfile(this.company),suppliers=this.anchorCard(this.card(i18n.t("operations.supply_title")),"dashboard-deliveries"),items=profile.allowedItems||[];if(!items.length){suppliers.append(this.el("div","Für diese Branche wird der Lieferantenkatalog noch ergänzt."));grid.append(suppliers);return;}suppliers.append(this.small("Rohstoffe und Verpackungsmaterial bestellen."),this.button("Einkauf öffnen",()=>this.openOperationalSupplyChain("buy")));const openOrders=this.operationsOverview.openDeliveries();if(openOrders.length)suppliers.append(this.el("strong",`${openOrders.length} offene Lieferung${openOrders.length===1?"":"en"}`),this.button("Lieferungen anzeigen",()=>this.openOperationalSupplyChain("deliveries")));else suppliers.append(this.small("Keine offenen Lieferungen."));grid.append(suppliers);}
 
     render(panel){
-        this.repairLegacyDeliveries();this.syncOperationalWarehouseToInventory();this.controller.processTime(this.company,new Date());panel.innerHTML="";this.header(panel);
+        this.syncCompanyReference();this.repairLegacyDeliveries();this.syncOperationalWarehouseToInventory();this.controller.processTime(this.company,new Date());panel.innerHTML="";this.header(panel);
         if(this.company.setupPhase&&this.company.setupPhase!=="operating"){this.renderSetup(panel);return;}
         this.controller.ensureCustomerOrders(this.company);
         const storage=this.controller.getStorageStatus(this.company),mission=this.controller.missions.getActiveMission(this.company),report=this.controller.getReport(this.company,168),operationCounters=this.operationsOverview.counters();
