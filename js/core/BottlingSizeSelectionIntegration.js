@@ -1,6 +1,7 @@
 // WorldProject – explizite Auswahl der Flaschengroesse in der vorhandenen Produktionsoberflaeche.
 // Die eigentlichen Abfuellrezepte bleiben die einzige Quelle fuer Materialbedarf und Ausgabemenge.
 import { OperationalSupplyChainDialog } from './OperationalSupplyChainDialog.js';
+import './ProductionRuntimeIntegration.js';
 
 const EPSILON = 1e-9;
 const sizeNumber = value => Number.isFinite(Number(value)) ? Number(value) : 0;
