@@ -79,6 +79,17 @@ export function syncOperationalWarehouse(company=currentCompany()){
   return changed;
 }
 
+// Gemeinsame, nur lesende KPI-Sicht fuer bestehende Dashboards/Command-Center.
+// Sie erzeugt bewusst kein zweites company.warehouse, sondern liest dieselben Zonen wie Einkauf und Produktion.
+export function operationalWarehouseKpis(company=currentCompany()){
+  const state=company?.operationalSupplyState||{},stock=state.warehouseStock||{},capacities={raw:10000,packaging:10000,finished:10000,cold:0,...(state.baseCapacities||{})};
+  const names=[...new Set(["raw","packaging","finished","cold",...Object.keys(capacities),...Object.keys(stock)])];
+  const zones=names.map(zone=>{const used=Object.values(stock[zone]||{}).reduce((sum,value)=>sum+Math.max(0,Number(value)||0),0),capacity=Math.max(0,Number(capacities[zone])||0);return{zone,used,capacity,free:Math.max(0,capacity-used),utilization:capacity?used/capacity:0};});
+  const stockPositions=Object.values(stock).reduce((sum,zone)=>sum+Object.values(zone||{}).filter(value=>(Number(value)||0)>0).length,0);
+  const reserved=Array.isArray(company?.warehouse?.reservations)?company.warehouse.reservations.filter(x=>x?.status==="active").reduce((sum,x)=>sum+Math.max(0,Number(x.quantity)||0),0):0;
+  return{zones,lots:stockPositions,stockPositions,reserved,criticalZones:zones.filter(x=>x.utilization>=.9).map(x=>x.zone)};
+}
+
 function syncSoon(){queueMicrotask(()=>{const changed=syncOperationalWarehouse();if(changed)console.log("✅ OPERATIVES LAGER SYNCHRONISIERT",{changed});});}
 window.addEventListener("world:game-state-dirty",syncSoon);
 window.addEventListener("worldproject:company-loaded",syncSoon);
