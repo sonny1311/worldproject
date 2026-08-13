@@ -4,12 +4,19 @@ import { runPlayability2HealthCheck } from './IndustryPlayabilityMatrix.js';
 import { runUniversalWorkforceTest } from './UniversalWorkforceMarket.js';
 import { industryScenarioMatrix } from './IndustryScenarioMatrix.js';
 import { IndustryProfiles } from './IndustryCatalog.js';
+import { worldContentRegistry } from './ContentRegistry.js';
+import { runAgricultureSeasonTest } from './SeasonalBusinessCalendar.js';
 
 export function runNinth1000AllIndustryHealth(){
  const coverage=runIndustryContentCoverageAudit();
  const playability=runPlayability2HealthCheck();
  const workforce=runUniversalWorkforceTest();
  const scenarios=industryScenarioMatrix();
+ const agriculture=runAgricultureSeasonTest();
+ const farmRecipes=worldContentRegistry.list('recipes').filter(r=>(r.industries||[]).includes('farm')&&!r.deprecated);
+ const farmRecipeIds=new Set(farmRecipes.map(r=>r.id));
+ const requiredFarmRecipes=['grow_wheat','grow_barley','grow_corn','grow_rapeseed','grow_potato'];
+ const missingCoreCrops=requiredFarmRecipes.filter(id=>!farmRecipeIds.has(id));
  const branchKeys=new Set(Object.values(IndustryProfiles).map(x=>x.branchKey));
  const scenarioBranches=new Set(scenarios.map(x=>x.branchKey));
  const missingScenarioBranches=[...branchKeys].filter(x=>!scenarioBranches.has(x));
@@ -17,10 +24,13 @@ export function runNinth1000AllIndustryHealth(){
   {name:'Content-Abdeckung berechenbar',success:!!coverage&&Array.isArray(coverage.rows)},
   {name:'Spielbarkeitsmatrix berechenbar',success:!!playability&&Array.isArray(playability.matrix)},
   {name:'Personalmarkt-Test berechenbar',success:!!workforce&&Array.isArray(workforce.checks)},
-  {name:'Szenarien für alle Branchen',success:missingScenarioBranches.length===0,missing:missingScenarioBranches}
+  {name:'Szenarien für alle Branchen',success:missingScenarioBranches.length===0,missing:missingScenarioBranches},
+  {name:'Landwirtschaft mindestens 17 Kulturen',success:farmRecipes.length>=17,count:farmRecipes.length},
+  {name:'Landwirtschaft Kernkulturen vorhanden',success:missingCoreCrops.length===0,missing:missingCoreCrops},
+  {name:'Landwirtschaft Region/Saison funktioniert',success:agriculture?.success===true}
  ];
  const failed=checks.filter(x=>!x.success);
- const report={success:failed.length===0,checks,failed,coverage,playability,workforce,scenarioCount:scenarios.length,ranAt:Date.now()};
+ const report={success:failed.length===0,checks,failed,coverage,playability,workforce,agriculture,farmRecipeCount:farmRecipes.length,scenarioCount:scenarios.length,ranAt:Date.now()};
  if(typeof window!=='undefined')window.worldNinth1000AllIndustryHealth=report;
  return report;
 }
