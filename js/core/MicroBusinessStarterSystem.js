@@ -2,29 +2,30 @@
 const n=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;
 const STARTER_CAPITAL=50000;
 const MICRO_TYPES={
-  Brauerei:{label:'Hausbrauerei / Getränkemanufaktur',founderRoles:['production','admin'],customers:['Freunde & Bekannte','Gaststätte','Verein','kleiner Getränkeladen']},
-  Getränkehersteller:{label:'Getränkemanufaktur',founderRoles:['production','admin'],customers:['Freunde & Bekannte','Café','Verein','kleiner Laden']},
-  Mineralbrunnen:{label:'Kleiner Abfüllbetrieb',founderRoles:['production','admin'],customers:['Privatkunden','Gaststätte','kleiner Laden']},
-  Schreinerei:{label:'Kleine Werkstatt',founderRoles:['craft','admin'],customers:['Privatkunde','Verein','Gaststätte','kleiner Laden']},
-  Tischlerei:{label:'Kleine Werkstatt',founderRoles:['craft','admin'],customers:['Privatkunde','Verein','Gaststätte','kleiner Laden']},
-  Bäckerei:{label:'Kleine Backstube',founderRoles:['production','sales','admin'],customers:['Nachbarschaft','Café','Verein','kleiner Laden']},
-  Metzgerei:{label:'Kleine Handwerksmetzgerei',founderRoles:['production','sales','admin'],customers:['Privatkunden','Gaststätte','Verein']},
-  Lebensmittelhersteller:{label:'Lebensmittelmanufaktur',founderRoles:['production','admin'],customers:['Privatkunden','Feinkostladen','Café']},
-  Landwirtschaftsbetrieb:{label:'Kleiner Hof',founderRoles:['farm','admin'],customers:['Privatkunden','Hofladen','Gaststätte','kleiner Händler']},
-  Tierhaltung:{label:'Kleiner Tierhaltungsbetrieb',founderRoles:['farm','admin'],customers:['Privatkunden','Hofladen','Gaststätte']},
-  Obstbau:{label:'Kleiner Obsthof',founderRoles:['farm','admin'],customers:['Privatkunden','Wochenmarkt','Gaststätte','kleiner Laden']},
-  Maschinenbau:{label:'Kleine Maschinenbauwerkstatt',founderRoles:['craft','admin'],customers:['lokaler Betrieb','Landwirt','Handwerker','Privatkunde']},
-  Metallverarbeitung:{label:'Kleine Metallwerkstatt',founderRoles:['craft','admin'],customers:['Privatkunde','Handwerker','Gaststätte','lokaler Betrieb']},
-  Kunststoffverarbeitung:{label:'Kleine Kunststoffwerkstatt',founderRoles:['production','admin'],customers:['Kleinbetrieb','Handwerker','Privatkunde']},
-  Einzelhandel:{label:'Tante-Emma-Laden / Kiosk',founderRoles:['sales','admin'],customers:['Nachbarschaft','Privatkunden']},
-  Großhandel:{label:'Kleiner Regionalhandel',founderRoles:['sales','warehouse','admin'],customers:['kleiner Laden','Gaststätte','Handwerksbetrieb']},
-  Onlinehandel:{label:'Kleiner Onlineshop',founderRoles:['sales','warehouse','admin'],customers:['Privatkunden','Kleinbetrieb']}
+  Brauerei:{label:'Hausbrauerei / Getränkemanufaktur',founderRoles:['production','admin'],founderJobs:['brew_master'],customers:['Freunde & Bekannte','Gaststätte','Verein','kleiner Getränkeladen']},
+  Getränkehersteller:{label:'Getränkemanufaktur',founderRoles:['production','admin'],founderJobs:['machine_operator'],customers:['Freunde & Bekannte','Café','Verein','kleiner Laden']},
+  Mineralbrunnen:{label:'Kleiner Abfüllbetrieb',founderRoles:['production','admin'],founderJobs:['machine_operator'],customers:['Privatkunden','Gaststätte','kleiner Laden']},
+  Schreinerei:{label:'Kleine Werkstatt',founderRoles:['craft','admin'],founderJobs:['carpenter'],customers:['Privatkunde','Verein','Gaststätte','kleiner Laden']},
+  Tischlerei:{label:'Kleine Werkstatt',founderRoles:['craft','admin'],founderJobs:['carpenter'],customers:['Privatkunde','Verein','Gaststätte','kleiner Laden']},
+  Bäckerei:{label:'Kleine Backstube',founderRoles:['production','sales','admin'],founderJobs:['baker'],customers:['Nachbarschaft','Café','Verein','kleiner Laden']},
+  Metzgerei:{label:'Kleine Handwerksmetzgerei',founderRoles:['production','sales','admin'],founderJobs:['butcher'],customers:['Privatkunden','Gaststätte','Verein']},
+  Lebensmittelhersteller:{label:'Lebensmittelmanufaktur',founderRoles:['production','admin'],founderJobs:['machine_operator'],customers:['Privatkunden','Feinkostladen','Café']},
+  Landwirtschaftsbetrieb:{label:'Kleiner Hof',founderRoles:['farm','admin'],founderJobs:['farmer'],customers:['Privatkunden','Hofladen','Gaststätte','kleiner Händler']},
+  Tierhaltung:{label:'Kleiner Tierhaltungsbetrieb',founderRoles:['farm','admin'],founderJobs:['farmer'],customers:['Privatkunden','Hofladen','Gaststätte']},
+  Obstbau:{label:'Kleiner Obsthof',founderRoles:['farm','admin'],founderJobs:['farmer'],customers:['Privatkunden','Wochenmarkt','Gaststätte','kleiner Laden']},
+  Maschinenbau:{label:'Kleine Maschinenbauwerkstatt',founderRoles:['craft','admin'],founderJobs:['machine_operator'],customers:['lokaler Betrieb','Landwirt','Handwerker','Privatkunde']},
+  Metallverarbeitung:{label:'Kleine Metallwerkstatt',founderRoles:['craft','admin'],founderJobs:['machine_operator'],customers:['Privatkunde','Handwerker','Gaststätte','lokaler Betrieb']},
+  Kunststoffverarbeitung:{label:'Kleine Kunststoffwerkstatt',founderRoles:['production','admin'],founderJobs:['machine_operator'],customers:['Kleinbetrieb','Handwerker','Privatkunde']},
+  Einzelhandel:{label:'Tante-Emma-Laden / Kiosk',founderRoles:['sales','admin'],founderJobs:[],customers:['Nachbarschaft','Privatkunden']},
+  Großhandel:{label:'Kleiner Regionalhandel',founderRoles:['sales','warehouse','admin'],founderJobs:[],customers:['kleiner Laden','Gaststätte','Handwerksbetrieb']},
+  Onlinehandel:{label:'Kleiner Onlineshop',founderRoles:['sales','warehouse','admin'],founderJobs:[],customers:['Privatkunden','Kleinbetrieb']}
 };
-export function microStarterProfile(companyOrType){const type=typeof companyOrType==='string'?companyOrType:companyOrType?.type||companyOrType?.company_type;return{type,starterCapital:STARTER_CAPITAL,...(MICRO_TYPES[type]||{label:'Kleiner Betrieb',founderRoles:['production','admin'],customers:['Privatkunde','lokaler Kleinbetrieb']})};}
-export function ensureMicroBusiness(company={}){const p=microStarterProfile(company);company.microBusiness??={stage:'micro',founderActive:true,founderRoles:[...p.founderRoles],reputation:0,completedStarterOrders:0,unlockedCustomerTier:1};return company.microBusiness;}
+export function microStarterProfile(companyOrType){const type=typeof companyOrType==='string'?companyOrType:companyOrType?.type||companyOrType?.company_type;return{type,starterCapital:STARTER_CAPITAL,...(MICRO_TYPES[type]||{label:'Kleiner Betrieb',founderRoles:['production','admin'],founderJobs:[],customers:['Privatkunde','lokaler Kleinbetrieb']})};}
+export function ensureMicroBusiness(company={}){const p=microStarterProfile(company);company.microBusiness??={stage:'micro',founderActive:true,founderRoles:[...p.founderRoles],founderJobs:[...(p.founderJobs||[])],reputation:0,completedStarterOrders:0,unlockedCustomerTier:1};company.microBusiness.founderJobs??=[...(p.founderJobs||[])];return company.microBusiness;}
 export function founderCanCover(company,role){const s=ensureMicroBusiness(company);return s.stage==='micro'&&s.founderActive&&s.founderRoles.includes(role);}
+export function founderCanCoverJob(company,jobId){const s=ensureMicroBusiness(company);return s.stage==='micro'&&s.founderActive&&(s.founderJobs||[]).includes(jobId);}
 export function starterOrderScale(company={}){const s=ensureMicroBusiness(company),rep=Math.max(0,n(s.reputation));if(rep<20)return{tier:1,minValue:40,maxValue:1200,maxQuantity:100,customerClass:'private_local'};if(rep<50)return{tier:2,minValue:150,maxValue:3500,maxQuantity:400,customerClass:'local_business'};return{tier:3,minValue:500,maxValue:9000,maxQuantity:1200,customerClass:'regional_small_business'};}
 export function generateStarterCustomer(company={},seed=Math.random()){const p=microStarterProfile(company),scale=starterOrderScale(company),list=p.customers||[];const customerType=list[Math.floor(Math.abs(seed)*list.length)%Math.max(1,list.length)]||'Privatkunde';return{id:`starter-customer-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,customerType,tier:scale.tier,customerClass:scale.customerClass,local:true,maxOrderValue:scale.maxValue,maxQuantity:scale.maxQuantity};}
 export function completeStarterOrder(company={},orderValue=0,{onTime=true,qualityOk=true}={}){const s=ensureMicroBusiness(company);s.completedStarterOrders++;s.reputation=Math.max(0,s.reputation+(onTime?2:0)+(qualityOk?2:-2)+Math.min(3,Math.floor(Math.max(0,n(orderValue))/1000)));if(s.reputation>=20)s.unlockedCustomerTier=Math.max(s.unlockedCustomerTier,2);if(s.reputation>=50)s.unlockedCustomerTier=Math.max(s.unlockedCustomerTier,3);if(s.reputation>=80&&s.completedStarterOrders>=20)s.stage='small';return s;}
-export function runMicroBusinessStarterTest(){const types=Object.keys(MICRO_TYPES),rows=types.map(type=>{const c={type,money:STARTER_CAPITAL};const s=ensureMicroBusiness(c),customer=generateStarterCustomer(c,.42);return{type,ok:s.stage==='micro'&&customer.maxOrderValue<=1200&&s.founderActive};});const success=rows.every(x=>x.ok);console[success?'log':'error'](success?'✅ MIKROBETRIEB-STARTTEST ERFOLGREICH':'❌ MIKROBETRIEB-STARTTEST FEHLGESCHLAGEN',rows);return{success,rows};}
-if(typeof window!=='undefined'){window.microBusinessStarter={microStarterProfile,ensureMicroBusiness,founderCanCover,starterOrderScale,generateStarterCustomer,completeStarterOrder};window.runMicroBusinessStarterTest=runMicroBusinessStarterTest;}
+export function runMicroBusinessStarterTest(){const types=Object.keys(MICRO_TYPES),rows=types.map(type=>{const c={type,money:STARTER_CAPITAL};const s=ensureMicroBusiness(c),customer=generateStarterCustomer(c,.42),job=(s.founderJobs||[])[0];return{type,ok:s.stage==='micro'&&customer.maxOrderValue<=1200&&s.founderActive&&(!job||founderCanCoverJob(c,job))};});const success=rows.every(x=>x.ok);console[success?'log':'error'](success?'✅ MIKROBETRIEB-STARTTEST ERFOLGREICH':'❌ MIKROBETRIEB-STARTTEST FEHLGESCHLAGEN',rows);return{success,rows};}
+if(typeof window!=='undefined'){window.microBusinessStarter={microStarterProfile,ensureMicroBusiness,founderCanCover,founderCanCoverJob,starterOrderScale,generateStarterCustomer,completeStarterOrder};window.runMicroBusinessStarterTest=runMicroBusinessStarterTest;}
