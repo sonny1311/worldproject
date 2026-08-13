@@ -1,0 +1,6 @@
+// WorldProject – Validierung für bestehende Betriebsformulare.
+const finite=v=>Number.isFinite(Number(v));
+export function validatePositiveNumber(value,{label='Wert',allowZero=false,max=Infinity}={}){if(!finite(value))return{valid:false,message:`${label} muss eine Zahl sein`};const n=Number(value);if(allowZero?n<0:n<=0)return{valid:false,message:`${label} muss ${allowZero?'mindestens 0':'größer als 0'} sein`};if(n>max)return{valid:false,message:`${label} ist zu groß`};return{valid:true,value:n};}
+export function validateText(value,{label='Text',min=1,max=120}={}){const text=String(value??'').trim();if(text.length<min)return{valid:false,message:`${label} fehlt`};if(text.length>max)return{valid:false,message:`${label} ist zu lang`};return{valid:true,value:text};}
+export function validateOperationForm(schema,data){const errors={},values={};for(const[field,rule]of Object.entries(schema||{})){const r=rule.type==='text'?validateText(data?.[field],rule):validatePositiveNumber(data?.[field],rule);if(r.valid)values[field]=r.value;else errors[field]=r.message;}return{valid:!Object.keys(errors).length,errors,values};}
+if(typeof window!=='undefined')window.worldOperationsValidation={number:validatePositiveNumber,text:validateText,form:validateOperationForm};
