@@ -2,6 +2,7 @@
 // Lager -> Reservierung -> Transport -> Rechnung -> Zahlung-Kette.
 import { ConnectedEconomyGameplay } from "./ConnectedEconomyGameplay.js";
 import { CommercialFulfillmentSystem } from "./CommercialFulfillmentSystem.js";
+import "./CustomerOrderFulfillmentUIBridge.js";
 
 function finishedStock(company){
   company.operationalSupplyState??={};
