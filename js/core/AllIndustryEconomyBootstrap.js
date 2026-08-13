@@ -17,6 +17,7 @@ import "./ProductionReadinessAssistant.js";
 import "./OperationsActionBridge.js";
 import "./OperationsPersistenceCoordinator.js";
 import "./IndustryOperationalDashboardVM.js";
+import "./OperationsSectionRegistry.js";
 import "./AdvancedMachineProductionControl.js";
 import "./AdvancedWorkforceScheduling.js";
 import "./AdvancedProcurementWorkflow.js";
