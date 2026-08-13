@@ -29,7 +29,7 @@ export class EconomyDashboard {
     focusOperationalDialog(section="buy"){
         const dialog=window.worldOperationalSupplyChainDialog,overlay=dialog?.overlay;
         if(!overlay)return;
-        const wanted={buy:"Rohstoffe einkaufen",deliveries:"Laufende Lieferungen",production:"Produktionsplanung"}[section]||"Rohstoffe einkaufen";
+        const wanted={buy:"Rohstoffe & Verpackung einkaufen",deliveries:"Laufende Lieferungen",production:"Produktionsplanung"}[section]||"Rohstoffe & Verpackung einkaufen";
         const title={buy:"📦 Einkauf",deliveries:"🚚 Lieferungen & Transporte",production:"🏗️ Produktion"}[section]||"📦 Einkauf";
         const h2=overlay.querySelector("h2");if(h2)h2.textContent=title;
         overlay.querySelectorAll("section").forEach(sec=>{const h3=sec.querySelector("h3");sec.style.display=h3?.textContent?.includes(wanted)?"":"none";});
