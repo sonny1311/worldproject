@@ -4,9 +4,6 @@ export class SupabaseGameStateSync {
         this.api=api;this.intervalMs=intervalMs;this.timer=null;this.saving=false;
         for(const event of ["worldproject:company-founded","worldproject:company-loaded","worldproject:company-switched"])window.addEventListener(event,()=>this.start());
         window.addEventListener("world:server-balances-changed",()=>this.refreshBalances());
-        // Alle vorhandenen Spielsysteme verwenden einen dieser beiden Dirty-Events.
-        // Beide muessen auf denselben zentralen Supabase-Spielstand zeigen, damit
-        // Einkauf/Lager/Produktion ebenso sicher persistieren wie Personal/Maschinen.
         for(const event of ["world:state-dirty","world:game-state-dirty"]){
             window.addEventListener(event,()=>this.save().catch(e=>console.warn("Sofortspeichern fehlgeschlagen",e)));
         }
@@ -16,7 +13,9 @@ export class SupabaseGameStateSync {
 
     sanitize(value,seen=new WeakSet()){
         if(value===null||["string","number","boolean"].includes(typeof value))return value;
-        if(typeof value!=="object")return undefined;if(seen.has(value))return undefined;seen.add(value);
+        if(value instanceof Date)return Number.isFinite(value.getTime())?value.getTime():null;
+        if(typeof value!=="object")return undefined;
+        if(seen.has(value))return undefined;seen.add(value);
         if(Array.isArray(value))return value.map(v=>this.sanitize(v,seen)).filter(v=>v!==undefined);
         const out={};for(const[k,v]of Object.entries(value)){if(typeof v==="function")continue;if(["market","transportSystem","gigaTransportService","constructionManagers"].includes(k))continue;const clean=this.sanitize(v,seen);if(clean!==undefined)out[k]=clean;}return out;
     }
