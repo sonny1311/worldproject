@@ -1,6 +1,7 @@
 // WorldProject – Maschinenansicht für bestehende UI.
-import { equipmentSetupVM,equipmentForMachineRequirement } from './IndustryEquipmentMarketplace.js';
+import { equipmentSetupVM,equipmentForMachineRequirement,buyIndustryEquipment,persistIndustryEquipment } from './IndustryEquipmentMarketplace.js';
 import { maintenanceKpis,maintenanceDue,breakdownRisk } from './IndustryMaintenanceEngine.js';
 import { industryRecipes } from './UniversalIndustryCycle.js';
-export function equipmentPanelState(company){const setup=equipmentSetupVM(company),recipes=industryRecipes(company),owned=company.buildingState?.equipment||[];return{setup,maintenance:maintenanceKpis(company),owned:owned.map(m=>({machine:m,due:maintenanceDue(company,m),breakdownRisk:breakdownRisk(m),recipes:recipes.filter(r=>equipmentForMachineRequirement(company,r.machineType).some(x=>x.id===m.id)).map(r=>r.id)})),missingRequired:setup.missingRequired,optional:setup.optional};}
-if(typeof window!=='undefined')window.worldEquipmentPanel={state:equipmentPanelState};
+export function equipmentPanelState(company){const setup=equipmentSetupVM(company),recipes=industryRecipes(company),owned=company.buildingState?.equipment||[];return{setup,maintenance:maintenanceKpis(company),owned:owned.map(m=>({machine:m,due:maintenanceDue(company,m),breakdownRisk:breakdownRisk(m),recipes:recipes.filter(r=>equipmentForMachineRequirement(company,r.machineType).some(x=>x.id===m.id)).map(r=>r.id)})),missingRequired:setup.missingRequired.map(x=>({...x,action:'buy'})),optional:setup.optional.map(x=>({...x,action:x.owned?null:'buy'})),canBuyRequired:setup.missingRequired.some(x=>x.affordable)};}
+export async function buyFromEquipmentPanel(company,equipmentId){const result=buyIndustryEquipment(company,equipmentId,{requestId:`equipment-panel-${equipmentId}-${Date.now()}`});await persistIndustryEquipment(company).catch(()=>null);if(typeof window!=='undefined')window.dispatchEvent(new CustomEvent('world:game-state-dirty',{detail:{reason:'equipment-panel-purchase',equipmentId}}));return result;}
+if(typeof window!=='undefined')window.worldEquipmentPanel={state:equipmentPanelState,buy:buyFromEquipmentPanel};
