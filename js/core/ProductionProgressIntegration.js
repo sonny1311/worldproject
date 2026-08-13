@@ -1,4 +1,4 @@
-// WorldProject – sichtbarer Live-Fortschritt fuer laufende Produktionen.
+// WorldProject – sichtbarer Live-Fortschritt und automatisches Nachruecken geplanter Produktionen.
 import { EconomyDashboard } from './EconomyDashboard.js';
 import { OperationalSupplyChainDialog } from './OperationalSupplyChainDialog.js';
 
@@ -18,6 +18,24 @@ function progress(job,now=Date.now()){
 }
 function label(job){const p=progress(job);return p===null?'':` · ${p} %`;}
 
+function tryAutoStart(dialog){
+  if(!dialog?.planner)return null;
+  const company=dialog.companyProvider?.();if(!company)return null;
+  dialog.ensureMachines?.(company);
+  dialog.planner.advance?.(Date.now());
+  const active=(dialog.planner.queue||[]).some(j=>['running','paused'].includes(String(j?.status||'').toLowerCase()));
+  if(active)return null;
+  const queued=(dialog.planner.queue||[]).find(j=>String(j?.status||'').toLowerCase()==='queued');
+  if(!queued)return null;
+  if(dialog.staffingAllows&&!dialog.staffingAllows(company,queued.recipe))return null;
+  const started=dialog.planner.startQueued?.(queued.id,Date.now());
+  if(!started)return null;
+  dialog.ensureMachines?.(company);
+  dialog.saveState?.(company);
+  try{window.dispatchEvent(new CustomEvent('world:game-state-dirty',{detail:{reason:'production-auto-start',jobId:started.id}}));}catch{}
+  return started;
+}
+
 const dashProto=EconomyDashboard.prototype;
 if(!dashProto.__worldProductionProgressIntegrated){
   dashProto.__worldProductionProgressIntegrated=true;
@@ -28,6 +46,9 @@ if(!dashProto.__worldProductionProgressIntegrated){
     clearInterval(this.productionProgressTimer);
     this.productionProgressTimer=setInterval(()=>{
       if(!this.overlay?.isConnected)return;
+      const dialog=window.worldOperationalSupplyChainDialog;
+      const started=tryAutoStart(dialog);
+      if(started){this.render(this.overlay.firstElementChild);return;}
       const jobs=this.operationsOverview?.activeProduction?.()||[];
       for(const el of this.overlay.querySelectorAll('[data-production-progress-id]')){
         const job=jobs.find(j=>String(j.id)===el.dataset.productionProgressId);
@@ -61,6 +82,7 @@ if(!dashProto.__worldProductionProgressIntegrated){
 const opProto=OperationalSupplyChainDialog.prototype;
 if(!opProto.__worldProductionProgressIntegrated){
   opProto.__worldProductionProgressIntegrated=true;
+  opProto.tryAutoStartNextProduction=function(){return tryAutoStart(this);};
   const originalRenderQueue=opProto.renderQueue;
   opProto.renderQueue=function(panel,company,recipes){
     const result=originalRenderQueue.call(this,panel,company,recipes);
@@ -77,9 +99,20 @@ if(!opProto.__worldProductionProgressIntegrated){
   };
   const originalOpen=opProto.open;
   opProto.open=async function(...args){
-    const result=await originalOpen.apply(this,args);clearInterval(this.productionProgressUiTimer);
+    const result=await originalOpen.apply(this,args);
+    const firstStarted=tryAutoStart(this);if(firstStarted&&this.overlay?.firstElementChild)this.render(this.overlay.firstElementChild);
+    clearInterval(this.productionProgressUiTimer);
     this.productionProgressUiTimer=setInterval(()=>{
       if(!this.overlay?.isConnected)return;
+      const before=(this.planner.queue||[]).map(j=>`${j.id}:${j.status}`).join('|');
+      this.planner.advance?.(Date.now());
+      const started=tryAutoStart(this);
+      const after=(this.planner.queue||[]).map(j=>`${j.id}:${j.status}`).join('|');
+      if(started||before!==after){
+        const company=this.companyProvider?.();if(company)this.saveState?.(company);
+        const panel=this.overlay.firstElementChild;if(panel)this.render(panel);
+        return;
+      }
       for(const el of this.overlay.querySelectorAll('[data-production-progress-id]')){
         const job=this.planner.queue.find(j=>String(j.id)===el.dataset.productionProgressId);if(!job)continue;
         const p=progress(job);el.textContent=el.textContent.includes('Fortschritt')?` · Fortschritt ${p??0} %`:label(job);
