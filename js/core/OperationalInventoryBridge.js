@@ -23,16 +23,18 @@ export function legacyMaterialId(id){const canonical=canonicalMaterialId(id);ret
 
 function totalOperationalStock(stock){let total=0;for(const zone of Object.values(stock||{}))for(const value of Object.values(zone||{}))total+=Math.max(0,Number(value)||0);return total;}
 function orderIdentity(order){return String(order?.legacyId??order?.sourceOrderId??order?.id??`${order?.supplierId||order?.offerId||"supplier"}:${order?.material||order?.itemId||"item"}:${order?.createdAt||order?.orderedAt||"time"}`);}
+function ensureWarehouseStock(company){if(!company)return null;company.operationalSupplyState??={};const state=company.operationalSupplyState;state.warehouseStock??={raw:{},packaging:{},finished:{},cold:{}};for(const zone of ["raw","packaging","finished","cold"])state.warehouseStock[zone]??={};return state.warehouseStock;}
+
+export function operationalStockAmount(company,material){const stock=company?.operationalSupplyState?.warehouseStock;if(!stock)return null;const canonical=canonicalMaterialId(material);let total=0;for(const zone of Object.values(stock))if(zone&&typeof zone==='object')for(const[id,value]of Object.entries(zone))if(canonicalMaterialId(id)===canonical)total+=Math.max(0,Number(value)||0);return total;}
+export function consumeOperationalStock(company,material,quantity){const stock=company?.operationalSupplyState?.warehouseStock;if(!stock)return null;let left=Math.max(0,Number(quantity)||0);if(left<=0)return{success:true,consumed:0,remaining:0};const canonical=canonicalMaterialId(material),available=operationalStockAmount(company,canonical)||0;if(available+1e-9<left)return{success:false,consumed:0,remaining:left,available};const requested=left;for(const zone of Object.values(stock)){if(!zone||typeof zone!=='object')continue;for(const[id,value]of Object.entries(zone)){if(left<=1e-9)break;if(canonicalMaterialId(id)!==canonical)continue;const have=Math.max(0,Number(value)||0),take=Math.min(have,left);if(take>0){zone[id]=have-take;left-=take;}}if(left<=1e-9)break;}syncOperationalWarehouse(company);return{success:left<=1e-9,consumed:requested-left,remaining:left,available};}
+export function addOperationalStock(company,material,quantity,{zone=null}={}){const stock=ensureWarehouseStock(company);if(!stock)return{success:false,added:0};const q=Math.max(0,Number(quantity)||0),canonical=canonicalMaterialId(material),target=zone||operationalZoneFor(canonical);stock[target]??={};stock[target][canonical]=Math.max(0,Number(stock[target][canonical])||0)+q;syncOperationalWarehouse(company);return{success:true,added:q,zone:target,material:canonical};}
 
 // Alte Spielstaende konnten bestaetigte Wareneingaenge besitzen, ohne warehouseStock.
 // Die Rekonstruktion laeuft nur einmal und dedupliziert operative + migrierte Legacy-Orders.
 export function recoverConfirmedDeliveries(company=currentCompany()){
   if(!company)return 0;
-  company.operationalSupplyState??={};
-  const state=company.operationalSupplyState;
-  state.warehouseStock??={raw:{},packaging:{},finished:{},cold:{}};
-  for(const zone of ["raw","packaging","finished","cold"])state.warehouseStock[zone]??={};
-  if(state.confirmedDeliveryStockRecovered||totalOperationalStock(state.warehouseStock)>0)return 0;
+  const stock=ensureWarehouseStock(company),state=company.operationalSupplyState;
+  if(state.confirmedDeliveryStockRecovered||totalOperationalStock(stock)>0)return 0;
 
   const recovered=new Map(),seen=new Set();
   const addOrder=(order,rawMaterial,rawQuantity)=>{
@@ -45,14 +47,13 @@ export function recoverConfirmedDeliveries(company=currentCompany()){
   for(const order of state.orders||[]){if(order&&order.status==="stored")addOrder(order,order.material||order.itemId,order.quantity??order.amount);}
   for(const order of company.supplierOrders||[]){
     if(!order||!["delivered","stored"].includes(order.status))continue;
-    // Migrierte operative Orders tragen legacyId. Ist diese ID bereits gesehen, darf dieselbe Lieferung nicht erneut addiert werden.
     const legacyKey=String(order.id??order.legacyId??"");
     if(legacyKey&&seen.has(legacyKey))continue;
     addOrder(order,order.itemId||order.material,order.amount??order.quantity);
   }
 
   let changed=0;
-  for(const [material,quantity] of recovered){const zone=operationalZoneFor(material);state.warehouseStock[zone][material]=Number(state.warehouseStock[zone][material]||0)+quantity;changed++;}
+  for(const [material,quantity] of recovered){const zone=operationalZoneFor(material);stock[zone][material]=Number(stock[zone][material]||0)+quantity;changed++;}
   state.confirmedDeliveryStockRecovered=true;
   state.confirmedDeliveryStockRecoveredAt=Date.now();
   if(changed){console.log("✅ BESTÄTIGTE ALTLIEFERUNGEN INS LAGER REKONSTRUIERT",Object.fromEntries(recovered));window.dispatchEvent(new CustomEvent("world:game-state-dirty",{detail:{reason:"recover-confirmed-deliveries"}}));}
@@ -74,13 +75,10 @@ export function syncOperationalWarehouse(company=currentCompany()){
   }
   let changed=0;
   for(const [id,value] of Object.entries(totals)){if(Number(company.inventory[id]||0)!==value){company.inventory[id]=value;changed++;}}
-  // Nur Materialien, die im operativen Lager explizit existieren, duerfen einen alten Legacy-Wert auf 0 zuruecksetzen.
   for(const canonical of explicitCanonical){const legacy=legacyMaterialId(canonical);if(!(legacy in totals)&&Number(company.inventory[legacy]||0)!==0){company.inventory[legacy]=0;changed++;}}
   return changed;
 }
 
-// Gemeinsame, nur lesende KPI-Sicht fuer bestehende Dashboards/Command-Center.
-// Sie erzeugt bewusst kein zweites company.warehouse, sondern liest dieselben Zonen wie Einkauf und Produktion.
 export function operationalWarehouseKpis(company=currentCompany()){
   const state=company?.operationalSupplyState||{},stock=state.warehouseStock||{},capacities={raw:10000,packaging:10000,finished:10000,cold:0,...(state.baseCapacities||{})};
   const names=[...new Set(["raw","packaging","finished","cold",...Object.keys(capacities),...Object.keys(stock)])];
