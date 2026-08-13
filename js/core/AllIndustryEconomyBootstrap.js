@@ -5,6 +5,7 @@ import { runAllIndustryLifecycleRegression } from "./AllIndustryLifecycleRegress
 import { runIndustryDeepSimulationRegression } from "./IndustryDeepSimulationRegression.js";
 import "./IndustryEconomyDiagnostics.js";
 import "./IndustryManagementDashboardData.js";
+import "./BusinessCommandCenter.js";
 export function runAllIndustryEconomyHealth(){
  const coverage=runIndustryContentCoverageAudit();
  const regression=runAllIndustryEconomyRegression();
