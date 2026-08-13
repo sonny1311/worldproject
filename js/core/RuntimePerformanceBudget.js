@@ -1,0 +1,9 @@
+// WorldProject – Performancebudgets für Start, Rendern und schwere Module.
+const n=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;
+export function ensurePerformanceState(world={}){world.performanceState??={marks:[],measures:[],budgets:{bootMs:3500,renderMs:120,actionMs:250,heavyHealthMs:4000},violations:[]};return world.performanceState;}
+export function markPerformance(world,name,{at=performance?.now?.()??Date.now()}={}){const p=ensurePerformanceState(world),row={name,at:n(at)};p.marks.push(row);if(p.marks.length>2000)p.marks.splice(0,p.marks.length-2000);return row;}
+export function measurePerformance(world,name,start,end,{budgetMs=null,module='unknown'}={}){const p=ensurePerformanceState(world),duration=Math.max(0,n(end)-n(start)),row={name,module,duration,budgetMs:budgetMs==null?null:n(budgetMs),at:Date.now()};p.measures.push(row);if(row.budgetMs!=null&&duration>row.budgetMs){const v={...row,overBy:duration-row.budgetMs};p.violations.push(v);if(p.violations.length>500)p.violations.shift();}return row;}
+export async function timedOperation(world,name,fn,{budgetMs=null,module='unknown'}={}){const start=performance?.now?.()??Date.now();try{return await fn();}finally{const end=performance?.now?.()??Date.now();measurePerformance(world,name,start,end,{budgetMs,module});}}
+export function performanceKpis(world){const p=ensurePerformanceState(world),avg=p.measures.length?p.measures.reduce((s,x)=>s+x.duration,0)/p.measures.length:0;return{measurements:p.measures.length,averageMs:avg,violations:p.violations.length,worst:[...p.measures].sort((a,b)=>b.duration-a.duration).slice(0,10),budgets:{...p.budgets}};}
+export function budgetFor(world,kind){return n(ensurePerformanceState(world).budgets[kind],Infinity);}
+if(typeof window!=='undefined')window.worldPerformanceBudget={ensure:ensurePerformanceState,mark:markPerformance,measure:measurePerformance,timed:timedOperation,kpis:performanceKpis,budget:budgetFor};
