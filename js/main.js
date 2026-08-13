@@ -5,6 +5,7 @@
 
 import "./content/ContentBootstrap.js";
 import "./core/OperationalInventoryBridge.js";
+import "./core/CurrencyPresentationBridge.js";
 import { Engine } from "./core/Engine.js";
 import { CompanySetup } from "./core/CompanySetup.js";
 
