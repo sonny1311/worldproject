@@ -5,28 +5,34 @@ export const WorkforceContent={
  jobs:[
   {id:"brew_master",label:"Braumeister",industries:["brewery","Getränke"],baseWageMonthly:4100,skills:["brewhouse","fermentation","brewery_quality","production_release"],requiredFor:["beer_production"],mandatoryForIndustry:true},
   {id:"brewer",label:"Brauer",industries:["brewery","Getränke"],baseWageMonthly:3200,skills:["brewhouse","fermentation"]},
-  {id:"machine_operator",label:"Maschinenfuehrer",industries:["brewery","Getränke","carpentry","bakery","butcher","food","mechanical","metal","plastic"],baseWageMonthly:3000,skills:["machine"]},
+  {id:"machine_operator",label:"Maschinenführer",industries:["brewery","Getränke","carpentry","bakery","butcher","food","mechanical","metal","plastic"],baseWageMonthly:3000,skills:["machine"]},
   {id:"warehouse_worker",label:"Lagerist",industries:["*"],baseWageMonthly:2850,skills:["warehouse"]},
   {id:"driver",label:"Fahrer",industries:["*"],baseWageMonthly:3000,skills:["transport"]},
+  {id:"dispatcher",label:"Disponent",industries:["*"],baseWageMonthly:3300,skills:["dispatch","transport"]},
   {id:"carpenter",label:"Schreiner",industries:["carpentry"],baseWageMonthly:3150,skills:["woodshop"]},
-  {id:"baker",label:"Baecker",industries:["bakery"],baseWageMonthly:3050,skills:["bakery"]},
+  {id:"baker",label:"Bäcker",industries:["bakery"],baseWageMonthly:3050,skills:["bakery"]},
   {id:"butcher",label:"Metzger",industries:["butcher"],baseWageMonthly:3150,skills:["butchery"]},
   {id:"farmer",label:"Landwirt",industries:["farm","livestock","orchard"],baseWageMonthly:2950,skills:["field_line","livestock","orchard"]},
+  {id:"salesperson",label:"Verkäufer",industries:["retail","wholesale"],baseWageMonthly:2700,skills:["sales","customer_service"]},
+  {id:"picker",label:"Kommissionierer",industries:["retail","wholesale","online_retail"],baseWageMonthly:2750,skills:["warehouse","picking"]},
+  {id:"packer",label:"Versandmitarbeiter",industries:["wholesale","online_retail"],baseWageMonthly:2750,skills:["packing","shipping"]},
+  {id:"ecommerce_specialist",label:"E-Commerce-Mitarbeiter",industries:["online_retail"],baseWageMonthly:3200,skills:["ecommerce","customer_service"]},
   {id:"maintenance_tech",label:"Instandhaltungstechniker",industries:["*"],baseWageMonthly:3450,skills:["maintenance"]},
   {id:"shift_supervisor",label:"Schichtleiter",industries:["*"],baseWageMonthly:3900,skills:["leadership"]}
  ],
  shifts:[
-  {id:"early",label:"Fruehschicht",startHour:6,endHour:14,wageFactor:1},
-  {id:"late",label:"Spaetschicht",startHour:14,endHour:22,wageFactor:1.08},
+  {id:"early",label:"Frühschicht",startHour:6,endHour:14,wageFactor:1},
+  {id:"late",label:"Spätschicht",startHour:14,endHour:22,wageFactor:1.08},
   {id:"night",label:"Nachtschicht",startHour:22,endHour:6,wageFactor:1.2}
  ],
  trainingCourses:[
   {id:"machine_basic",label:"Maschinen-Fortbildung",industries:["*"],skills:["machine"],weeks:4,schoolDaysPerWeek:1,schoolWeekday:3,costPerSchoolDay:220,qualificationGain:.08},
-  {id:"quality_course",label:"Qualitaetssicherung",industries:["*"],skills:["quality"],weeks:6,schoolDaysPerWeek:1,schoolWeekday:2,costPerSchoolDay:260,qualificationGain:.10},
+  {id:"quality_course",label:"Qualitätssicherung",industries:["*"],skills:["quality"],weeks:6,schoolDaysPerWeek:1,schoolWeekday:2,costPerSchoolDay:260,qualificationGain:.10},
   {id:"maintenance_course",label:"Instandhaltung Aufbaukurs",industries:["*"],skills:["maintenance"],weeks:6,schoolDaysPerWeek:1,schoolWeekday:4,costPerSchoolDay:310,qualificationGain:.12},
-  {id:"leadership_course",label:"Schichtleitung / Fuehrung",industries:["*"],skills:["leadership"],weeks:6,schoolDaysPerWeek:1,schoolWeekday:1,costPerSchoolDay:340,qualificationGain:.10},
+  {id:"leadership_course",label:"Schichtleitung / Führung",industries:["*"],skills:["leadership"],weeks:6,schoolDaysPerWeek:1,schoolWeekday:1,costPerSchoolDay:340,qualificationGain:.10},
   {id:"brewery_advanced",label:"Brautechnik Fortbildung",industries:["brewery","Getränke"],skills:["brewhouse","fermentation"],weeks:6,schoolDaysPerWeek:1,schoolWeekday:3,costPerSchoolDay:290,qualificationGain:.12},
-  {id:"farm_advanced",label:"Landwirtschaftliche Fortbildung",industries:["farm","livestock","orchard"],skills:["field_line"],weeks:4,schoolDaysPerWeek:1,schoolWeekday:2,costPerSchoolDay:250,qualificationGain:.09}
+  {id:"farm_advanced",label:"Landwirtschaftliche Fortbildung",industries:["farm","livestock","orchard"],skills:["field_line"],weeks:4,schoolDaysPerWeek:1,schoolWeekday:2,costPerSchoolDay:250,qualificationGain:.09},
+  {id:"commerce_logistics",label:"Handel & Logistik",industries:["retail","wholesale","online_retail"],skills:["sales","warehouse","picking","packing"],weeks:4,schoolDaysPerWeek:1,schoolWeekday:2,costPerSchoolDay:220,qualificationGain:.08}
  ],
  energyTypes:[
   {id:"electricity",label:"Strom",unit:"kWh",pricePerUnit:.28},
