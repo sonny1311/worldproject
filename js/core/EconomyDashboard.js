@@ -22,8 +22,8 @@ export class EconomyDashboard {
     async openOperationalSupplyChain(section="buy"){
         const company=window.worldPlayerCompany||window.worldEconomyGameplay?.company||window.worldEngine?.company||this.company;
         if(window.worldEconomyGameplay)window.worldEconomyGameplay.company=company;
-        if(!window.worldFocusedOperationsDialog){const {FocusedOperationsDialog}=await import("./FocusedOperationsDialog.js");window.worldFocusedOperationsDialog=new FocusedOperationsDialog({companyProvider:()=>window.worldPlayerCompany||window.worldEconomyGameplay?.company||window.worldEngine?.company||null,parent:document.body});}
-        window.worldFocusedOperationsDialog.open(section);
+        if(!window.worldFocusedOperationsDialog){const {FocusedOperationsDialog}=await import("./FocusedOperationsDialog.js");window.worldFocusedOperationsDialog=new FocusedOperationsDialog({companyProvider:()=>window.worldPlayerCompany||window.worldEconomyGameplay?.company||window.worldEngine?.company||this.company,parent:document.body});}
+        return window.worldFocusedOperationsDialog.open(section);
     }
     showCustomerOrders(){const target=this.overlay?.querySelector?.("#dashboard-customer-orders");if(target){target.scrollIntoView({behavior:"smooth",block:"center"});const old=target.style.outline;target.style.outline="2px solid #ffd54a";setTimeout(()=>target.style.outline=old,1400);}}
     header(panel){const head=this.el("div");Object.assign(head.style,{display:"flex",justifyContent:"space-between",gap:"10px",alignItems:"center"});const title=this.el("div",`🏭 ${this.company.name||"WorldProject"} · Betrieb ${this.company.slotNo||1} · ${this.company.type||""}`);Object.assign(title.style,{fontSize:"24px",fontWeight:800});head.append(title,this.button("✕",()=>this.close()));panel.append(head);}
