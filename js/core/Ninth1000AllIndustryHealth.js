@@ -7,6 +7,7 @@ import { IndustryProfiles } from './IndustryCatalog.js';
 import { worldContentRegistry } from './ContentRegistry.js';
 import { runAgricultureSeasonTest } from './SeasonalBusinessCalendar.js';
 import { WorldCurrencySystem,currencyForCountry,countryFromLocale } from './WorldCurrencySystem.js';
+import { currencyHealthStatus } from './CurrencyHealthStatus.js';
 
 export function runNinth1000AllIndustryHealth(){
  const coverage=runIndustryContentCoverageAudit();
@@ -14,6 +15,7 @@ export function runNinth1000AllIndustryHealth(){
  const workforce=runUniversalWorkforceTest();
  const scenarios=industryScenarioMatrix();
  const agriculture=runAgricultureSeasonTest();
+ const currencyHealth=currencyHealthStatus();
  const farmRecipes=worldContentRegistry.list('recipes').filter(r=>(r.industries||[]).includes('farm')&&!r.deprecated);
  const farmRecipeIds=new Set(farmRecipes.map(r=>r.id));
  const requiredFarmRecipes=['grow_wheat','grow_barley','grow_corn','grow_rapeseed','grow_potato'];
@@ -33,10 +35,12 @@ export function runNinth1000AllIndustryHealth(){
   {name:'Währungen nach Land korrekt',success:currencyForCountry('DE')==='EUR'&&currencyForCountry('US')==='USD'&&currencyForCountry('CN')==='CNY'&&currencyForCountry('JP')==='JPY'},
   {name:'Land aus Locale erkennbar',success:countryFromLocale('en-US')==='US'&&countryFromLocale('ja-JP')==='JP'},
   {name:'Währungsumrechnung reversibel',success:Math.abs(back-100)<1e-9,usd,back},
-  {name:'Lokale Währungsformatierung',success:usdText.includes('$')&&jpyText.length>0,usdText,jpyText}
+  {name:'Lokale Währungsformatierung',success:usdText.includes('$')&&jpyText.length>0,usdText,jpyText},
+  {name:'Währungsabdeckung vollständig',success:currencyHealth.success,detail:currencyHealth},
+  {name:'Kursquelle ausgewiesen',success:['fallback','server'].includes(currencyHealth.rateSource),source:currencyHealth.rateSource}
  ];
  const failed=checks.filter(x=>!x.success);
- const report={success:failed.length===0,checks,failed,coverage,playability,workforce,agriculture,farmRecipeCount:farmRecipes.length,scenarioCount:scenarios.length,ranAt:Date.now()};
+ const report={success:failed.length===0,checks,failed,coverage,playability,workforce,agriculture,currencyHealth,farmRecipeCount:farmRecipes.length,scenarioCount:scenarios.length,ranAt:Date.now()};
  if(typeof window!=='undefined')window.worldNinth1000AllIndustryHealth=report;
  return report;
 }
