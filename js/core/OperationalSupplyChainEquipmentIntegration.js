@@ -2,6 +2,7 @@
 // Keine neue UI: erweitert ausschließlich OperationalSupplyChainDialog.
 import './OperationalPurchaseFeedbackIntegration.js';
 import './ProductionQueueCancelIntegration.js';
+import './ProductionDashboardDeleteIntegration.js';
 import { OperationalSupplyChainDialog } from './OperationalSupplyChainDialog.js';
 import { recipesForCompany } from './OperationalSupplyChainSystem.js';
 import { compatibleMachineIds } from './IndustryMachineCompatibility.js';
