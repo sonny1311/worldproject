@@ -17,6 +17,7 @@ function addChecklist(dashboard, card) {
   box.append(dashboard.el('strong','🧭 Was brauche ich noch?'),dashboard.small('Reihenfolge: zuerst Anlage, danach Personal, danach Rohstoffe und Verpackung.'));
   for (const row of rows.slice(0,8)) {
     const item = dashboard.el('div');
+    item.className='production-readiness-row';
     Object.assign(item.style,{marginTop:'9px',paddingTop:'8px',borderTop:'1px solid rgba(255,255,255,.08)'});
     const title=dashboard.el('div',`${row.ready?'✅':'🔧'} ${String(row.product).replace(/_/g,' ')}`);
     title.style.fontWeight='700';
