@@ -12,6 +12,7 @@ import "./core/EconomyDashboardSetupIntegration.js";
 import "./core/ConnectedEconomyGameplay.js";
 import "./core/CustomerOrderPricingIntegration.js";
 import "./core/ProductionProgressIntegration.js";
+import "./core/BottlingSizeSelectionIntegration.js";
 import "./core/ProductionStatusBannerIntegration.js";
 import "./core/MachineStaffingOverviewIntegration.js";
 import "./core/DashboardSummaryNavigationIntegration.js";
