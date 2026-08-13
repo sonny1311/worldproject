@@ -1,5 +1,6 @@
 // WorldProject – verbindet den bestehenden Einkaufs-/Produktionsdialog mit dem zentralen Maschinenmarkt.
 // Keine neue UI: erweitert ausschließlich OperationalSupplyChainDialog.
+import './OperationalPurchaseFeedbackIntegration.js';
 import { OperationalSupplyChainDialog } from './OperationalSupplyChainDialog.js';
 import { recipesForCompany } from './OperationalSupplyChainSystem.js';
 import { compatibleMachineIds } from './IndustryMachineCompatibility.js';
