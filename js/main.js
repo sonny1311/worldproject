@@ -3,6 +3,8 @@
 // WorldProject
 // ============================================
 
+import "./content/ContentBootstrap.js";
+import "./core/OperationalInventoryBridge.js";
 import { Engine } from "./core/Engine.js";
 import { CompanySetup } from "./core/CompanySetup.js";
 
@@ -36,6 +38,7 @@ const companySetup = new CompanySetup(
         console.log("Unternehmen geladen:", company);
         engine.company = company;
         window.worldPlayerCompany = company;
+        window.dispatchEvent(new CustomEvent("worldproject:company-activated",{detail:{company}}));
     }
 );
 
