@@ -19,6 +19,7 @@ import "./core/MachineStaffingHireLinkIntegration.js";
 import "./core/ProductionReadinessChecklistView.js";
 import "./core/ProductionReadinessPremiumNavigationV2.js";
 import "./core/DashboardSummaryNavigationIntegration.js";
+import "./core/OperationalDialogSectionPersistenceIntegration.js";
 import "./core/ProductionQueueLimitIntegration.js";
 import "./core/CommercialFulfillmentGameplayBridge.js";
 import "./core/DashboardUsabilityIntegration.js";
