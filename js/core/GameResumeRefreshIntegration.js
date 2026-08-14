@@ -6,7 +6,7 @@ export function refreshTimedSystemsOnResume({force=false,now=Date.now()}={}){
  if(typeof window==='undefined')return false;if(!force&&now-lastRun<1000)return false;lastRun=now;
  try{window.worldTimedBusinessUpgrades?.process?.();}catch(error){console.warn('Ausbau-Refresh nach Rueckkehr fehlgeschlagen',error);}
  try{window.worldRewardedAdUI?.refresh?.();}catch(error){console.warn('Werbe-Refresh nach Rueckkehr fehlgeschlagen',error);}
- try{window.worldLiveTrafficDelivery?.refresh?.();}catch(error){console.warn('Verkehrs-Refresh nach Rueckkehr fehlgeschlagen',error);}
+ try{window.worldLiveTraffic?.refresh?.();}catch(error){console.warn('Verkehrs-Refresh nach Rueckkehr fehlgeschlagen',error);}
  window.dispatchEvent(new CustomEvent('world:runtime-resumed',{detail:{at:now}}));
  return true;
 }
