@@ -20,6 +20,7 @@ import "./core/ProductionReadinessPremiumNavigationV2.js";
 import "./core/DashboardSummaryNavigationIntegration.js";
 import "./core/ProductionQueueLimitIntegration.js";
 import "./core/CommercialFulfillmentGameplayBridge.js";
+import "./core/DashboardUsabilityIntegration.js";
 import "./core/CoreRegressionSuite.js";
 import { runAllIndustryPlayabilityAudit } from "./core/AllIndustryPlayabilityAudit.js";
 import { runAllIndustryEconomyHealth } from "./core/AllIndustryEconomyBootstrap.js";
