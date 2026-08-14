@@ -18,6 +18,7 @@ import "./core/MachineStaffingOverviewIntegration.js";
 import "./core/MachineStaffingHireLinkIntegration.js";
 import "./core/ProductionReadinessChecklistView.js";
 import "./core/DashboardSummaryNavigationIntegration.js";
+import "./core/DashboardFinishedGoodsSummaryIntegration.js";
 import "./core/DashboardSummaryGradientIntegration.js";
 import "./core/OperationalDialogSectionPersistenceIntegration.js";
 import "./core/MachinePurchaseTabIntegration.js";
