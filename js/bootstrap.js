@@ -24,6 +24,7 @@ import "./core/DashboardFinishedGoodsSummaryIntegration.js";
 import "./core/DashboardSummaryGradientIntegration.js";
 import "./core/OperationalDialogSectionPersistenceIntegration.js";
 import "./core/MachinePurchaseTabIntegration.js";
+import "./core/WarehouseClearanceSaleIntegration.js";
 import "./core/ProductionReadinessPremiumNavigationV2.js";
 import "./core/ProductionQueueLimitIntegration.js";
 import "./core/CommercialFulfillmentGameplayBridge.js";
