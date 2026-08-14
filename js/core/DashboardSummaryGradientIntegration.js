@@ -7,6 +7,7 @@ const gradients = Object.freeze({
   '🪙 Coins': 'linear-gradient(135deg,#162a48 0%,#123b62 100%)',
   '🚚 Fuhrpark': 'linear-gradient(135deg,#17314f 0%,#174a70 100%)',
   '🏬 Lager': 'linear-gradient(135deg,#173942 0%,#14545a 100%)',
+  '📦 Fertigwaren': 'linear-gradient(135deg,#194044 0%,#16605b 100%)',
   '📈 Wochengewinn': 'linear-gradient(135deg,#252e55 0%,#3b3068 100%)',
   '🎯 Aufgabe': 'linear-gradient(135deg,#382946 0%,#592d46 100%)'
 });
@@ -40,8 +41,9 @@ if(!proto.__worldSummaryGradientIntegrated){
 }
 
 export function runDashboardSummaryGradientTest(){
-  if(Object.keys(gradients).length!==6)throw new Error('Kennzahlen-Farbverläufe unvollständig');
+  if(Object.keys(gradients).length!==7)throw new Error('Kennzahlen-Farbverläufe unvollständig');
   if(!gradients['🏬 Lager']?.includes('linear-gradient'))throw new Error('Lager-Farbverlauf fehlt');
+  if(!gradients['📦 Fertigwaren']?.includes('linear-gradient'))throw new Error('Fertigwaren-Farbverlauf fehlt');
   return true;
 }
 
