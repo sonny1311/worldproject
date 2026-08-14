@@ -1,5 +1,6 @@
 // WorldProject - aktualisiert zeitbasierte Systeme sofort, wenn der Spieler zum Spiel zurueckkehrt.
 // Browser-/App-Timer koennen im Hintergrund gedrosselt werden; beim Fokus wird deshalb aktiv nachgezogen.
+import { runOperationalConsistency } from './OperationalConsistencyGuard.js';
 
 let lastRun=0;
 export function refreshTimedSystemsOnResume({force=false,now=Date.now()}={}){
@@ -7,6 +8,7 @@ export function refreshTimedSystemsOnResume({force=false,now=Date.now()}={}){
  try{window.worldTimedBusinessUpgrades?.process?.();}catch(error){console.warn('Ausbau-Refresh nach Rueckkehr fehlgeschlagen',error);}
  try{window.worldRewardedAdUI?.refresh?.();}catch(error){console.warn('Werbe-Refresh nach Rueckkehr fehlgeschlagen',error);}
  try{window.worldLiveTraffic?.refresh?.();}catch(error){console.warn('Verkehrs-Refresh nach Rueckkehr fehlgeschlagen',error);}
+ try{const company=window.worldPlayerCompany;if(company)runOperationalConsistency(company,now);}catch(error){console.warn('Betriebs-Konsistenz nach Rueckkehr fehlgeschlagen',error);}
  window.dispatchEvent(new CustomEvent('world:runtime-resumed',{detail:{at:now}}));
  return true;
 }
