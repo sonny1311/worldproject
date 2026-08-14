@@ -59,6 +59,7 @@ import "./core/CommercialFulfillmentGameplayBridge.js";
 import "./core/PlayerMarketDialog.js";
 import "./core/PlayerMarketGoodsDelivery.js";
 import "./core/PlayerMarketDirectGoodsPurchase.js";
+import "./core/PlayerMarketLocalPersistence.js";
 import "./core/PlayerCoinMarketExchange.js";
 import "./core/PlayerCoinMarketUIIntegration.js";
 import "./core/PlayerMarketNavigationIntegration.js";
