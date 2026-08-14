@@ -1,0 +1,5 @@
+import { runExpansionReadinessAdvisorTest } from './ExpansionReadinessAdvisor.js';
+import { runGeneratedConstructionCrewMarketTest } from './GeneratedConstructionCrewMarket.js';
+import { advanceAllConstruction } from './ConstructionRuntimeCompletionIntegration.js';
+export function runExpansionRuntimeRegression(){const checks=[],run=(name,fn)=>{try{checks.push({name,success:fn()===true});}catch(error){checks.push({name,success:false,error:error.message});}};run('Ausbau-Beratung',runExpansionReadinessAdvisorTest);run('KI-Bautrupp-Markt',runGeneratedConstructionCrewMarketTest);const result={success:checks.every(x=>x.success),passed:checks.filter(x=>x.success).length,total:checks.length,checks};console[result.success?'log':'error'](`WORLDPROJECT AUSBAU-RUNTIME ${result.passed}/${result.total}`,result);return result;}
+if(typeof window!=='undefined'){window.runExpansionRuntimeRegression=runExpansionRuntimeRegression;try{runExpansionRuntimeRegression();}catch(error){console.error('Ausbau-Runtime-Regression fehlgeschlagen',error);}}
