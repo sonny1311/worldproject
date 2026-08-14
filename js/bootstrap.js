@@ -20,6 +20,7 @@ import "./core/MachineMaintenanceUIIntegration.js";
 import "./core/ReputationSystem.js";
 import "./core/UrgentCustomerOrderSystem.js";
 import "./core/ReputationCustomerOrderIntegration.js";
+import "./core/CustomerFreightEconomySystem.js";
 import "./core/UniversalOperationsDialog.js";
 import "./core/LandConstructionExpansionUIIntegration.js";
 import "./core/WarehouseExpansionUIIntegration.js";
