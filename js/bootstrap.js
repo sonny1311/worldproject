@@ -10,6 +10,7 @@ import "./core/WarehouseSpaceIntegration.js";
 import "./core/WarehousePackDisplayIntegration.js";
 import "./core/OperationalSupplyChainEquipmentIntegration.js";
 import "./core/UniversalOperationsDialog.js";
+import "./core/LandConstructionExpansionUIIntegration.js";
 import "./core/EconomyDashboardSetupIntegration.js";
 import "./core/ConnectedEconomyGameplay.js";
 import "./core/CustomerOrderPricingIntegration.js";
