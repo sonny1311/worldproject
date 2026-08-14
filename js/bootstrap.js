@@ -66,7 +66,7 @@ import { runAllIndustryEconomyHealth } from "./core/AllIndustryEconomyBootstrap.
 import { gameAccessGate } from "./core/AccountMultiplayerIntegration.js";
 async function startWorldProject(){
     await gameAccessGate.ensureAccess();
-    console.log("✅ ACCOUNT FREIGEGEN – SPIEL WIRD GELADEN");
+    console.log("✅ ACCOUNT FREIGEGEBEN – SPIEL WIRD GELADEN");
     window.worldProjectIndustryHealth=runAllIndustryPlayabilityAudit();
     window.worldAllIndustryEconomyHealth=runAllIndustryEconomyHealth();
     await import("./main.js");
