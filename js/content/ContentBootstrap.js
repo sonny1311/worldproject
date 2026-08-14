@@ -4,8 +4,10 @@ import "./GameContentData.js";
 import "./AllIndustryEconomyContent.js";
 import "./AgricultureCropContent.js";
 import "./BrewerySupplySupplement.js";
+import "./ConnectedIndustryChainsContent.js";
 import "./MarketAndFleetContentData.js";
 import "./WorkforceContentData.js";
+import "../core/IndustryChainCatalogSupplement.js";
 import { registerWorldContent, worldContentRegistry } from "../core/ContentRegistry.js";
 
 registerWorldContent({
@@ -26,7 +28,25 @@ registerWorldContent({
     { id:"Kunststoffverarbeitung", branchKey:"plastic", label:"Kunststoffverarbeitung" },
     { id:"Einzelhandel", branchKey:"retail", label:"Einzelhandel" },
     { id:"Großhandel", branchKey:"wholesale", label:"Großhandel" },
-    { id:"Onlinehandel", branchKey:"online_retail", label:"Onlinehandel" }
+    { id:"Onlinehandel", branchKey:"online_retail", label:"Onlinehandel" },
+    { id:"Forstbetrieb", branchKey:"forestry", label:"Forstbetrieb" },
+    { id:"Saegewerk", branchKey:"sawmill", label:"Sägewerk" },
+    { id:"Muehle", branchKey:"mill", label:"Mühle" },
+    { id:"Maelzerei", branchKey:"maltster", label:"Mälzerei" },
+    { id:"Hopfenbaubetrieb", branchKey:"hops_farm", label:"Hopfenbaubetrieb" },
+    { id:"Zuckerfabrik", branchKey:"sugar_factory", label:"Zuckerfabrik" },
+    { id:"Futtermuehle", branchKey:"feed_mill", label:"Futtermühle" },
+    { id:"Molkerei", branchKey:"dairy", label:"Molkerei" },
+    { id:"Schlachthof", branchKey:"slaughterhouse", label:"Schlachthof" },
+    { id:"Glaswerk", branchKey:"glassworks", label:"Glaswerk / Flaschenhersteller" },
+    { id:"Verschlusshersteller", branchKey:"closures", label:"Verschlusshersteller" },
+    { id:"Papierfabrik", branchKey:"paper_mill", label:"Papierfabrik" },
+    { id:"Etikettendruckerei", branchKey:"label_print", label:"Etikettendruckerei" },
+    { id:"Verpackungshersteller", branchKey:"packaging_maker", label:"Verpackungshersteller" },
+    { id:"Stahlwerk", branchKey:"steelworks", label:"Stahlwerk" },
+    { id:"Kunststoffrohstoffwerk", branchKey:"polymer", label:"Kunststoffrohstoffwerk" },
+    { id:"Lebensmittelchemie", branchKey:"food_chemicals", label:"Lebensmittelchemie" },
+    { id:"Agrarchemie", branchKey:"agri_chemicals", label:"Agrarchemie" }
   ]
 });
 function applyCompanyBranchKey(company){
