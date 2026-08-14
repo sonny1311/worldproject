@@ -41,6 +41,7 @@ import { runOperationalAttentionFeedbackTest } from "./OperationalAttentionFeedb
 import { runMachineConditionProductionGuardTest } from "./MachineConditionProductionGuard.js";
 import { runMachineConditionVisibilityTest } from "./MachineConditionVisibilityIntegration.js";
 import { runMachineMaintenanceTest } from "./MachineMaintenanceSystem.js";
+import { runMachineMaintenanceUITest } from "./MachineMaintenanceUIIntegration.js";
 import { runReputationSystemTest } from "./ReputationSystem.js";
 import { runUrgentCustomerOrderTest } from "./UrgentCustomerOrderSystem.js";
 import { runRegularCustomerReputationTest } from "./ReputationCustomerOrderIntegration.js";
@@ -60,6 +61,7 @@ export function runCoreRegressionSuite(){
  run("Machine Condition Production",()=>runMachineConditionProductionGuardTest());
  run("Machine Condition Visibility",()=>runMachineConditionVisibilityTest());
  run("Machine Maintenance",()=>runMachineMaintenanceTest());
+ run("Machine Maintenance UI",()=>runMachineMaintenanceUITest());
  run("Reputation",()=>runReputationSystemTest());
  run("Urgent Customer Orders",()=>runUrgentCustomerOrderTest());
  run("Regular Customer Reputation",()=>runRegularCustomerReputationTest());
