@@ -10,6 +10,7 @@ import "./core/TransportFuelTimeIntegration.js";
 import "./core/TransportGameplayIntegration.js";
 import "./core/CompanyEconomyIntegration.js";
 import "./core/WarehouseSpaceIntegration.js";
+import "./core/LegacyEconomyWarehouseSpaceBridge.js";
 import "./core/WarehousePackDisplayIntegration.js";
 import "./core/OperationalSupplyChainEquipmentIntegration.js";
 import "./core/UniversalOperationsDialog.js";
