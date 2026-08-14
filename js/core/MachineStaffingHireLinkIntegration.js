@@ -4,7 +4,7 @@ import { PremiumEntitlementSystem } from './PremiumEntitlementSystem.js';
 const premium = new PremiumEntitlementSystem();
 const accountFor = dashboard => dashboard?.account || window.worldCurrentUser || window.worldAccount || {};
 
-async function openPersonnel(dashboard,label,{preselect=false}={}){
+async function openPersonnel(dashboard,roleId,label,{preselect=false}={}){
   if(!window.worldWorkforceOperationsDialog){
     const { WorkforceOperationsDialog } = await import('./WorkforceOperationsDialog.js');
     window.worldWorkforceOperationsDialog = new WorkforceOperationsDialog({parent:document.body});
@@ -23,19 +23,19 @@ async function openPersonnel(dashboard,label,{preselect=false}={}){
   setTimeout(()=>area.style.outline='',1800);
 
   if(!preselect)return;
-  const wanted=String(label||'').toLowerCase();
   const select=area.querySelector('select');
   if(!select)return;
-  const aliases={
-    'keller-/gärmitarbeiter':['keller','gär','gaer','cellar'],
-    'abfüll-/verpackungsmitarbeiter':['abfüll','abfuell','verpack','packaging'],
-    'betriebstechniker':['betriebstechn','wartung','maintenance'],
-    'braumeister':['braumeister','brew master'],
-    'maschinen-/anlagenführer':['maschinen','anlagenführer','anlagenfuehrer','machine operator']
-  };
-  const terms=[wanted,...Object.entries(aliases).filter(([key])=>wanted.includes(key)).flatMap(([,values])=>values)];
-  const option=[...select.options].find(o=>terms.some(term=>(o.textContent||'').toLowerCase().includes(term)));
-  if(option){select.value=option.value;select.dispatchEvent(new Event('change',{bubbles:true}));}
+  const exact=[...select.options].find(o=>String(o.value)===String(roleId));
+  if(exact){
+    select.value=exact.value;
+    select.dispatchEvent(new Event('change',{bubbles:true}));
+    select.focus();
+    return;
+  }
+  // Nur als Sicherheitsnetz für alte Spielstände/Inhalte; regulär wird per Rollen-ID gewählt.
+  const wanted=String(label||'').toLowerCase();
+  const fallback=[...select.options].find(o=>(o.textContent||'').toLowerCase().includes(wanted));
+  if(fallback){select.value=fallback.value;select.dispatchEvent(new Event('change',{bubbles:true}));select.focus();}
 }
 
 const proto=EconomyDashboard.prototype;
@@ -51,12 +51,15 @@ if(!proto.__machineStaffingHireLinks){
     for(const strong of box.querySelectorAll('strong')){
       const text=(strong.textContent||'').trim();
       if(!text.startsWith('❌'))continue;
+      const line=strong.parentElement;
+      const roleId=line?.dataset?.staffRole||'';
       const label=text.replace(/^❌\s*/,'').replace(/\s+einstellen$/i,'').trim();
-      if(strong.parentElement?.querySelector('.staff-hire-link'))continue;
-      const button=this.button(guided?'⭐ Jetzt einstellen':'Personal öffnen',()=>openPersonnel(this,label,{preselect:guided}));
+      if(line?.querySelector('.staff-hire-link'))continue;
+      const button=this.button(guided?'⭐ Jetzt einstellen':'Personal öffnen',()=>openPersonnel(this,roleId,label,{preselect:guided}));
       button.classList.add('staff-hire-link');
+      if(roleId)button.dataset.staffRole=roleId;
       Object.assign(button.style,{display:'block',margin:'5px 0 0',padding:'6px 9px',fontSize:'11px'});
-      strong.parentElement?.append(button);
+      line?.append(button);
     }
     return result;
   };
