@@ -25,13 +25,14 @@ export function runOperationalSupplyChainRegressionTest(){
  check("06 Bestellung besitzt stabile ETA",()=>{assert(Number.isFinite(order.eta)&&order.eta>order.createdAt,"ETA fehlt");});
  check("07 Lieferung wechselt zu unterwegs",()=>{orders.advance(order.createdAt+1);assert(order.status==="in_transit","Status wurde nicht unterwegs");});
  check("08 Lieferung kommt nach ETA an",()=>{orders.advance(order.eta);assert(order.status==="arrived","Status wurde nicht angekommen");});
- const warehouse=new WarehouseSystem({raw:1,packaging:1000,finished:1000,cold:1000});
+ // 750 Einheiten: 500 passen hinein, weitere 251 muessen die Kapazitaet bewusst ueberschreiten.
+ const warehouse=new WarehouseSystem({raw:750,packaging:1000,finished:1000,cold:1000});
  check("09 Wareneingang bucht exakt einmal",()=>{warehouse.receive(order);assert(warehouse.stock.raw.malt===500&&order.status==="stored","Wareneingang falsch");});
  check("10 doppelter Wareneingang wird blockiert",()=>{expectThrow(()=>warehouse.receive(order),"Doppelter Wareneingang wurde akzeptiert");assert(warehouse.stock.raw.malt===500,"Doppelter Wareneingang hat Bestand veraendert");});
  check("11 Lagergrenze wird eingehalten",()=>{const full={status:"arrived",material:"malt",quantity:251};expectThrow(()=>warehouse.receive(full),"Ueberfuellung wurde akzeptiert");assert(warehouse.stock.raw.malt===500,"Ueberfuellung hat Bestand veraendert");});
  check("12 negative Lagerbewegung ist unmoeglich",()=>{const r=warehouse.consume({malt:501});assert(!r.ok&&warehouse.stock.raw.malt===500,"Bestand wurde negativ");});
  check("13 JSON-Roundtrip behaelt Lieferstatus",()=>{const restored=clone({orders:orders.orders,stock:warehouse.stock});assert(restored.orders[0].status==="stored"&&restored.stock.raw.malt===500,"Persistenz-Roundtrip falsch");});
- check("14 Reload erzeugt keine zweite Gutschrift",()=>{const restoredOrder=clone(order),restoredWarehouse=new WarehouseSystem({raw:1,packaging:1000,finished:1000,cold:1000});restoredWarehouse.stock=clone(warehouse.stock);expectThrow(()=>restoredWarehouse.receive(restoredOrder),"Reload erlaubte doppelte Einlagerung");assert(restoredWarehouse.stock.raw.malt===500,"Reload verdoppelte Bestand");});
+ check("14 Reload erzeugt keine zweite Gutschrift",()=>{const restoredOrder=clone(order),restoredWarehouse=new WarehouseSystem({raw:750,packaging:1000,finished:1000,cold:1000});restoredWarehouse.stock=clone(warehouse.stock);expectThrow(()=>restoredWarehouse.receive(restoredOrder),"Reload erlaubte doppelte Einlagerung");assert(restoredWarehouse.stock.raw.malt===500,"Reload verdoppelte Bestand");});
  const machine={id:1,type:"brewhouse",status:"available",busy:false,capacity:1000};
  const planner=new ProductionPlanner({warehouse,machines:[machine]});
  const recipe={id:"regression_beer",product:"regression_beer_bulk",materials:{malt:100},machineType:"brewhouse",durationMinutes:60,output:1000,variableCost:50};
