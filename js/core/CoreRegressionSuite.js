@@ -23,6 +23,9 @@ import { runPlayerMarketDialogShapeTest } from "./PlayerMarketDialog.js";
 import { runLandConstructionExpansionTest } from "./LandConstructionExpansionSystem.js";
 import { runWarehouseConstructionExpansionTest } from "./WarehouseConstructionExpansionSystem.js";
 import { runProgressiveBuildingExpansionTest } from "./ProgressiveBuildingExpansionSystem.js";
+import { runPremiumEntitlementTest } from "./PremiumEntitlementSystem.js";
+import { runConstructionQueueTest } from "./ConstructionQueueSystem.js";
+import { runConstructionPremiumCoinTest } from "./ConstructionPremiumCoinSystem.js";
 
 function runBottleWasherCompatibilityTest(){
  runIndustryEquipmentCatalogSupplementTest();
@@ -56,6 +59,9 @@ export function runCoreRegressionSuite(){
  run("Land Construction",()=>runLandConstructionExpansionTest());
  run("Warehouse Construction",()=>runWarehouseConstructionExpansionTest());
  run("Progressive Building Expansion",()=>runProgressiveBuildingExpansionTest());
+ run("Premium Entitlements",()=>runPremiumEntitlementTest());
+ run("Premium Construction Queue",()=>runConstructionQueueTest());
+ run("Coin Time Reduction",()=>runConstructionPremiumCoinTest());
  run("Bottle Washer Compatibility",()=>runBottleWasherCompatibilityTest());
  run("Equipment Level Visibility",()=>runEquipmentLevelVisibilityTest());
  run("Duplicate Equipment Repair",()=>runDuplicateEquipmentRepairTest());
