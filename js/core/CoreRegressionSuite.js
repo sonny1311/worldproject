@@ -32,6 +32,10 @@ import { runLiveTrafficRoutingTest } from "./LiveTrafficRoutingSystem.js";
 import { runLiveTrafficDeliveryIntegrationTest } from "./LiveTrafficDeliveryIntegration.js";
 import { runBusinessUpgradeTest } from "./BusinessUpgradeSystem.js";
 import { runRewardedAdSystemTest } from "./RewardedAdSystem.js";
+import { runRewardedAdUIIntegrationTest } from "./RewardedAdUIIntegration.js";
+import { runTimeValueUtilsTest } from "./TimeValueUtils.js";
+import { runActiveOperationsOverviewTest } from "./ActiveOperationsOverview.js";
+import { runActiveOperationsUIFilterTest } from "./ActiveOperationsOverviewUI.js";
 
 function runBottleWasherCompatibilityTest(){runIndustryEquipmentCatalogSupplementTest();const small={type:"Brauerei",buildingState:{equipment:[{id:"micro_bottle_washer"}]}},fillerOnly={type:"Brauerei",buildingState:{equipment:[{id:"filling_line"}]}};if(!machineRequirementSatisfied(small,"bottle_washer"))throw new Error("Kleine Flaschenwaschanlage erfüllt Waschmaschinenbedarf nicht");if(machineRequirementSatisfied(fillerOnly,"bottle_washer"))throw new Error("Abfüllanlage darf Flaschenwaschanlage nicht ersetzen");return true;}
 function runEquipmentLevelVisibilityTest(){const company={type:"Brauerei",money:50000,growth:{xp:0,level:1,researchPoints:0,research:[],expansions:[],milestones:[]},buildingState:{equipment:[]}};const visible=visibleEquipmentMarketplace(company).map(x=>x.id);if(!visible.includes("micro_bottle_washer"))throw new Error("Kleine Flaschenwaschanlage fehlt auf Betriebslevel 1");if(visible.includes("bottle_washer"))throw new Error("Große Flaschenwaschanlage ist vor Betriebslevel 5 sichtbar");return true;}
@@ -46,7 +50,11 @@ export function runCoreRegressionSuite(){
  run("Business Expansion Effects",()=>runBusinessExpansionOperationalEffectsTest());
  run("Unified Expansion Entry",()=>runBusinessExpansionTest());
  run("Timed Business Upgrades",()=>runBusinessUpgradeTest());
+ run("Persisted Timer Values",()=>runTimeValueUtilsTest());
+ run("Active Operations Reload",()=>runActiveOperationsOverviewTest());
+ run("Active Operations Filter",()=>runActiveOperationsUIFilterTest());
  run("Rewarded Ads",()=>runRewardedAdSystemTest());
+ run("Rewarded Ads Reload UI",()=>runRewardedAdUIIntegrationTest());
  run("Dashboard Priority Hints",()=>runDashboardPriorityHintsTest());
  run("Land Construction",()=>runLandConstructionExpansionTest());
  run("Warehouse Construction",()=>runWarehouseConstructionExpansionTest());
@@ -70,5 +78,4 @@ export function runCoreRegressionSuite(){
  const activeCompany=window.worldPlayerCompany;if(activeCompany&&typeof activeCompany==="object"&&Object.keys(activeCompany).length>0)run("Persistence Reload",()=>persistenceReloadHealth(activeCompany));
  const failed=results.filter(r=>!r.success),success=failed.length===0,passed=results.length-failed.length,score=Math.round(passed/Math.max(1,results.length)*100);const summary={success,score,passed,total:results.length,failed:failed.map(x=>({name:x.name,error:x.error||x.value?.failed||null})),results,ranAt:Date.now()};console[success?"log":"error"](success?`✅ WORLDPROJECT CORE HEALTH ${score}/100`:`❌ WORLDPROJECT CORE HEALTH ${score}/100`,summary);window.worldCoreRegression=summary;window.worldProjectHealth=summary;return summary;
 }
-runCoreRegressionSuite();
-window.addEventListener("worldproject:company-switched",()=>setTimeout(()=>runCoreRegressionSuite(),0));
+runCoreRegressionSuite();window.addEventListener("worldproject:company-switched",()=>setTimeout(()=>runCoreRegressionSuite(),0));
