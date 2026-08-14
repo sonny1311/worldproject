@@ -3,6 +3,7 @@
 import { runOperationalConsistency } from './OperationalConsistencyGuard.js';
 import { processMachineMaintenance } from './MachineMaintenanceSystem.js';
 import { processUrgentOrders } from './UrgentCustomerOrderSystem.js';
+import { processArrivedMarketGoods } from './PlayerMarketGoodsDelivery.js';
 
 let lastRun=0;
 export function refreshTimedSystemsOnResume({force=false,now=Date.now()}={}){
@@ -10,7 +11,7 @@ export function refreshTimedSystemsOnResume({force=false,now=Date.now()}={}){
  try{window.worldTimedBusinessUpgrades?.process?.();}catch(error){console.warn('Ausbau-Refresh nach Rueckkehr fehlgeschlagen',error);}
  try{window.worldRewardedAdUI?.refresh?.();}catch(error){console.warn('Werbe-Refresh nach Rueckkehr fehlgeschlagen',error);}
  try{window.worldLiveTraffic?.refresh?.();}catch(error){console.warn('Verkehrs-Refresh nach Rueckkehr fehlgeschlagen',error);}
- try{const company=window.worldPlayerCompany;if(company){processMachineMaintenance(company,now);processUrgentOrders(company,now);runOperationalConsistency(company,now);}}catch(error){console.warn('Betriebs-Konsistenz nach Rueckkehr fehlgeschlagen',error);}
+ try{const company=window.worldPlayerCompany;if(company){processMachineMaintenance(company,now);processUrgentOrders(company,now);processArrivedMarketGoods(company,now);runOperationalConsistency(company,now);}}catch(error){console.warn('Betriebs-Konsistenz nach Rueckkehr fehlgeschlagen',error);}
  window.dispatchEvent(new CustomEvent('world:runtime-resumed',{detail:{at:now}}));
  return true;
 }
