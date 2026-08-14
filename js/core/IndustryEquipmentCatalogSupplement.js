@@ -15,12 +15,13 @@ function addEquipment(type,item){
   return true;
 }
 
-addEquipment('Brauerei',{id:'micro_bottle_washer',name:'Kleine Flaschenwaschanlage',price:1800,required:false,room:'production',capacity:250,capacityUnit:'Flaschen/h',description:'Kleine Anlage für Rücklaufflaschen. Reinigt gebrauchte 0,33-l- und 0,50-l-Flaschen für die erneute Abfüllung.'});
-addEquipment('Brauerei',{id:'bottle_washer',name:'Flaschenwaschanlage',price:8500,required:false,room:'production',capacity:1000,capacityUnit:'Flaschen/h',description:'Professionelle Flaschenreinigung für größere Mehrwegmengen.'});
+addEquipment('Brauerei',{id:'micro_bottle_washer',name:'Kleine Flaschenwaschanlage',price:1800,required:false,requiredLevel:1,room:'production',capacity:250,capacityUnit:'Flaschen/h',description:'Kleine Anlage für Rücklaufflaschen. Reinigt gebrauchte 0,33-l- und 0,50-l-Flaschen für die erneute Abfüllung.'});
+addEquipment('Brauerei',{id:'bottle_washer',name:'Flaschenwaschanlage',price:8500,required:false,requiredLevel:5,room:'production',capacity:1000,capacityUnit:'Flaschen/h',description:'Professionelle Flaschenreinigung für größere Mehrwegmengen.'});
 
 export function runIndustryEquipmentCatalogSupplementTest(){
-  const ids=(IndustryProfiles.Brauerei?.equipment||[]).map(x=>x.id);
+  const items=IndustryProfiles.Brauerei?.equipment||[],ids=items.map(x=>x.id);
   if(!ids.includes('micro_bottle_washer')||!ids.includes('bottle_washer'))throw new Error('Flaschenwaschanlagen fehlen im Brauerei-Maschinenkatalog');
+  if(items.find(x=>x.id==='micro_bottle_washer')?.requiredLevel!==1||items.find(x=>x.id==='bottle_washer')?.requiredLevel!==5)throw new Error('Freischaltstufen der Flaschenwaschanlagen sind fehlerhaft');
   return true;
 }
 
