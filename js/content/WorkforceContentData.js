@@ -6,7 +6,7 @@ export const WorkforceContent={
   {id:"brew_master",label:"Braumeister",industries:["brewery","Getränke"],baseWageMonthly:4100,skills:["brewhouse","fermentation","brewery_quality","production_release"],requiredFor:["beer_production"],mandatoryForIndustry:true},
   {id:"brewer",label:"Brauer",industries:["brewery","Getränke"],baseWageMonthly:3200,skills:["brewhouse","fermentation"]},
   {id:"cellar_worker",label:"Keller-/Gärmitarbeiter",industries:["brewery","Getränke"],baseWageMonthly:3050,skills:["fermentation","brewery_quality"]},
-  {id:"packaging_operator",label:"Abfüll-/Verpackungsmitarbeiter",industries:["brewery","Getränke","beverage"],baseWageMonthly:2950,skills:["machine","packing"]},
+  {id:"packaging_operator",label:"Abfüll-/Verpackungsmitarbeiter",industries:["brewery","Getränke","beverage"],baseWageMonthly:2950,skills:["machine","packing","bottle_washing"]},
   {id:"machine_operator",label:"Maschinenführer",industries:["brewery","Getränke","carpentry","bakery","butcher","food","mechanical","metal","plastic"],baseWageMonthly:3000,skills:["machine"]},
   {id:"warehouse_worker",label:"Lagerist",industries:["*"],baseWageMonthly:2850,skills:["warehouse"]},
   {id:"driver",label:"Fahrer",industries:["*"],baseWageMonthly:3000,skills:["transport"]},
