@@ -27,6 +27,7 @@ import "./core/MachinePurchaseTabIntegration.js";
 import "./core/ProductionReadinessPremiumNavigationV2.js";
 import "./core/ProductionQueueLimitIntegration.js";
 import "./core/CommercialFulfillmentGameplayBridge.js";
+import "./core/PlayerMarketDialog.js";
 import "./core/DashboardUsabilityIntegration.js";
 import "./core/DashboardFinanceLedgerIntegration.js";
 import "./core/BusinessExpansionOperationalEffectsIntegration.js";
