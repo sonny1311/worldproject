@@ -43,6 +43,7 @@ import "./core/DashboardFinanceLedgerIntegration.js";
 import "./core/BusinessExpansionOperationalEffectsIntegration.js";
 import "./core/LongDialogUsabilityIntegration.js";
 import "./core/WarehouseSpaceRuntimeGuard.js";
+import "./core/GameActionFeedbackIntegration.js";
 import "./core/GameSaveStatusIntegration.js";
 import "./core/PremiumExtraPackageUIIntegration.js";
 import "./core/InGameAdminAccessIntegration.js";
