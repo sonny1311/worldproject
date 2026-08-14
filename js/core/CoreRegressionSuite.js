@@ -76,7 +76,7 @@ export function runCoreRegressionSuite(){
  run("Live Delivery Routing",()=>runLiveTrafficDeliveryIntegrationTest());
  run("Bottle Washer Compatibility",()=>runBottleWasherCompatibilityTest());
  run("Equipment Level Visibility",()=>runEquipmentLevelVisibilityTest());
- run("Duplicate Equipment Repair",()=>runDuplicateIndustryEquipmentRepairTest());
+ run("Duplicate Equipment Repair",()=>runDuplicateEquipmentRepairTest());
  run("Workforce Machine Assignment",()=>runWorkforceMachineAssignmentTest());
  run("Customer Delivery Quantity",()=>runCustomerOrderPresentationTest());
  run("Warehouse Clearance Sale",()=>runWarehouseClearanceSaleTest());
