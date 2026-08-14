@@ -74,6 +74,7 @@ import "./core/ActiveOperationsOverviewUI.js";
 import "./core/TimedBusinessUpgradeUI.js";
 import "./core/RewardedAdUIIntegration.js";
 import "./core/GameResumeRefreshIntegration.js";
+import "./core/PremiumDailyCoinRuntimeIntegration.js";
 import "./core/GameRuntimeErrorBoundary.js";
 import "./core/GameFinishPolishRegression.js";
 import "./core/PremiumExtraPackageUIIntegration.js";
