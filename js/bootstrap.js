@@ -15,6 +15,7 @@ import "./core/ProductionProgressIntegration.js";
 import "./core/BottlingSizeSelectionIntegration.js";
 import "./core/ProductionStatusBannerIntegration.js";
 import "./core/MachineStaffingOverviewIntegration.js";
+import "./core/MachineStaffingHireLinkIntegration.js";
 import "./core/ProductionReadinessChecklistView.js";
 import "./core/ProductionReadinessPremiumNavigationV2.js";
 import "./core/DashboardSummaryNavigationIntegration.js";
