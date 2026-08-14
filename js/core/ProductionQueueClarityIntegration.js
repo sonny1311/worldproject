@@ -47,7 +47,7 @@ function describe(dialog,company,job,now=Date.now()){
   if(status==='queued'){
     const plan=currentPlan(dialog,job),reasons=[];
     const missing=missingLabels(dialog,plan);if(missing.length)reasons.push(`Material fehlt: ${missing.join(', ')}`);
-    if(plan&&!plan.machineAvailable)reasons.push('benötigte Maschine ist nicht frei oder nicht betriebsbereit');
+    if(plan?.machineConditionBlocked)reasons.push(`Maschinenzustand kritisch (${Math.round(Number(plan.machineCondition||0))} %) – Wartung erforderlich`);else if(plan&&!plan.machineAvailable)reasons.push('benötigte Maschine ist nicht frei oder nicht betriebsbereit');
     if(dialog.staffingAllows&&!dialog.staffingAllows(company,job.recipe))reasons.push('benötigte Fachkraft fehlt');
     return reasons.length
       ?{tone:'waiting',title:'🟡 Eingeplant – wartet auf Voraussetzung',detail:reasons.join(' · '),progress:0}
