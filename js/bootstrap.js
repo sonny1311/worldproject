@@ -26,6 +26,7 @@ import "./core/ProductionReadinessPremiumNavigationV2.js";
 import "./core/ProductionQueueLimitIntegration.js";
 import "./core/CommercialFulfillmentGameplayBridge.js";
 import "./core/DashboardUsabilityIntegration.js";
+import "./core/DashboardFinanceLedgerIntegration.js";
 import "./core/BusinessExpansionOperationalEffectsIntegration.js";
 import "./core/LongDialogUsabilityIntegration.js";
 import "./core/CoreRegressionSuite.js";
