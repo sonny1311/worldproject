@@ -1,0 +1,6 @@
+// WorldProject - sichtbarer Ruf im Unternehmensdashboard.
+import { EconomyDashboard } from './EconomyDashboard.js';
+import { reputationSummary } from './ReputationSystem.js';
+const p=EconomyDashboard.prototype;
+if(!p.__worldReputationDashboard){p.__worldReputationDashboard=true;const old=p.render;p.render=function(panel){const result=old.call(this,panel);if(this.company?.setupPhase&&this.company.setupPhase!=='operating')return result;const summary=panel.children?.[1],r=reputationSummary(this.company);if(summary&&summary.style?.display==='grid'&&!summary.querySelector('[data-reputation-card]')){const card=this.card('⭐ Ruf');card.dataset.reputationCard='1';const value=this.el('div',`${Math.round(r.score)} / 100 · ${r.level.label}`);value.style.fontWeight='800';const bar=this.el('div');Object.assign(bar.style,{height:'7px',marginTop:'8px',borderRadius:'999px',background:'rgba(255,255,255,.16)',overflow:'hidden'});const fill=this.el('div');Object.assign(fill.style,{height:'100%',width:`${r.score}%`,background:'currentColor',opacity:'.75'});bar.append(fill);card.append(value,bar,this.small('Pünktliche und zuverlässige Aufträge verbessern deinen Ruf und schalten bessere Chancen frei.'));summary.append(card);}return result;};}
+export function runReputationDashboardTest(){return typeof reputationSummary==='function';}
