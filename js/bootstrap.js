@@ -39,6 +39,7 @@ import "./core/DashboardFinanceLedgerIntegration.js";
 import "./core/BusinessExpansionOperationalEffectsIntegration.js";
 import "./core/LongDialogUsabilityIntegration.js";
 import "./core/WarehouseSpaceRuntimeGuard.js";
+import "./core/InGameAdminAccessIntegration.js";
 import "./core/CoreRegressionSuite.js";
 import { runAllIndustryPlayabilityAudit } from "./core/AllIndustryPlayabilityAudit.js";
 import { runAllIndustryEconomyHealth } from "./core/AllIndustryEconomyBootstrap.js";
