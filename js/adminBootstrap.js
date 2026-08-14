@@ -6,6 +6,7 @@ import { AdminWorkspaceController } from "./core/AdminWorkspaceController.js";
 import { mountAdminConsole } from "./core/AdminConsoleUI.js";
 import { runAdminRegressionTest } from "./core/AdminRegressionTest.js";
 import "./core/AdminConsoleSectionViews.js";
+import "./core/AdminConsoleActionViews.js";
 import "./core/AdminDashboardData.js";
 import "./core/ModerationCaseSystem.js";
 import "./core/LiveOpsSystem.js";
