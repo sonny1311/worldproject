@@ -13,6 +13,7 @@ import { runAdminSupplierNpcRegression } from "./core/AdminSupplierNpcRegression
 import { runAdminSupportSlaRegression } from "./core/AdminSupportSlaRegression.js";
 import { runAdminProductAwardRegression } from "./core/AdminProductAwardRegression.js";
 import { runAdminSystemHealthRegression } from "./core/AdminSystemHealthRegression.js";
+import { runAdminModuleIntegrityRegression } from "./core/AdminModuleIntegrityRegression.js";
 import "./core/AdminConsoleSectionViews.js";
 import "./core/AdminConsoleActionViews.js";
 import "./core/AdminAuditAnalytics.js";
@@ -45,7 +46,7 @@ import "./core/AllianceLaunchGuard.js";
 function blank(){return{success:false,passed:0,total:0,failed:[{error:"nicht ausgeführt"}]};}
 function runAdminStartupRegressions(){
   const auditCheckpoint=adminControlSystem.auditLog.length;
-  let regression=blank(),auditRegression=blank(),roleRegression=blank(),currencyRegression=blank(),operationsExpansionRegression=blank(),supplierNpcRegression=blank(),supportSlaRegression=blank(),productAwardRegression=blank(),systemHealthRegression=blank();
+  let regression=blank(),auditRegression=blank(),roleRegression=blank(),currencyRegression=blank(),operationsExpansionRegression=blank(),supplierNpcRegression=blank(),supportSlaRegression=blank(),productAwardRegression=blank(),systemHealthRegression=blank(),moduleIntegrityRegression=blank();
   try{
     regression=runAdminRegressionTest();
     auditRegression=runAdminAuditRegression();
@@ -56,7 +57,8 @@ function runAdminStartupRegressions(){
     supportSlaRegression=runAdminSupportSlaRegression();
     productAwardRegression=runAdminProductAwardRegression();
     systemHealthRegression=runAdminSystemHealthRegression();
-    return {regression,auditRegression,roleRegression,currencyRegression,operationsExpansionRegression,supplierNpcRegression,supportSlaRegression,productAwardRegression,systemHealthRegression};
+    moduleIntegrityRegression=runAdminModuleIntegrityRegression();
+    return {regression,auditRegression,roleRegression,currencyRegression,operationsExpansionRegression,supplierNpcRegression,supportSlaRegression,productAwardRegression,systemHealthRegression,moduleIntegrityRegression};
   } finally {
     if(adminControlSystem.auditLog.length>auditCheckpoint)adminControlSystem.auditLog.splice(auditCheckpoint);
   }
