@@ -2,6 +2,7 @@
 // Keine Dialoge; nur reproduzierbare Logiktests mit klarer Fehlerliste.
 import "../content/ContentBootstrap.js";
 import { runTransportGameplayIntegrationTest } from "./TransportGameplayIntegration.js";
+import { runTransportCoinTimeReductionTest } from "./TransportCoinTimeReductionSystem.js";
 import { runAdvancedEconomyTest } from "./AdvancedEconomySystem.js";
 import { SupplyOrderSystem, WarehouseSystem } from "./OperationalSupplyChainSystem.js";
 import { runOperationalSupplyChainRegressionTest } from "./OperationalSupplyChainRegressionTest.js";
@@ -59,6 +60,7 @@ function runDuplicateEquipmentRepairTest(){const company={money:1000,buildingSta
 export function runCoreRegressionSuite(){
  const results=[],run=(name,fn)=>{try{const value=fn();const success=value===true||value?.success===true;results.push({name,success,value});if(!success)console.error(`❌ CORE-REGRESSION ${name}`,value);}catch(error){results.push({name,success:false,error:error?.message||String(error)});console.error(`❌ CORE-REGRESSION ${name}`,error);}};
  run("Transport",()=>runTransportGameplayIntegrationTest());
+ run("Transport Coin Reduction",()=>runTransportCoinTimeReductionTest());
  run("Advanced Economy",()=>runAdvancedEconomyTest());
  run("Operational Supply 25",()=>runOperationalSupplyChainRegressionTest());
  run("Supply Transactions",()=>runOperationalSupplyTransactionTest({SupplyOrderSystem,WarehouseSystem,supplier:worldContentRegistry.get("suppliers","brew_malt_regional")}));
