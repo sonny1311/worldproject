@@ -6,19 +6,26 @@ import { worldContentRegistry } from './ContentRegistry.js';
 export const EURO_PALLET=Object.freeze({label:'Europalette',lengthMm:1200,widthMm:800,areaSqm:.96});
 const RULES=Object.freeze({
   caps:{packSize:20000,spacePerPack:1,label:'20.000 Kronkorken / Europalette'},
+  crown_cap:{packSize:20000,spacePerPack:1,label:'20.000 Kronkorken / Europalette'},
   labels:{packSize:20000,spacePerPack:1,label:'20.000 Etiketten / Europalette'},
+  label_033:{packSize:20000,spacePerPack:1,label:'20.000 Etiketten / Europalette'},
   labels_050:{packSize:20000,spacePerPack:1,label:'20.000 Etiketten / Europalette'},
   bottles:{packSize:300,spacePerPack:1,label:'300 Leerflaschen / Europalette'},
+  bottle_033:{packSize:300,spacePerPack:1,label:'300 Leerflaschen / Europalette'},
   clean_bottles:{packSize:300,spacePerPack:1,label:'300 Leerflaschen / Europalette'},
   dirty_bottles:{packSize:300,spacePerPack:1,label:'300 Leerflaschen / Europalette'},
   bottles_050:{packSize:300,spacePerPack:1,label:'300 Leerflaschen / Europalette'},
   clean_bottles_050:{packSize:300,spacePerPack:1,label:'300 Leerflaschen / Europalette'},
   dirty_bottles_050:{packSize:300,spacePerPack:1,label:'300 Leerflaschen / Europalette'},
   malt:{packSize:750,spacePerPack:1,label:'ca. 750 kg Sackware / Europalette'},
+  malt_kg:{packSize:750,spacePerPack:1,label:'ca. 750 kg Sackware / Europalette'},
   hops:{packSize:500,spacePerPack:1,label:'ca. 500 kg Hopfen / Europalette'},
+  hops_kg:{packSize:500,spacePerPack:1,label:'ca. 500 kg Hopfen / Europalette'},
   yeast:{packSize:400,spacePerPack:1,label:'ca. 400 kg Hefegebinde / Europalette'},
+  yeast_kg:{packSize:400,spacePerPack:1,label:'ca. 400 kg Hefegebinde / Europalette'},
   bottle_wash_chem:{packSize:600,spacePerPack:1,label:'ca. 600 kg Chemiegebinde / Europalette'},
   water:{packSize:1000,spacePerPack:1,label:'1.000 l IBC / Palettenstellplatz'},
+  water_l:{packSize:1000,spacePerPack:1,label:'1.000 l IBC / Palettenstellplatz'},
   beer_bulk_pils:{packSize:1000,spacePerPack:1,label:'1.000 l Tank-/IBC-Äquivalent'},
   beer_bulk_lager:{packSize:1000,spacePerPack:1,label:'1.000 l Tank-/IBC-Äquivalent'},
   softwood:{packSize:1.5,spacePerPack:1,label:'ca. 1,5 m³ Holz / Stellplatz'},
@@ -73,9 +80,9 @@ if(!proto.__worldRealisticWarehouseSpaceIntegrated){
 
 export function runWarehouseSpaceIntegrationTest(){
   const near=(a,b)=>Math.abs(a-b)<1e-9;
-  if(!near(storageSpaceFor('caps',20000),1))throw new Error('20.000 Kronkorken müssen 1 Europalette belegen');
-  if(!near(storageSpaceFor('bottles',300),1))throw new Error('300 Leerflaschen müssen 1 Europalette belegen');
-  if(!near(storageSpaceFor('yeast',1),.0025))throw new Error('1 kg Hefe darf keinen ganzen Lagerplatz belegen');
+  if(!near(storageSpaceFor('caps',20000),1)||!near(storageSpaceFor('crown_cap',20000),1))throw new Error('20.000 Kronkorken müssen 1 Europalette belegen');
+  if(!near(storageSpaceFor('bottles',300),1)||!near(storageSpaceFor('bottle_033',300),1))throw new Error('300 Leerflaschen müssen 1 Europalette belegen');
+  if(!near(storageSpaceFor('yeast',1),.0025)||!near(storageSpaceFor('yeast_kg',1),.0025))throw new Error('1 kg Hefe darf keinen ganzen Lagerplatz belegen');
   if(!near(storageSpaceFor('beer_pils_033',600),1))throw new Error('600 fertige Getränkeflaschen müssen 1 Europalette belegen');
   const wh=new WarehouseSystem({raw:10,packaging:100,finished:10,cold:10});wh.stock.packaging.caps=20000;wh.stock.packaging.bottles=300;wh.stock.cold.yeast=1;if(!near(wh.used('packaging'),2))throw new Error('Palettenfaktor Verpackung fehlerhaft');if(!near(wh.used('cold'),.0025))throw new Error('Teilpaletten werden nicht korrekt gerechnet');return true;
 }
