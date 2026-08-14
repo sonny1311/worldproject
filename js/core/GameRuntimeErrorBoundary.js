@@ -1,0 +1,11 @@
+// WorldProject – spielerfreundliche Fehlergrenze fuer unerwartete Laufzeitfehler.
+import { feedback } from './GameActionFeedbackIntegration.js';
+const MAX=50,errors=[];let lastSignature='',lastAt=0;
+function safeText(v,max=800){return String(v??'').slice(0,max);}
+function record(kind,error,meta={}){const message=safeText(error?.message||error||'Unbekannter Fehler'),stack=safeText(error?.stack||'',2400),signature=`${kind}:${message}:${meta.source||''}:${meta.line||''}`;const now=Date.now();if(signature===lastSignature&&now-lastAt<3000)return null;lastSignature=signature;lastAt=now;const row={id:`runtime-${now}-${Math.random().toString(36).slice(2,6)}`,at:now,kind,message,stack,source:safeText(meta.source||''),line:Number(meta.line||0)||null,column:Number(meta.column||0)||null,companyId:window.worldPlayerCompany?.serverCompanyId||window.worldPlayerCompany?.id||null};errors.push(row);if(errors.length>MAX)errors.splice(0,errors.length-MAX);window.worldRuntimeErrors=errors;window.dispatchEvent(new CustomEvent('world:runtime-error-recorded',{detail:row}));return row;}
+function notify(row){if(!row)return;feedback('Es ist ein unerwarteter Fehler aufgetreten. Dein Spielstand wird weiter automatisch gesichert. Bitte die letzte Aktion notfalls erneut versuchen.',{type:'error',title:'Spiel-Fehler',duration:6500});}
+export function installRuntimeErrorBoundary(){if(typeof window==='undefined')return false;window.addEventListener('error',e=>{const msg=String(e.message||'');if(/ResizeObserver loop/i.test(msg))return;notify(record('error',e.error||msg,{source:e.filename,line:e.lineno,column:e.colno}));});window.addEventListener('unhandledrejection',e=>notify(record('promise',e.reason)));return true;}
+export function runtimeErrorReport(){return{count:errors.length,last:errors.at(-1)||null,errors:[...errors]};}
+export function clearRuntimeErrors(){errors.length=0;return true;}
+export function runRuntimeErrorBoundaryTest(){const before=errors.length,row=record('test',new Error('Regressionstest'),{source:'test'});if(!row||errors.length!==before+1)throw new Error('Runtime-Fehlerprotokoll fehlerhaft');errors.pop();return true;}
+if(typeof window!=='undefined'){window.worldRuntimeErrorBoundary={report:runtimeErrorReport,clear:clearRuntimeErrors,runTest:runRuntimeErrorBoundaryTest};installRuntimeErrorBoundary();}
