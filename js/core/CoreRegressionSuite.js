@@ -26,6 +26,7 @@ import { runLandConstructionExpansionTest } from "./LandConstructionExpansionSys
 import { runWarehouseConstructionExpansionTest } from "./WarehouseConstructionExpansionSystem.js";
 import { runProgressiveBuildingExpansionTest } from "./ProgressiveBuildingExpansionSystem.js";
 import { runPremiumEntitlementTest } from "./PremiumEntitlementSystem.js";
+import { runPremiumDailyCoinTest } from "./PremiumDailyCoinSystem.js";
 import { runConstructionQueueTest } from "./ConstructionQueueSystem.js";
 import { runConstructionPremiumCoinTest } from "./ConstructionPremiumCoinSystem.js";
 import { runLiveTrafficRoutingTest } from "./LiveTrafficRoutingSystem.js";
@@ -84,6 +85,7 @@ export function runCoreRegressionSuite(){
  run("Warehouse Construction",()=>runWarehouseConstructionExpansionTest());
  run("Progressive Building Expansion",()=>runProgressiveBuildingExpansionTest());
  run("Premium Entitlements",()=>runPremiumEntitlementTest());
+ run("Premium Plus Daily Coins",()=>runPremiumDailyCoinTest());
  run("Premium Construction Queue",()=>runConstructionQueueTest());
  run("Coin Time Reduction",()=>runConstructionPremiumCoinTest());
  run("Verified Live Traffic",()=>runLiveTrafficRoutingTest());
