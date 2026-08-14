@@ -93,6 +93,7 @@ import "./core/InGameAdminAccessIntegration.js";
 import "./core/DeveloperSecondBusinessTestUnlock.js";
 import "./core/BusinessPortfolioIsolationRegression.js";
 import "./core/ConnectedIndustryEconomyRegression.js";
+import { runIndustryChainPresentationTest } from "./core/IndustryChainPresentation.js";
 import "./core/CoreRegressionSuite.js";
 import { runAllIndustryPlayabilityAudit } from "./core/AllIndustryPlayabilityAudit.js";
 import { runAllIndustryEconomyHealth } from "./core/AllIndustryEconomyBootstrap.js";
@@ -100,6 +101,7 @@ import { gameAccessGate } from "./core/AccountMultiplayerIntegration.js";
 async function startWorldProject(){
     await gameAccessGate.ensureAccess();
     console.log("✅ ACCOUNT FREIGEGEBEN – SPIEL WIRD GELADEN");
+    window.worldIndustryChainPresentationHealth=runIndustryChainPresentationTest();
     window.worldProjectIndustryHealth=runAllIndustryPlayabilityAudit();
     window.worldAllIndustryEconomyHealth=runAllIndustryEconomyHealth();
     await import("./main.js");
