@@ -11,6 +11,7 @@ function addQuickActions(dashboard,panel){
   quickButton('📦 Einkauf',()=>dashboard.openOperationalSupplyChain?.('buy')),
   quickButton('🚚 Lieferungen',()=>dashboard.openOperationalSupplyChain?.('deliveries')),
   quickButton('🏭 Produktion',()=>dashboard.openOperationalSupplyChain?.('production')),
+  quickButton('☀️ Solar',()=>window.openWorldSolarMarket?.()),
   quickButton('⚙️ Ausbau',()=>window.worldTimedBusinessUpgrades?.open?.()),
   quickButton('🚦 Verkehr',()=>window.worldLiveTraffic?.open?.()),
   quickButton('📋 Läuft gerade',()=>window.worldActiveOperationsUI?.open?.())
