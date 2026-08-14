@@ -36,21 +36,35 @@ export function overdueOperations(company={},now=Date.now()){
  return rows;
 }
 
+export function operationalHealth(company={},now=Date.now()){
+ const overdue=overdueOperations(company,now);
+ const machines=company.productionMachines||[];
+ const criticalMachines=machines.filter(m=>n(m.condition,100)<=25);
+ const maintenanceDue=machines.filter(m=>n(m.condition,100)>25&&n(m.condition,100)<=45);
+ const vehicles=company.vehicles||[];
+ const criticalVehicles=vehicles.filter(v=>n(v.condition,100)<=25||String(v.status||'')==='workshop_required');
+ const maintenanceVehicles=vehicles.filter(v=>n(v.condition,100)>25&&n(v.condition,100)<=45||String(v.status||'')==='maintenance_due');
+ const openCustomers=(company.customerOrders||[]).filter(o=>active(o.status)&&Math.max(0,n(o.quantity??o.amount)-n(o.delivered??o.deliveredQuantity??o.fulfilledQuantity??o.deliveredAmount)-n(o.reserved))>0);
+ const lateCustomers=openCustomers.filter(o=>{const due=Number(o.dueAt??o.deliveryDeadline??o.deadline);const parsed=Number.isFinite(due)&&due>0?due:Date.parse(o.dueAt??o.deliveryDeadline??o.deadline);return Number.isFinite(parsed)&&parsed<now;});
+ return {overdue,criticalMachines,maintenanceDue,criticalVehicles,maintenanceVehicles,openCustomers,lateCustomers,attentionCount:overdue.length+criticalMachines.length+criticalVehicles.length+lateCustomers.length};
+}
+
 export function runOperationalConsistency(company={},now=Date.now()){
  const reservationRepairs=reconcileCustomerReservations(company);
  const machineRepairs=reconcileMachineStatuses(company);
- const overdue=overdueOperations(company,now);
- return {success:true,reservationRepairs,machineRepairs,overdueCount:overdue.length,overdue};
+ const health=operationalHealth(company,now);
+ return {success:true,reservationRepairs,machineRepairs,overdueCount:health.overdue.length,overdue:health.overdue,health};
 }
 
 export function runOperationalConsistencyGuardTest(){
  const now=Date.parse('2026-08-14T10:00:00Z');
- const c={customerOrders:[{id:1,status:'open',quantity:100,delivered:100,reserved:20}],productionMachines:[{id:'m1',status:'producing',condition:80}],productionQueue:[{id:2,status:'completed',machineId:'m1',completeAt:now-1000}],supplierOrders:[{id:3,status:'in_transit',arrivalAt:now-5000}]};
+ const c={customerOrders:[{id:1,status:'open',quantity:100,delivered:100,reserved:20},{id:4,status:'open',quantity:10,delivered:0,dueAt:now-1000}],productionMachines:[{id:'m1',status:'producing',condition:80},{id:'m2',status:'available',condition:20}],productionQueue:[{id:2,status:'completed',machineId:'m1',completeAt:now-1000}],supplierOrders:[{id:3,status:'in_transit',arrivalAt:now-5000}]};
  const r=runOperationalConsistency(c,now);
  if(c.customerOrders[0].reserved!==0||c.customerOrders[0].status!=='completed')throw new Error('Kundenauftrag wurde nicht konsistent repariert');
  if(c.productionMachines[0].status!=='available')throw new Error('Verwaister Maschinenstatus wurde nicht repariert');
  if(r.overdueCount!==1)throw new Error('Ueberfaelliger Vorgang wurde nicht erkannt');
+ if(r.health.criticalMachines.length!==1||r.health.lateCustomers.length!==1)throw new Error('Betriebszustand erkennt kritische Wartung/Auftraege nicht');
  return true;
 }
 
-if(typeof window!=='undefined')window.worldOperationalConsistency={run:runOperationalConsistency,overdue:overdueOperations,test:runOperationalConsistencyGuardTest};
+if(typeof window!=='undefined')window.worldOperationalConsistency={run:runOperationalConsistency,health:operationalHealth,overdue:overdueOperations,test:runOperationalConsistencyGuardTest};
