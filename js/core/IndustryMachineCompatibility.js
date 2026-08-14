@@ -2,7 +2,7 @@
 import { getIndustryProfile } from "./IndustryCatalog.js";
 
 const ALIASES={
- brewery:{brewhouse:["brew_kettle"],bottle_washer:["filling_line"]},
+ brewery:{brewhouse:["brew_kettle"],bottle_washer:["micro_bottle_washer","bottle_washer"]},
  carpentry:{woodshop:["panel_saw","workbench"]},
  farm:{field_line:["tractor","cultivator","seeder"]},
  beverage:{mixing_tank:["mixing_tank","water_treatment"],filling_line:["filling_line"]},
