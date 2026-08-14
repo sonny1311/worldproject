@@ -1,0 +1,11 @@
+// WorldProject – zentrale Systemgesundheit für den Adminbereich.
+import { currencyHealth } from './CurrencyLocalizationSystem.js';
+import { supplierAdminHealth } from './AdminSupplierControl.js';
+import { npcControlHealth } from './AdminNpcControl.js';
+import { supportSlaSnapshot } from './AdminSupportSlaSystem.js';
+import { adminFleetHealth } from './AdminOperationsOverview.js';
+import { adminHealthSnapshot } from './AdminSecurityIntegration.js';
+import { releaseControlKpis } from './AdminReleaseControl.js';
+const issue=(code,severity,message,details={})=>({code,severity,message,details});
+export function adminSystemHealth({world={},companies=[]}={}){const currency=currencyHealth(world),suppliers=supplierAdminHealth(world),npc=npcControlHealth(world),support=supportSlaSnapshot(world),fleet=adminFleetHealth(companies),security=adminHealthSnapshot(),release=releaseControlKpis(world),issues=[];if(!currency.success)issues.push(issue('currency_missing','warning',`${currency.missing.length} Währungskurse fehlen`,{missing:currency.missing}));if(suppliers.total&&!suppliers.success)issues.push(issue('suppliers','critical','Keine aktiven Lieferanten verfügbar',suppliers));if(suppliers.unreliable)issues.push(issue('supplier_reliability','warning',`${suppliers.unreliable} Lieferanten sind unzuverlässig`,suppliers));if(!npc.success)issues.push(issue('npc_invalid','warning',`${npc.invalid} NPC-Datensätze sind ungültig`,npc));if(support.breached)issues.push(issue('support_sla','critical',`${support.breached} Supportfälle überschreiten das SLA`,support));if(fleet.criticalIssues)issues.push(issue('company_health','critical',`${fleet.criticalIssues} kritische Betriebsprobleme erkannt`,fleet));if(!security.success)issues.push(issue('admin_security','critical','Admin-Sicherheitsprüfung meldet Fehler',security));if(release.maintenance)issues.push(issue('maintenance','warning','Release-Wartungsmodus ist aktiv',release));const critical=issues.filter(x=>x.severity==='critical').length,warnings=issues.filter(x=>x.severity==='warning').length,score=Math.max(0,100-critical*20-warnings*5);return{success:critical===0,score,critical,warnings,issues,currency,suppliers,npc,support,fleet,security,release,generatedAt:Date.now()};}
+if(typeof window!=='undefined')window.worldAdminSystemHealth=adminSystemHealth;
