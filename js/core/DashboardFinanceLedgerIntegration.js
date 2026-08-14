@@ -10,7 +10,8 @@ const TYPE_LABELS={
   vehicle_service:'Fahrzeugwartung',
   fleet_trip:'Fahrtkosten',
   customer_sale:'Kundenverkauf',
-  mission_sale:'Verkauf / Auftrag'
+  mission_sale:'Verkauf / Auftrag',
+  warehouse_clearance_sale:'Lager-Notverkauf'
 };
 const n=v=>Number.isFinite(Number(v))?Number(v):0;
 const ts=v=>{const t=v instanceof Date?v.getTime():Number(v)||Date.parse(v);return Number.isFinite(t)?t:0;};
@@ -49,9 +50,9 @@ if(!proto.__worldFinanceLedgerIntegrated){
 }
 
 export function runDashboardFinanceLedgerTest(){
-  const c={financialLog:[{type:'supplier_order',amount:-100,time:1},{type:'customer_sale',amount:160,time:2}]};
-  const totals=financeLedgerTotals(c),rows=financeLedgerRows(c,{limit:2});
-  if(totals.income!==160||totals.expense!==100||rows[0].label!=='Kundenverkauf')throw new Error('Ein-/Ausgabenliste fehlerhaft');
+  const c={financialLog:[{type:'supplier_order',amount:-100,time:1},{type:'customer_sale',amount:160,time:2},{type:'warehouse_clearance_sale',amount:20,time:3}]};
+  const totals=financeLedgerTotals(c),rows=financeLedgerRows(c,{limit:3});
+  if(totals.income!==180||totals.expense!==100||rows[0].label!=='Lager-Notverkauf')throw new Error('Ein-/Ausgabenliste fehlerhaft');
   return true;
 }
 if(typeof window!=='undefined')window.runDashboardFinanceLedgerTest=runDashboardFinanceLedgerTest;
