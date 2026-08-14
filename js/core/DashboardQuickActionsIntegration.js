@@ -9,6 +9,7 @@ function addQuickActions(dashboard,panel){
  const bar=document.createElement('div');bar.dataset.worldDashboardQuickActions='1';Object.assign(bar.style,{display:'flex',flexWrap:'wrap',gap:'7px',padding:'10px',margin:'8px 0 14px',background:'rgba(15,23,42,.82)',border:'1px solid #334155',borderRadius:'11px',position:'sticky',top:'58px',zIndex:'25'});
  bar.append(
   quickButton('📦 Einkauf',()=>dashboard.openOperationalSupplyChain?.('buy')),
+  quickButton('🏬 Lager',()=>dashboard.openOperationalSupplyChain?.('warehouse')),
   quickButton('🚚 Lieferungen',()=>dashboard.openOperationalSupplyChain?.('deliveries')),
   quickButton('🏭 Produktion',()=>dashboard.openOperationalSupplyChain?.('production')),
   quickButton('☀️ Solar',()=>window.openWorldSolarMarket?.()),
