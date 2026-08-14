@@ -23,10 +23,24 @@ import "./core/AllianceSystem.js";
 import "./core/AllianceAdvancedSystem.js";
 import "./core/AllianceLaunchGuard.js";
 
+function runAdminStartupRegressions(){
+  const auditCheckpoint=adminControlSystem.auditLog.length;
+  let regression={success:false,passed:0,total:0,failed:[{error:"nicht ausgeführt"}]};
+  let auditRegression={success:false,passed:0,total:0,failed:[{error:"nicht ausgeführt"}]};
+  try{
+    regression=runAdminRegressionTest();
+    auditRegression=runAdminAuditRegression();
+    return {regression,auditRegression};
+  } finally {
+    // Regressionen benutzen absichtlich echte Admin-APIs. Ihre Test-Auditzeilen dürfen
+    // niemals im produktiven Auditlog des Adminbereichs verbleiben.
+    if(adminControlSystem.auditLog.length>auditCheckpoint)adminControlSystem.auditLog.splice(auditCheckpoint);
+  }
+}
+
 export async function startWorldProjectAdmin({actor,context={},loadAdminUi=null,mount=null}={}){
   adminControlSystem.requireAdmin(actor);
-  const regression=runAdminRegressionTest();
-  const auditRegression=runAdminAuditRegression();
+  const {regression,auditRegression}=runAdminStartupRegressions();
   if(!regression.success)console.error("❌ WORLDPROJECT ADMIN-REGRESSION",regression);
   if(!auditRegression.success)console.error("❌ WORLDPROJECT ADMIN-AUDIT-REGRESSION",auditRegression);
   const frontend=createAdminFrontend(actor,adminControlSystem,context);
