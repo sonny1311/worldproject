@@ -1,6 +1,12 @@
 // WorldProject - zentrale Admin-Grundstruktur
 export const AdminSections=Object.freeze({OVERVIEW:"overview",PLAYERS:"players",COMPANIES:"companies",ECONOMY:"economy",MARKET:"market",PRODUCTS:"products",SUPPLIERS:"suppliers",PRODUCTION:"production",TRANSPORT:"transport",ALLIANCES:"alliances",PREMIUM:"premium",COINS:"coins",AWARDS:"awards",LANGUAGES:"languages",NPC:"npc",SUPPORT:"support",MODERATION:"moderation",LIVEOPS:"liveops",SYSTEM:"system",AUDIT:"audit"});
-export const AdminRoles=Object.freeze({owner:["*"],admin:["players.read","players.write","companies.read","companies.write","economy.write","market.write","production.write","transport.write","alliances.write","support.write","moderation.write","liveops.write","system.write","audit.read"],moderator:["players.read","companies.read","support.write","moderation.write","audit.read"],support:["players.read","companies.read","support.write"],economy:["companies.read","economy.write","market.write","products.write","suppliers.write"]});
+export const AdminRoles=Object.freeze({
+ owner:["*"],
+ admin:["players.read","players.write","companies.read","companies.write","economy.write","market.write","products.write","suppliers.write","production.write","transport.write","alliances.write","premium.write","coins.write","awards.write","languages.write","npc.write","support.write","moderation.write","liveops.write","system.write","world.write","audit.read"],
+ moderator:["players.read","companies.read","support.write","moderation.write","audit.read"],
+ support:["players.read","companies.read","support.write"],
+ economy:["companies.read","economy.write","market.write","products.write","suppliers.write","audit.read"]
+});
 const n=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;
 export class AdminControlSystem{
  constructor(){this.settings={marketFeeRate:.005,npcLiquidityEnabled:true,npcMinDelayMinutes:60,npcMaxDelayMinutes:2880,premiumEnabled:true,maintenanceMode:false,alliancesEnabled:false,globalChatEnabled:false,registrationEnabled:true};this.auditLog=[];this.staff=[];}
