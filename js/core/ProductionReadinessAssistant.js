@@ -4,8 +4,10 @@ import { equipmentForMachineRequirement } from './IndustryEquipmentMarketplace.j
 import { missingRequiredRoles, availableCandidates } from './IndustryRecruitmentAvailability.js';
 import { founderCanCoverJob } from './MicroBusinessStarterSystem.js';
 import { formatMoney } from './CurrencyPresentationBridge.js';
+import { worldContentRegistry } from './ContentRegistry.js';
 
 const n = (v, d = 0) => Number.isFinite(Number(v)) ? Number(v) : d;
+const contentLabel = (type, id) => worldContentRegistry.get(type, id)?.label || String(id ?? '').replace(/_/g, ' ');
 
 export function productionReadinessVM(company, recipeId, amount) {
   const r = productionReadiness(company, recipeId, amount);
@@ -16,13 +18,14 @@ export function productionReadinessVM(company, recipeId, amount) {
     const estimatedMissingCost = missing * (suppliers[0] ? n(suppliers[0].prices?.[id]) : 0);
     return {
       id,
+      label: contentLabel('materials', id),
       required: n(required),
       have,
       missing,
       ok: missing <= 1e-9,
       suppliers: suppliers.map(s => {
         const unitPrice = n(s.prices?.[id]);
-        return { id: s.id, name: s.name || s.id, unitPrice, unitPriceFormatted: formatMoney(unitPrice) };
+        return { id: s.id, name: s.name || s.label || s.id, unitPrice, unitPriceFormatted: formatMoney(unitPrice) };
       }),
       estimatedMissingCost,
       estimatedMissingCostFormatted: formatMoney(estimatedMissingCost)
@@ -44,14 +47,16 @@ export function productionReadinessVM(company, recipeId, amount) {
   const ready = r.ready && !roleMissing;
   const estimatedProcurementCost = materials.reduce((s, x) => s + x.estimatedMissingCost, 0);
   const blockingReasons = [
-    ...(machineMissing ? [`Maschine fehlt: ${r.recipe.machineType}`] : []),
+    ...(machineMissing ? [`Maschine fehlt: ${contentLabel('machines', r.recipe.machineType)}`] : []),
     ...(roleMissing ? [`Fachkraft fehlt: ${candidate?.label || requiredRole}`] : []),
-    ...materials.filter(x => !x.ok).map(x => `${x.id}: ${x.missing.toFixed(2)} fehlen`)
+    ...materials.filter(x => !x.ok).map(x => `${x.label}: ${x.missing.toFixed(2)} fehlen`)
   ];
 
   return {
     recipeId,
+    recipeLabel: r.recipe.label || contentLabel('recipes', recipeId),
     product: r.recipe.product,
+    productLabel: contentLabel('products', r.recipe.product),
     amount: n(amount),
     unit: r.recipe.outputUnit || r.recipe.unit || 'Einheiten',
     materials,
@@ -90,7 +95,7 @@ export function recommendedProductionFixes(company, recipeId, amount) {
       supplierId: m.suppliers[0]?.id || null,
       estimatedCost: m.estimatedMissingCost,
       estimatedCostFormatted: formatMoney(m.estimatedMissingCost),
-      label: `${m.missing.toFixed(2)} ${m.id} beschaffen`
+      label: `${m.missing.toFixed(2)} ${m.label} beschaffen`
     });
   }
 
