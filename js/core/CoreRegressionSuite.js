@@ -18,6 +18,8 @@ import { runWorkforceMachineAssignmentTest } from "./WorkforceMachineAssignmentI
 import { runCustomerOrderPresentationTest } from "./CustomerOrderFulfillmentUIBridge.js";
 import { runWarehouseClearanceSaleTest } from "./WarehouseClearanceSaleIntegration.js";
 import { runWarehouseSpaceRuntimeGuardTest } from "./WarehouseSpaceRuntimeGuard.js";
+import { runPlayerMarketOperationalStockTest } from "./PlayerMarketExchange.js";
+import { runPlayerMarketDialogShapeTest } from "./PlayerMarketDialog.js";
 
 function runBottleWasherCompatibilityTest(){
  runIndustryEquipmentCatalogSupplementTest();
@@ -55,6 +57,8 @@ export function runCoreRegressionSuite(){
  run("Customer Delivery Quantity",()=>runCustomerOrderPresentationTest());
  run("Warehouse Clearance Sale",()=>runWarehouseClearanceSaleTest());
  run("Warehouse Pack Space",()=>runWarehouseSpaceRuntimeGuardTest());
+ run("Player Market Operational Stock",()=>runPlayerMarketOperationalStockTest());
+ run("Player Market Categories",()=>runPlayerMarketDialogShapeTest());
  run("Finance Ledger",()=>runDashboardFinanceLedgerTest());
  run("Extended Core",()=>runExtendedCoreRegression());
  const activeCompany=window.worldPlayerCompany;
