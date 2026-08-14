@@ -51,6 +51,7 @@ import "./core/GameActionFeedbackIntegration.js";
 import "./core/GameActionFeedbackBridge.js";
 import "./core/GameSaveStatusIntegration.js";
 import "./core/ActiveOperationsOverviewUI.js";
+import "./core/TimedBusinessUpgradeUI.js";
 import "./core/GameRuntimeErrorBoundary.js";
 import "./core/GameFinishPolishRegression.js";
 import "./core/PremiumExtraPackageUIIntegration.js";
