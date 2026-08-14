@@ -26,6 +26,7 @@ import "./core/ExpansionRuntimeRegression.js";
 import "./core/EconomyDashboardSetupIntegration.js";
 import "./core/ConnectedEconomyGameplay.js";
 import "./core/ReputationDashboardIntegration.js";
+import "./core/UrgentCustomerOrderUIIntegration.js";
 import "./core/LiveTrafficDeliveryIntegration.js";
 import "./core/CustomerOrderPricingIntegration.js";
 import "./core/ProductionProgressIntegration.js";
