@@ -20,6 +20,9 @@ import { runWarehouseClearanceSaleTest } from "./WarehouseClearanceSaleIntegrati
 import { runWarehouseSpaceRuntimeGuardTest } from "./WarehouseSpaceRuntimeGuard.js";
 import { runPlayerMarketOperationalStockTest } from "./PlayerMarketExchange.js";
 import { runPlayerMarketDialogShapeTest } from "./PlayerMarketDialog.js";
+import { runLandConstructionExpansionTest } from "./LandConstructionExpansionSystem.js";
+import { runWarehouseConstructionExpansionTest } from "./WarehouseConstructionExpansionSystem.js";
+import { runProgressiveBuildingExpansionTest } from "./ProgressiveBuildingExpansionSystem.js";
 
 function runBottleWasherCompatibilityTest(){
  runIndustryEquipmentCatalogSupplementTest();
@@ -50,6 +53,9 @@ export function runCoreRegressionSuite(){
  run("Operational Supply 25",()=>runOperationalSupplyChainRegressionTest());
  run("Supply Transactions",()=>runOperationalSupplyTransactionTest({SupplyOrderSystem,WarehouseSystem,supplier:worldContentRegistry.get("suppliers","brew_malt_regional")}));
  run("Business Expansion Effects",()=>runBusinessExpansionOperationalEffectsTest());
+ run("Land Construction",()=>runLandConstructionExpansionTest());
+ run("Warehouse Construction",()=>runWarehouseConstructionExpansionTest());
+ run("Progressive Building Expansion",()=>runProgressiveBuildingExpansionTest());
  run("Bottle Washer Compatibility",()=>runBottleWasherCompatibilityTest());
  run("Equipment Level Visibility",()=>runEquipmentLevelVisibilityTest());
  run("Duplicate Equipment Repair",()=>runDuplicateEquipmentRepairTest());
