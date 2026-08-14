@@ -56,6 +56,8 @@ import "./core/ProductionReadinessPremiumNavigationV2.js";
 import "./core/ProductionQueueLimitIntegration.js";
 import "./core/CommercialFulfillmentGameplayBridge.js";
 import "./core/PlayerMarketDialog.js";
+import "./core/PlayerCoinMarketExchange.js";
+import "./core/PlayerCoinMarketUIIntegration.js";
 import "./core/PlayerMarketNavigationIntegration.js";
 import "./core/PlayerMarketFleetBridgeIntegration.js";
 import "./core/DashboardUsabilityIntegration.js";
@@ -86,7 +88,7 @@ import { runAllIndustryEconomyHealth } from "./core/AllIndustryEconomyBootstrap.
 import { gameAccessGate } from "./core/AccountMultiplayerIntegration.js";
 async function startWorldProject(){
     await gameAccessGate.ensureAccess();
-    console.log("✅ ACCOUNT FREIGEGEN – SPIEL WIRD GELADEN");
+    console.log("✅ ACCOUNT FREIGEGEBEN – SPIEL WIRD GELADEN");
     window.worldProjectIndustryHealth=runAllIndustryPlayabilityAudit();
     window.worldAllIndustryEconomyHealth=runAllIndustryEconomyHealth();
     await import("./main.js");
