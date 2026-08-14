@@ -19,7 +19,7 @@ function addChecklist(dashboard, card) {
     const item = dashboard.el('div');
     item.className='production-readiness-row';
     Object.assign(item.style,{marginTop:'9px',paddingTop:'8px',borderTop:'1px solid rgba(255,255,255,.08)'});
-    const title=dashboard.el('div',`${row.ready?'✅':'🔧'} ${String(row.product).replace(/_/g,' ')}`);
+    const title=dashboard.el('div',`${row.ready?'✅':'🔧'} ${row.productLabel}`);
     title.style.fontWeight='700';
     item.append(title);
     for (const stage of row.stages) item.append(dashboard.small(`${icon(stage.state)} ${stage.label}`));
