@@ -1,0 +1,12 @@
+// WorldProject – zentrale dunkle Kopfzeile mit Spielstatus statt Entwickler-HUD.
+import { Renderer } from './Renderer.js';
+const money=v=>Number(v||0).toLocaleString('de-DE',{minimumFractionDigits:0,maximumFractionDigits:2});
+function company(){return window.worldPlayerCompany||window.worldEngine?.company||null;}
+function ensureStatus(){let s=document.querySelector('[data-world-command-status]');if(s)return s;s=document.createElement('div');s.dataset.worldCommandStatus='1';Object.assign(s.style,{position:'fixed',top:'76px',left:'16px',right:'16px',zIndex:'43000',display:'flex',gap:'18px',alignItems:'center',flexWrap:'wrap',padding:'8px 12px',background:'rgba(15,23,42,.94)',border:'1px solid #334155',borderRadius:'12px',color:'#f8fafc',fontWeight:'700',boxShadow:'0 6px 20px rgba(0,0,0,.28)',pointerEvents:'none'});document.body.append(s);return s;}
+export function refreshCommandCenterStatus(){if(typeof document==='undefined')return false;const c=company(),s=ensureStatus();if(!c){s.innerHTML='<span>🏢 Betrieb wird geladen …</span>';return true;}const land=Number(c.land?.size??c.expansionState?.landSqm??c.landSqm??0);s.innerHTML=`<span>🏢 ${String(c.name||'Betrieb')}</span><span>💶 Geld: ${money(c.money)} €</span><span>🪙 Coins: ${Number(c.coins||0).toLocaleString('de-DE')}</span><span>🌍 Grundstück: ${land.toLocaleString('de-DE')} m²</span>`;return true;}
+export function installDarkCommandCenterHeader(){if(typeof document==='undefined')return false;
+ // Das alte Entwickler-HUD (World Engine / FPS / Feld / Terrain) wird fuer Spieler nicht mehr gezeichnet.
+ if(!Renderer.prototype.__worldPlayerHudPolished){Renderer.prototype.__worldPlayerHudPolished=true;Renderer.prototype.drawHud=function(){};}
+ const update=()=>refreshCommandCenterStatus();for(const ev of ['worldproject:company-loaded','worldproject:company-founded','worldproject:company-switched','worldproject:company-activated','world:game-state-dirty','world:server-balances-changed'])window.addEventListener(ev,update);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',update);else update();setInterval(update,3000);return true;}
+export function runDarkCommandCenterHeaderTest(){return typeof Renderer.prototype.drawHud==='function';}
+if(typeof window!=='undefined'){window.worldDarkCommandCenter={refresh:refreshCommandCenterStatus,install:installDarkCommandCenterHeader,runTest:runDarkCommandCenterHeaderTest};installDarkCommandCenterHeader();}
