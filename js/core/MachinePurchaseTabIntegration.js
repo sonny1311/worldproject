@@ -3,7 +3,7 @@
 import './IndustryEquipmentCatalogSupplement.js';
 import { OperationalSupplyChainDialog } from './OperationalSupplyChainDialog.js';
 import { EconomyDashboard } from './EconomyDashboard.js';
-import { visibleEquipmentMarketplace,buyIndustryEquipment,persistIndustryEquipment } from './IndustryEquipmentMarketplace.js';
+import { visibleEquipmentMarketplace,buyIndustryEquipment,persistIndustryEquipment,repairDuplicateIndustryEquipment } from './IndustryEquipmentMarketplace.js';
 import { recipesForCompany } from './OperationalSupplyChainSystem.js';
 import { compatibleMachineIds } from './IndustryMachineCompatibility.js';
 
@@ -45,6 +45,7 @@ function purchaseSnapshot(company){
     setup_phase:company.setup_phase,
     buildingState:structuredClone(company.buildingState||company.building_state||{}),
     costLedger:structuredClone(company.costLedger||[]),
+    financialLog:structuredClone(company.financialLog||[]),
     requestIds:structuredClone(company.equipmentPurchaseRequestIds||[])
   };
 }
@@ -54,12 +55,19 @@ function restorePurchaseSnapshot(company,snapshot){
   company.setup_phase=snapshot.setup_phase;
   company.buildingState=snapshot.buildingState;
   company.costLedger=snapshot.costLedger;
+  company.financialLog=snapshot.financialLog;
   company.equipmentPurchaseRequestIds=snapshot.requestIds;
 }
 
 function renderMachineMarket(dialog,panel,company,recipes){
+  const repair=repairDuplicateIndustryEquipment(company);
+  if(repair.repaired){
+    persistIndustryEquipment(company).catch(error=>console.error('❌ Maschinen-Duplikatkorrektur konnte nicht gespeichert werden',error));
+    window.dispatchEvent(new CustomEvent('world:game-state-dirty',{detail:{reason:'equipment-duplicate-repair',removed:repair.removed.length,refund:repair.refund}}));
+  }
   const section=dialog.el('section');section.className='world-machine-purchase-section';
   section.append(dialog.el('h3','Maschinenkauf'),dialog.el('p','Hier findest du zentral alle Maschinen und Betriebsausstattungen, die für deinen aktuellen Betriebslevel freigeschaltet sind. Fehlende Produktionsmaschinen werden direkt mit ihrem Einsatzzweck angezeigt.'));
+  if(repair.repaired){const note=dialog.el('div',`✅ ${repair.removed.length} doppelte Maschineninstanz${repair.removed.length===1?'':'en'} bereinigt${repair.refund>0?` · ${dialog.money(repair.refund)} zurückerstattet`:''}.`);Object.assign(note.style,{padding:'9px 11px',margin:'8px 0',borderRadius:'8px',background:'#eef8ee',fontWeight:'700'});section.append(note);}
   const market=visibleEquipmentMarketplace(company).sort((a,b)=>Number(b.required&&!b.owned)-Number(a.required&&!a.owned)||Number(a.owned)-Number(b.owned)||Number(a.price||0)-Number(b.price||0));
   if(!market.length){section.append(dialog.el('p','Für dieses Gewerbe sind auf deinem aktuellen Betriebslevel noch keine kaufbaren Maschinen verfügbar.'));panel.append(section);return;}
   for(const item of market){
