@@ -38,8 +38,6 @@ export function productionReadinessVM(company, recipeId, amount) {
   const founderCovers = Boolean(requiredRole && founderCanCoverJob(company, requiredRole));
   const missingRoles = new Set(missingRequiredRoles(company));
 
-  // Personal hängt von der zugehörigen Maschine/Anlage ab. Solange die Anlage fehlt,
-  // darf das Spiel keine nicht erfüllbare Personalaufgabe anzeigen oder als Blocker zählen.
   const workforceBlockedByMachine = Boolean(requiredRole && machineMissing);
   const roleMissing = Boolean(requiredRole && !workforceBlockedByMachine && !founderCovers && missingRoles.has(requiredRole));
   const candidate = roleMissing ? availableCandidates(company, { count: 12 }).find(x => x.role === requiredRole) : null;
@@ -88,6 +86,7 @@ export function recommendedProductionFixes(company, recipeId, amount) {
   const actions = [];
 
   for (const m of vm.missingMaterials) {
+    const supplierName=m.suppliers[0]?.name||null;
     actions.push({
       kind: 'procure',
       materialId: m.id,
@@ -95,7 +94,7 @@ export function recommendedProductionFixes(company, recipeId, amount) {
       supplierId: m.suppliers[0]?.id || null,
       estimatedCost: m.estimatedMissingCost,
       estimatedCostFormatted: formatMoney(m.estimatedMissingCost),
-      label: `${m.missing.toFixed(2)} ${m.label} beschaffen`
+      label: `${m.missing.toFixed(2)} ${m.label} beschaffen${supplierName?` · bei ${supplierName}`:''}`
     });
   }
 
@@ -112,7 +111,6 @@ export function recommendedProductionFixes(company, recipeId, amount) {
     }
   }
 
-  // Erst nach vorhandener Maschine wird Personal als konkrete Aktion angeboten.
   if (!vm.machine.missing && vm.workforce.missing) {
     actions.push({
       kind: 'hire',
