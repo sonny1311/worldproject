@@ -14,3 +14,5 @@ export function runBusinessPortfolioIsolationRegression(){
   if(target.serverCompanyId!==2||target.type!=='Mühle')throw new Error('Kernidentitaet des Zielbetriebs stimmt nicht');
   return {success:true};
 }
+
+try{const result=runBusinessPortfolioIsolationRegression();if(typeof window!=='undefined')window.worldBusinessPortfolioIsolationRegression=result;console.log('✅ MEHRBETRIEB-ZUSTANDSISOLATION',result);}catch(error){if(typeof window!=='undefined')window.worldBusinessPortfolioIsolationRegression={success:false,error:error?.message||String(error)};console.error('❌ MEHRBETRIEB-ZUSTANDSISOLATION',error);}
