@@ -17,6 +17,7 @@ import "./core/ProductionStatusBannerIntegration.js";
 import "./core/MachineStaffingOverviewIntegration.js";
 import "./core/MachineStaffingHireLinkIntegration.js";
 import "./core/WorkforceMachineAssignmentIntegration.js";
+import "./core/WorkforceAssignmentStatusIntegration.js";
 import "./core/ProductionReadinessChecklistView.js";
 import "./core/DashboardSummaryNavigationIntegration.js";
 import "./core/DashboardFinishedGoodsSummaryIntegration.js";
