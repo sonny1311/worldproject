@@ -11,6 +11,7 @@ import "./core/TransportGameplayIntegration.js";
 import "./core/CompanyEconomyIntegration.js";
 import "./core/WarehouseSpaceIntegration.js";
 import "./core/LegacyEconomyWarehouseSpaceBridge.js";
+import "./core/UnifiedOperationalStockBridge.js";
 import "./core/WarehousePackDisplayIntegration.js";
 import "./core/OperationalSupplyChainEquipmentIntegration.js";
 import "./core/MachineConditionProductionGuard.js";
