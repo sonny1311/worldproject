@@ -46,6 +46,7 @@ import "./core/WarehouseSpaceRuntimeGuard.js";
 import "./core/GameActionFeedbackIntegration.js";
 import "./core/GameActionFeedbackBridge.js";
 import "./core/GameSaveStatusIntegration.js";
+import "./core/ActiveOperationsOverviewUI.js";
 import "./core/PremiumExtraPackageUIIntegration.js";
 import "./core/InGameAdminAccessIntegration.js";
 import "./core/CoreRegressionSuite.js";
