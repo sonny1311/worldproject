@@ -10,6 +10,17 @@ import { runExtendedCoreRegression } from "./ExtendedCoreRegression.js";
 import { persistenceReloadHealth } from "./PersistenceReloadHealth.js";
 import { worldContentRegistry } from "./ContentRegistry.js";
 import { runBusinessExpansionOperationalEffectsTest } from "./BusinessExpansionOperationalEffectsIntegration.js";
+import { runIndustryEquipmentCatalogSupplementTest } from "./IndustryEquipmentCatalogSupplement.js";
+import { machineRequirementSatisfied } from "./IndustryMachineCompatibility.js";
+
+function runBottleWasherCompatibilityTest(){
+ runIndustryEquipmentCatalogSupplementTest();
+ const small={type:"Brauerei",buildingState:{equipment:[{id:"micro_bottle_washer"}]}};
+ const fillerOnly={type:"Brauerei",buildingState:{equipment:[{id:"filling_line"}]}};
+ if(!machineRequirementSatisfied(small,"bottle_washer"))throw new Error("Kleine Flaschenwaschanlage erfüllt Waschmaschinenbedarf nicht");
+ if(machineRequirementSatisfied(fillerOnly,"bottle_washer"))throw new Error("Abfüllanlage darf Flaschenwaschanlage nicht ersetzen");
+ return true;
+}
 
 export function runCoreRegressionSuite(){
  const results=[],run=(name,fn)=>{try{const value=fn();const success=value===true||value?.success===true;results.push({name,success,value});if(!success)console.error(`❌ CORE-REGRESSION ${name}`,value);}catch(error){results.push({name,success:false,error:error?.message||String(error)});console.error(`❌ CORE-REGRESSION ${name}`,error);}};
@@ -18,6 +29,7 @@ export function runCoreRegressionSuite(){
  run("Operational Supply 25",()=>runOperationalSupplyChainRegressionTest());
  run("Supply Transactions",()=>runOperationalSupplyTransactionTest({SupplyOrderSystem,WarehouseSystem,supplier:worldContentRegistry.get("suppliers","brew_malt_regional")}));
  run("Business Expansion Effects",()=>runBusinessExpansionOperationalEffectsTest());
+ run("Bottle Washer Compatibility",()=>runBottleWasherCompatibilityTest());
  run("Extended Core",()=>runExtendedCoreRegression());
  const activeCompany=window.worldPlayerCompany;
  if(activeCompany&&typeof activeCompany==="object"&&Object.keys(activeCompany).length>0)run("Persistence Reload",()=>persistenceReloadHealth(activeCompany));
