@@ -8,7 +8,8 @@ const economy=new AdvancedEconomySystem();
 const n=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;
 const company=()=>window.worldPlayerCompany||window.worldActiveServerCompany||window.worldEngine?.company||null;
 const orderProduct=o=>o?.productId||o?.product||o?.itemId||o?.outputId||'';
-const finishedAmount=(c,id)=>{try{if(window.worldUnifiedOperationalStock?.has?.(c))return Math.max(0,n(window.worldUnifiedOperationalStock.amount(c,id,{finished:true})));}catch{}return Math.max(0,n(c?.finishedGoods?.[id]));};
+const productAliases=id=>{const raw=String(id||'');const set=new Set([raw]);if(raw.endsWith('_bottle'))set.add(raw.replace(/_bottle$/,' bottle'));if(raw.endsWith(' bottle'))set.add(raw.replace(/ bottle$/,'_bottle'));if(raw==='lager033')set.add('lager033_bottle');if(raw==='lager033 bottle')set.add('lager033_bottle');if(raw==='pils033')set.add('pils033_bottle');return[...set].filter(Boolean);};
+const finishedAmount=(c,id)=>{const stock=c?.operationalSupplyState?.warehouseStock?.finished||{};let best=0;for(const key of productAliases(id)){best=Math.max(best,n(stock?.[key]),n(c?.finishedGoods?.[key]));try{if(window.worldUnifiedOperationalStock?.has?.(c))best=Math.max(best,n(window.worldUnifiedOperationalStock.amount(c,key,{finished:true})));}catch{}}return Math.max(0,best);};
 const cleanLabel=id=>{const raw=String(id||'Ware');const fixed={lager033_bottle:'Lagerbier 0,33 l',pils033_bottle:'Pils 0,33 l',lager050_bottle:'Lagerbier 0,50 l',pils050_bottle:'Pils 0,50 l'};return worldContentRegistry.get('products',raw)?.label||worldContentRegistry.get('materials',raw)?.label||fixed[raw]||raw.replace(/033/g,'0,33').replace(/050/g,'0,50').replace(/_?bottle/gi,' Flasche').replace(/_/g,' ').trim();};
 const openQty=o=>Math.max(0,n(o?.quantity??o?.amount)-n(o?.delivered??o?.deliveredQuantity??o?.fulfilledQuantity));
 
