@@ -7,6 +7,7 @@ import "./core/DarkMainNavigationIntegration.js";
 import "./core/DarkCommandCenterHeaderIntegration.js";
 import "./core/HomeOperationsDashboardIntegration.js";
 import "./core/HomeWarehouseAndPartialDeliveryIntegration.js";
+import "./core/CustomerOrderProductIdCompatibilityIntegration.js";
 import "./core/HomeDashboardViewportIntegration.js";
 import "./core/TransportVehicleCostIntegration.js";
 import "./core/TransportFuelTimeIntegration.js";
