@@ -32,13 +32,16 @@ export function persistenceReloadHealth(company){
    ['vehicles',snapshot.vehicles||[],restored.vehicles||[]],
    ['customerOrders',snapshot.customerOrders||[],restored.customerOrders||[]],
    ['supplierOrders',snapshot.supplierOrders||[],restored.supplierOrders||[]],
-   ['buildingState',serverCompany.building_state||{},restored.buildingState||{}]
+   ['buildingState',serverCompany.building_state||{},restored.buildingState||{}],
+   ['land',snapshot.land||{},restored.land||{}],
+   ['constructionSite',snapshot.constructionSite||{},restored.constructionSite||{}],
+   ['machineUpgradeJobs',snapshot.machineUpgradeJobs||[],restored.machineUpgradeJobs||[]],
+   ['warehouseExpansion',snapshot.warehouseExpansion||{},restored.warehouseExpansion||{}],
+   ['warehouseCapacity',Number(snapshot.warehouseCapacity||0),Number(restored.warehouseCapacity||0)]
   ];
   for(const [name,a,b] of want)checks.push({name,success:equal(a,b)});
   const sharedOrders=company.operationalSupplyState?.orders;
-  if(Array.isArray(sharedOrders)&&company.operationsState?.supplyOrders===sharedOrders){
-   checks.push({name:'sharedSupplyOrdersSerialized',success:equal(snapshot.operationalSupplyState?.orders||[],snapshot.operationsState?.supplyOrders||[])});
-  }
+  if(Array.isArray(sharedOrders)&&company.operationsState?.supplyOrders===sharedOrders){checks.push({name:'sharedSupplyOrdersSerialized',success:equal(snapshot.operationalSupplyState?.orders||[],snapshot.operationsState?.supplyOrders||[])});}
   const failed=checks.filter(x=>!x.success);return{success:failed.length===0,checks,failed,snapshot,restored};
  }finally{window.worldPlayerCompany=previous;}
 }
