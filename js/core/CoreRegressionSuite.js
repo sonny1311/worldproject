@@ -38,6 +38,7 @@ import { runActiveOperationsOverviewTest } from "./ActiveOperationsOverview.js";
 import { runActiveOperationsUIFilterTest } from "./ActiveOperationsOverviewUI.js";
 import { runOperationalConsistencyGuardTest } from "./OperationalConsistencyGuard.js";
 import { runOperationalAttentionFeedbackTest } from "./OperationalAttentionFeedbackIntegration.js";
+import { runMachineConditionProductionGuardTest } from "./MachineConditionProductionGuard.js";
 
 function runBottleWasherCompatibilityTest(){runIndustryEquipmentCatalogSupplementTest();const small={type:"Brauerei",buildingState:{equipment:[{id:"micro_bottle_washer"}]}},fillerOnly={type:"Brauerei",buildingState:{equipment:[{id:"filling_line"}]}};if(!machineRequirementSatisfied(small,"bottle_washer"))throw new Error("Kleine Flaschenwaschanlage erfüllt Waschmaschinenbedarf nicht");if(machineRequirementSatisfied(fillerOnly,"bottle_washer"))throw new Error("Abfüllanlage darf Flaschenwaschanlage nicht ersetzen");return true;}
 function runEquipmentLevelVisibilityTest(){const company={type:"Brauerei",money:50000,growth:{xp:0,level:1,researchPoints:0,research:[],expansions:[],milestones:[]},buildingState:{equipment:[]}};const visible=visibleEquipmentMarketplace(company).map(x=>x.id);if(!visible.includes("micro_bottle_washer"))throw new Error("Kleine Flaschenwaschanlage fehlt auf Betriebslevel 1");if(visible.includes("bottle_washer"))throw new Error("Große Flaschenwaschanlage ist vor Betriebslevel 5 sichtbar");return true;}
@@ -51,6 +52,7 @@ export function runCoreRegressionSuite(){
  run("Supply Transactions",()=>runOperationalSupplyTransactionTest({SupplyOrderSystem,WarehouseSystem,supplier:worldContentRegistry.get("suppliers","brew_malt_regional")}));
  run("Operational Consistency",()=>runOperationalConsistencyGuardTest());
  run("Operational Attention Feedback",()=>runOperationalAttentionFeedbackTest());
+ run("Machine Condition Production",()=>runMachineConditionProductionGuardTest());
  run("Business Expansion Effects",()=>runBusinessExpansionOperationalEffectsTest());
  run("Unified Expansion Entry",()=>runBusinessExpansionTest());
  run("Timed Business Upgrades",()=>runBusinessUpgradeTest());
