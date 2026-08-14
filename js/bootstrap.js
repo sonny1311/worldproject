@@ -16,6 +16,8 @@ import "./core/OperationalSupplyChainEquipmentIntegration.js";
 import "./core/MachineConditionProductionGuard.js";
 import "./core/MachineMaintenanceSystem.js";
 import "./core/MachineConditionVisibilityIntegration.js";
+import "./core/ReputationSystem.js";
+import "./core/UrgentCustomerOrderSystem.js";
 import "./core/UniversalOperationsDialog.js";
 import "./core/LandConstructionExpansionUIIntegration.js";
 import "./core/WarehouseExpansionUIIntegration.js";
