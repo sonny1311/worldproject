@@ -44,6 +44,7 @@ import "./core/PlayerMarketNavigationIntegration.js";
 import "./core/PlayerMarketFleetBridgeIntegration.js";
 import "./core/DashboardUsabilityIntegration.js";
 import "./core/DashboardQuickActionsIntegration.js";
+import "./core/DashboardPriorityHintsIntegration.js";
 import "./core/DashboardFinanceLedgerIntegration.js";
 import "./core/BusinessExpansionOperationalEffectsIntegration.js";
 import "./core/LongDialogUsabilityIntegration.js";
