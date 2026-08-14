@@ -26,6 +26,8 @@ import { runProgressiveBuildingExpansionTest } from "./ProgressiveBuildingExpans
 import { runPremiumEntitlementTest } from "./PremiumEntitlementSystem.js";
 import { runConstructionQueueTest } from "./ConstructionQueueSystem.js";
 import { runConstructionPremiumCoinTest } from "./ConstructionPremiumCoinSystem.js";
+import { runLiveTrafficRoutingTest } from "./LiveTrafficRoutingSystem.js";
+import { runLiveTrafficDeliveryIntegrationTest } from "./LiveTrafficDeliveryIntegration.js";
 
 function runBottleWasherCompatibilityTest(){
  runIndustryEquipmentCatalogSupplementTest();
@@ -62,6 +64,8 @@ export function runCoreRegressionSuite(){
  run("Premium Entitlements",()=>runPremiumEntitlementTest());
  run("Premium Construction Queue",()=>runConstructionQueueTest());
  run("Coin Time Reduction",()=>runConstructionPremiumCoinTest());
+ run("Verified Live Traffic",()=>runLiveTrafficRoutingTest());
+ run("Live Delivery Routing",()=>runLiveTrafficDeliveryIntegrationTest());
  run("Bottle Washer Compatibility",()=>runBottleWasherCompatibilityTest());
  run("Equipment Level Visibility",()=>runEquipmentLevelVisibilityTest());
  run("Duplicate Equipment Repair",()=>runDuplicateEquipmentRepairTest());
@@ -81,9 +85,5 @@ export function runCoreRegressionSuite(){
  window.worldCoreRegression=summary;window.worldProjectHealth=summary;
  return summary;
 }
-
-// Der Test ist rein logisch und oeffnet keine UI. Ein Lauf beim Bootstrap macht Regressionen sofort sichtbar.
 runCoreRegressionSuite();
-// Der echte Persistenztest braucht eine bereits aus dem Serverzustand hydrierte Firma.
-// Nach einem Firmenwechsel/Ladevorgang wird die Suite deshalb erneut ausgefuehrt.
 window.addEventListener("worldproject:company-switched",()=>setTimeout(()=>runCoreRegressionSuite(),0));
