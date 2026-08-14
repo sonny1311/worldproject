@@ -17,6 +17,7 @@ import { runDashboardFinanceLedgerTest } from "./DashboardFinanceLedgerIntegrati
 import { runWorkforceMachineAssignmentTest } from "./WorkforceMachineAssignmentIntegration.js";
 import { runCustomerOrderPresentationTest } from "./CustomerOrderFulfillmentUIBridge.js";
 import { runWarehouseClearanceSaleTest } from "./WarehouseClearanceSaleIntegration.js";
+import { runWarehouseSpaceRuntimeGuardTest } from "./WarehouseSpaceRuntimeGuard.js";
 
 function runBottleWasherCompatibilityTest(){
  runIndustryEquipmentCatalogSupplementTest();
@@ -53,6 +54,7 @@ export function runCoreRegressionSuite(){
  run("Workforce Machine Assignment",()=>runWorkforceMachineAssignmentTest());
  run("Customer Delivery Quantity",()=>runCustomerOrderPresentationTest());
  run("Warehouse Clearance Sale",()=>runWarehouseClearanceSaleTest());
+ run("Warehouse Pack Space",()=>runWarehouseSpaceRuntimeGuardTest());
  run("Finance Ledger",()=>runDashboardFinanceLedgerTest());
  run("Extended Core",()=>runExtendedCoreRegression());
  const activeCompany=window.worldPlayerCompany;
