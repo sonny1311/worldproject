@@ -1,7 +1,9 @@
-// WorldProject - verbindet die sichtbaren Betriebsausbaustufen mit dem bereits aktiven operativen Lager-/Produktionssystem.
-// Kein zweites Lager oder Produktionssystem: wir erweitern die vorhandenen Klassen und synchronisieren sie je aktivem Betrieb.
+// WorldProject - verbindet die sichtbaren Betriebsausbaustufen mit den bereits aktiven Fachsystemen.
+// Kein zweites Lager, Produktions-, Verkaufs- oder Verwaltungssystem: vorhandene Klassen werden synchron erweitert.
 import { WarehouseSystem, ProductionPlanner, SupplyOrderSystem } from "./OperationalSupplyChainSystem.js";
 import { OperationalSupplyChainDialog } from "./OperationalSupplyChainDialog.js";
+import { CommercialFulfillmentSystem } from "./CommercialFulfillmentSystem.js";
+import { BusinessGrowthIntegration } from "./BusinessGrowthIntegration.js";
 import { operationalModifiers } from "./BusinessExpansionSystem.js";
 
 const positiveMultiplier=(value,fallback=1)=>{
@@ -83,6 +85,30 @@ if(!SupplyOrderSystem.prototype.__worldExpansionLogisticsPatched){
  Object.defineProperty(SupplyOrderSystem.prototype,"__worldExpansionLogisticsPatched",{value:true});
 }
 
+if(!CommercialFulfillmentSystem.prototype.__worldExpansionQualityPatched){
+ const baseDeliver=CommercialFulfillmentSystem.prototype.deliver;
+ CommercialFulfillmentSystem.prototype.deliver=function(fulfillmentId,options={}){
+  const company=options?.company;
+  const bonus=company?expansionOperationalEffects(company).qualityBonus:0;
+  const baseQuality=Number(options?.quality??1);
+  const quality=Math.max(0,Math.min(2,(Number.isFinite(baseQuality)?baseQuality:1)+bonus));
+  return baseDeliver.call(this,fulfillmentId,{...options,quality});
+ };
+ Object.defineProperty(CommercialFulfillmentSystem.prototype,"__worldExpansionQualityPatched",{value:true});
+}
+
+if(!BusinessGrowthIntegration.prototype.__worldExpansionAdministrationPatched){
+ const baseMonthlyCosts=BusinessGrowthIntegration.prototype.monthlyExpansionCosts;
+ BusinessGrowthIntegration.prototype.monthlyExpansionCosts=function(){
+  const costs=baseMonthlyCosts.call(this);
+  const multiplier=expansionOperationalEffects(this.company).administrationMultiplier;
+  const baseAdministration=Math.max(0,Number(costs.administration)||0);
+  const administration=baseAdministration/multiplier;
+  return {...costs,baseAdministration,administration,administrationExpansionMultiplier:multiplier,total:Number(costs.total||0)-baseAdministration+administration};
+ };
+ Object.defineProperty(BusinessGrowthIntegration.prototype,"__worldExpansionAdministrationPatched",{value:true});
+}
+
 if(!OperationalSupplyChainDialog.prototype.__worldExpansionSyncPatched){
  const baseLoadState=OperationalSupplyChainDialog.prototype.loadState;
  OperationalSupplyChainDialog.prototype.loadState=function(company){
@@ -103,8 +129,8 @@ export function runBusinessExpansionOperationalEffectsTest(){
  const warehouse=new WarehouseSystem({raw:100,packaging:100,finished:100,cold:0});
  warehouse.businessExpansionStorageMultiplier=1.25;
  if(Math.abs(warehouse.capacity("finished")-125)>1e-9)throw new Error("Lagerausbau wirkt nicht auf operative Kapazität");
- const effects=expansionOperationalEffects({upgrades:{production:2,storage:3,efficiency:2,logistics:2}});
- if(!(effects.productionMultiplier>1)||!(effects.storageMultiplier>1)||!(effects.operatingCostMultiplier<1)||!(effects.logisticsMultiplier>1))throw new Error("Ausbaumultiplikatoren werden nicht korrekt berechnet");
+ const effects=expansionOperationalEffects({upgrades:{production:2,storage:3,efficiency:2,quality:2,logistics:2,administration:2}});
+ if(!(effects.productionMultiplier>1)||!(effects.storageMultiplier>1)||!(effects.operatingCostMultiplier<1)||!(effects.qualityBonus>0)||!(effects.logisticsMultiplier>1)||!(effects.administrationMultiplier>1))throw new Error("Ausbaumultiplikatoren werden nicht korrekt berechnet");
  return true;
 }
 
