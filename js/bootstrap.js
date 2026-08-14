@@ -50,6 +50,7 @@ import "./core/DashboardFinanceLedgerIntegration.js";
 import "./core/BusinessExpansionOperationalEffectsIntegration.js";
 import "./core/LongDialogUsabilityIntegration.js";
 import "./core/WarehouseSpaceRuntimeGuard.js";
+import "./core/OperationalConsistencyGuard.js";
 import "./core/GameActionFeedbackIntegration.js";
 import "./core/GameActionFeedbackBridge.js";
 import "./core/GameSaveStatusIntegration.js";
