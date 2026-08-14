@@ -1,12 +1,13 @@
 // WorldProject - Rewarded-Ads Kern.
 // Keine Belohnung ohne bestaetigte Vollansicht durch einen Werbeprovider.
-// Allgemeines Tageskontingent: 10 Anzeigen. Der konkrete allgemeine Reward bleibt konfigurierbar.
-// Zeit-Ads: bei laufender Produktion oder Betriebsausbau werden 0,5 % der RESTZEIT abgezogen.
+// Allgemeines Tageskontingent auf der Startseite: 10 Anzeigen.
+// Zeit-Ads erscheinen nur an laufenden Vorgaengen und reduzieren je Anzeige 0,5 % der AKTUELLEN Restzeit.
+// Maximal 5 Anzeigen je Vorgang (= nominell bis 2,5 %, tatsaechlich leicht weniger durch die fortlaufend kleinere Restzeit).
 
 export const RewardedAdConfig=Object.freeze({
  dailyGeneralAds:10,
  timeReductionRate:.005,
- maxTimeAdsPerJob:10,
+ maxTimeAdsPerJob:5,
  generalReward:null
 });
 
@@ -38,14 +39,14 @@ export class RewardedAdSystem{
  }
  resolveTimer(job){
   if(!job)return null;
-  for(const key of ['finishAt','completeAt','arrivalAt','endsAt']){const value=ts(job[key]);if(value>0)return{key,value};}
+  for(const key of ['finishAt','completeAt','arrivalAt','eta','endsAt']){const value=ts(job[key]);if(value>0)return{key,value};}
   return null;
  }
  timeAdState(job){const count=Math.max(0,num(job?.rewardedTimeAds));return{watched:count,remaining:Math.max(0,this.config.maxTimeAdsPerJob-count),total:this.config.maxTimeAdsPerJob,complete:count>=this.config.maxTimeAdsPerJob};}
  confirmTimeAd(company,job,{kind='job',providerReceipt=null,now=Date.now()}={}){
   if(!providerReceipt?.completed)throw new Error('Werbung wurde nicht vollständig bestätigt');
   const timer=this.resolveTimer(job);if(!timer)throw new Error('Für diesen Vorgang ist keine laufende Restzeit vorhanden');
-  const state=this.timeAdState(job);if(state.complete)throw new Error('Maximale Werbe-Zeitverkürzungen für diesen Vorgang erreicht');
+  const state=this.timeAdState(job);if(state.complete)throw new Error('Maximal 5 Werbungen für diesen Vorgang erreicht');
   const remaining=Math.max(0,timer.value-now);if(remaining<=0)throw new Error('Vorgang ist bereits abgeschlossen');
   const reduction=Math.max(1000,Math.floor(remaining*this.config.timeReductionRate));const next=Math.max(now,timer.value-reduction);job[timer.key]=job[timer.key] instanceof Date?new Date(next):next;job.rewardedTimeAds=state.watched+1;job.rewardedTimeReductionMs=num(job.rewardedTimeReductionMs)+reduction;
   const s=this.ensure(company,now);s.history.push({type:'time',kind,jobId:job.id||null,at:now,reductionMs:reduction,receiptId:providerReceipt.id||null});
@@ -55,7 +56,7 @@ export class RewardedAdSystem{
 }
 
 export function runRewardedAdSystemTest(){
- const system=new RewardedAdSystem(),company={},now=1_000_000,job={id:'p1',status:'running',finishAt:now+1000000};let rejected=false;try{system.confirmTimeAd(company,job,{providerReceipt:{completed:false},now});}catch{rejected=true;}if(!rejected)throw new Error('Unbestätigte Werbung wurde belohnt');const r=system.confirmTimeAd(company,job,{providerReceipt:{completed:true,id:'test'},now});if(r.reductionMs!==5000||job.finishAt!==now+995000)throw new Error('0,5%-Zeitverkürzung fehlerhaft');for(let i=0;i<10;i++)system.confirmGeneralAd(company,{providerReceipt:{completed:true,id:`g${i}`},now});if(!system.generalState(company,now).complete)throw new Error('10er-Werbeblock fehlerhaft');return true;
+ const system=new RewardedAdSystem(),company={},now=1_000_000,job={id:'p1',status:'running',finishAt:now+1000000};let rejected=false;try{system.confirmTimeAd(company,job,{providerReceipt:{completed:false},now});}catch{rejected=true;}if(!rejected)throw new Error('Unbestätigte Werbung wurde belohnt');const r=system.confirmTimeAd(company,job,{providerReceipt:{completed:true,id:'test'},now});if(r.reductionMs!==5000||job.finishAt!==now+995000)throw new Error('0,5%-Zeitverkürzung fehlerhaft');for(let i=1;i<5;i++)system.confirmTimeAd(company,job,{providerReceipt:{completed:true,id:`t${i}`},now});if(!system.timeAdState(job).complete)throw new Error('5er-Limit pro Vorgang fehlerhaft');for(let i=0;i<10;i++)system.confirmGeneralAd(company,{providerReceipt:{completed:true,id:`g${i}`},now});if(!system.generalState(company,now).complete)throw new Error('10er-Werbeblock fehlerhaft');return true;
 }
 
 if(typeof window!=='undefined')window.worldRewardedAds={system:new RewardedAdSystem(),config:RewardedAdConfig,runTest:runRewardedAdSystemTest};
