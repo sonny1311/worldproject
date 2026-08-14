@@ -16,6 +16,7 @@ import "./core/BottlingSizeSelectionIntegration.js";
 import "./core/ProductionStatusBannerIntegration.js";
 import "./core/MachineStaffingOverviewIntegration.js";
 import "./core/MachineStaffingHireLinkIntegration.js";
+import "./core/WorkforceMachineAssignmentIntegration.js";
 import "./core/ProductionReadinessChecklistView.js";
 import "./core/DashboardSummaryNavigationIntegration.js";
 import "./core/DashboardFinishedGoodsSummaryIntegration.js";
@@ -35,7 +36,7 @@ import { runAllIndustryEconomyHealth } from "./core/AllIndustryEconomyBootstrap.
 import { gameAccessGate } from "./core/AccountMultiplayerIntegration.js";
 async function startWorldProject(){
     await gameAccessGate.ensureAccess();
-    console.log("✅ ACCOUNT FREIGEGEBEN – SPIEL WIRD GELADEN");
+    console.log("✅ ACCOUNT FREIGEGEN – SPIEL WIRD GELADEN");
     window.worldProjectIndustryHealth=runAllIndustryPlayabilityAudit();
     window.worldAllIndustryEconomyHealth=runAllIndustryEconomyHealth();
     await import("./main.js");
