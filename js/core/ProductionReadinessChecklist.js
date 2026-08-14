@@ -18,6 +18,7 @@ export function productionReadinessChecklist(company) {
     return {
       recipeId: vm.recipeId,
       product: vm.product || vm.recipeId,
+      productLabel: vm.productLabel || vm.recipeLabel || text(vm.product || vm.recipeId),
       ready: Boolean(vm.ready),
       stages: [
         { id: 'machine', state: machineMissing ? 'missing' : 'ok', label: machineMissing ? `Anlage fehlt: ${text(machineLabel)}` : 'Anlage vorhanden' },
