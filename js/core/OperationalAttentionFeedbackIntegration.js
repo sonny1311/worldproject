@@ -1,0 +1,11 @@
+// WorldProject - meldet neue kritische Betriebsrisiken einmalig und unaufdringlich.
+import { operationalHealth } from './OperationalConsistencyGuard.js';
+import { feedback } from './GameActionFeedbackIntegration.js';
+
+let previous=new Set();
+function company(){return window.worldPlayerCompany||window.worldEconomyGameplay?.company||window.worldEngine?.company||null;}
+function keysFor(c){const h=operationalHealth(c||{}),rows=[];for(const x of h.overdue)rows.push([`overdue:${x.kind}:${x.row?.id??x.row?.instanceId??x.end}`,'Vorgang über geplanter Endzeit']);for(const m of h.criticalMachines)rows.push([`machine:${m.id}`,'Produktionsmaschine braucht dringend Wartung']);for(const v of h.criticalVehicles)rows.push([`vehicle:${v.id}`,'Fahrzeug ist nicht einsatzbereit']);for(const o of h.lateCustomers)rows.push([`customer:${o.id}`,'Kundenauftrag ist überfällig']);return rows;}
+export function refreshOperationalAttention({notify=true}={}){const c=company();if(!c)return{count:0,newCount:0};const rows=keysFor(c),current=new Set(rows.map(x=>x[0])),fresh=rows.filter(x=>!previous.has(x[0]));if(notify&&previous.size&&fresh.length){const labels=[...new Set(fresh.map(x=>x[1]))];feedback(labels.slice(0,2).join(' · ')+(labels.length>2?` · +${labels.length-2} weitere`:''),{type:'warning',title:'Betrieb braucht Aufmerksamkeit',duration:5200});}previous=current;return{count:rows.length,newCount:fresh.length};}
+export function installOperationalAttentionFeedback(){if(typeof window==='undefined'||window.__worldOperationalAttentionInstalled)return false;window.__worldOperationalAttentionInstalled=true;refreshOperationalAttention({notify:false});for(const ev of ['world:runtime-resumed','world:game-saved','world:construction-completed','world:business-upgrade-completed','worldproject:company-switched'])window.addEventListener(ev,()=>refreshOperationalAttention({notify:true}));setInterval(()=>refreshOperationalAttention({notify:true}),60000);return true;}
+export function runOperationalAttentionFeedbackTest(){return typeof refreshOperationalAttention==='function';}
+if(typeof window!=='undefined'){window.worldOperationalAttention={refresh:refreshOperationalAttention,install:installOperationalAttentionFeedback,test:runOperationalAttentionFeedbackTest};installOperationalAttentionFeedback();}
