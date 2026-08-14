@@ -9,6 +9,7 @@ import { EconomyDashboard } from "./EconomyDashboard.js";
 import { AdvancedEconomySystem, CoinStoreCatalog, runAdvancedEconomyTest } from "./AdvancedEconomySystem.js";
 import { BusinessSetupSystem, runBusinessSetupTest } from "./BusinessSetupSystem.js";
 import { allowedItem, getIndustryProfile } from "./IndustryCatalog.js";
+import { ensureMicroLocalOrders, runMicroLocalOrderTest } from "./MicroLocalOrderIntegration.js";
 
 export class ConnectedEconomyGameplay {
     constructor(){this.economy=new EconomyGameplaySystem();this.advanced=new AdvancedEconomySystem();this.setup=new BusinessSetupSystem();this.fleet=new FleetManagementSystem();this.fleetCosts=new FleetOperatingCostSystem();this.market=new SupplierMarketSystem();this.missions=new MissionSystem();this.salePrice=0.95;}
@@ -80,8 +81,21 @@ export class ConnectedEconomyGameplay {
     deliverCustomerOrder(company,orderId,amount){return this.advanced.deliverCustomerOrder(company,orderId,amount);}
 
     ensureCustomerOrders(company){
-        this.ensureCompany(company);if(company.setupPhase&&company.setupPhase!=="operating")return[];const profile=getIndustryProfile(company);if(profile.branchKey!=="brewery")return company.customerOrders.filter(x=>x.status==="open");
-        const open=company.customerOrders.filter(x=>x.status==="open");if(open.length<2){this.createCustomerOrder(company,{customer:"REWE Regional",amount:1000,unitPrice:0.98,dueHours:72});this.createCustomerOrder(company,{customer:"Getränkemarkt West",amount:1500,unitPrice:1.02,dueHours:96});}return company.customerOrders.filter(x=>x.status==="open");
+        this.ensureCompany(company);
+        if(company.setupPhase&&company.setupPhase!=="operating")return[];
+        if(company.microBusiness?.stage==="micro")return ensureMicroLocalOrders(this,company,{targetOpen:2});
+        const profile=getIndustryProfile(company),open=company.customerOrders.filter(x=>x.status==="open");
+        if(profile.branchKey!=="brewery")return open;
+        const regional=[
+            {customer:"REWE Regional",amount:1000,unitPrice:0.98,dueHours:72},
+            {customer:"Getränkemarkt West",amount:1500,unitPrice:1.02,dueHours:96}
+        ];
+        for(const template of regional){
+            if(company.customerOrders.filter(x=>x.status==="open").length>=2)break;
+            const duplicate=company.customerOrders.some(x=>x.status==="open"&&x.customer===template.customer);
+            if(!duplicate)this.createCustomerOrder(company,template);
+        }
+        return company.customerOrders.filter(x=>x.status==="open");
     }
 
     ensureMission(company){if(company.setupPhase&&company.setupPhase!=="operating")return null;return this.missions.getActiveMission(company)??this.missions.createNextMission(company);}
@@ -99,7 +113,7 @@ export class ConnectedEconomyGameplay {
 function createDemoCompany(){return{name:"WorldProject Testbrauerei",type:"Brauerei",money:200000,coins:0,vehicles:[],inventory:{},finishedGoods:{},production:{capacity:1000,active:false},missions:[],completedMissions:[]};}
 export function runConnectedEconomyGameplayTest(){const game=new ConnectedEconomyGameplay(),company=createDemoCompany();game.ensureCompany(company);const vehicle=game.buyVehicle(company,"truck18",35000),supplies=game.buyRecipeInputs(company,"lager033",1);game.fastForward(company,24);const production=game.produce(company,"lager033",1);game.fastForward(company,48);const mission=game.ensureMission(company);mission.targetAmount=1000;const first=game.deliverMission(company,500),second=game.deliverMission(company,500),trip=vehicle.success?game.applyTripCosts(company,vehicle.vehicle,200):{success:false};const customer=game.createCustomerOrder(company,{amount:100,unitPrice:1.05});company.finishedGoods.lager033_bottle=(company.finishedGoods.lager033_bottle||0)+100;const customerDelivery=game.deliverCustomerOrder(company,customer.order.id,100),report=game.getReport(company,999999);const success=vehicle.success&&supplies.success&&production.success&&first.success&&second.success&&second.completed&&trip.success&&customerDelivery.success&&report.income>0&&company.coins>=1;console[success?"log":"error"](success?"✅ VERBUNDENER-WIRTSCHAFTS-TEST ERFOLGREICH":"❌ VERBUNDENER-WIRTSCHAFTS-TEST FEHLGESCHLAGEN",{company,vehicle,supplies,production,first,second,trip,customerDelivery,report});return{success,company};}
 
-runBeverageRecipeTest();runSupplierMarketTest();runFleetOperatingCostTest();runMissionSystemTest();runAdvancedEconomyTest();runBusinessSetupTest();runConnectedEconomyGameplayTest();
+runBeverageRecipeTest();runSupplierMarketTest();runFleetOperatingCostTest();runMissionSystemTest();runAdvancedEconomyTest();runBusinessSetupTest();runMicroLocalOrderTest();runConnectedEconomyGameplayTest();
 const visibleGame=new ConnectedEconomyGameplay(),fallbackCompany=createDemoCompany();visibleGame.ensureMission(fallbackCompany);window.worldEconomyGameplay={game:visibleGame,company:fallbackCompany};
 function getCurrentCompany(){return window.worldPlayerCompany||fallbackCompany;}
 function mountEconomyButton(){if(document.getElementById("world-economy-button"))return;const button=document.createElement("button");button.id="world-economy-button";button.textContent="🏭 Wirtschaft";Object.assign(button.style,{position:"fixed",right:"18px",bottom:"18px",zIndex:"11000",border:"0",borderRadius:"10px",padding:"12px 16px",fontWeight:"800",cursor:"pointer",boxShadow:"0 5px 18px rgba(0,0,0,.35)"});button.addEventListener("click",()=>{const company=getCurrentCompany();window.worldEconomyGameplay.company=company;visibleGame.openDashboard(company);});document.body.append(button);}
