@@ -7,8 +7,9 @@ import { founderCanCoverJob } from './MicroBusinessStarterSystem.js';
 
 const activeEmployee=e=>e&&e.active!==false&&!['notice','dismissed','terminated','inactive','fired'].includes(String(e.status||'').toLowerCase());
 const employeeRole=e=>e?.role||e?.jobId||e?.profession||null;
-const machineId=m=>m?.sourceType||m?.type||m?.id||m?.equipmentId||null;
-const machineLabel=m=>m?.name||m?.label||worldContentRegistry.get('machines',machineId(m))?.label||machineId(m)||'Maschine';
+const machineId=m=>m?.sourceType||m?.type||m?.equipmentId||m?.id||null;
+const MACHINE_LABEL_FALLBACK={micro_bottle_washer:'Kleine Flaschenwaschanlage',bottle_washer:'Flaschenwaschanlage',brewhouse:'Sudhaus',brew_kettle:'Sudwerk',fermenter:'Gär-/Lagertank',fermentation_tank:'Gär-/Lagertank',filling_line:'Abfüllanlage',cooling_system:'Kühltechnik',production_line:'Produktionslinie'};
+const machineLabel=m=>{const id=machineId(m);return worldContentRegistry.get('machines',id)?.label||MACHINE_LABEL_FALLBACK[id]||m?.label||m?.name||String(id||'Maschine').replace(/_/g,' ');};
 const roleLabel=id=>worldContentRegistry.get('jobs',id)?.label||({brew_master:'Braumeister',brewer:'Brauer',machine_operator:'Maschinen-/Anlagenführer',cellar_worker:'Keller-/Gärmitarbeiter',packaging_operator:'Abfüll-/Verpackungsmitarbeiter',maintenance_tech:'Betriebstechniker',carpenter:'Schreiner',baker:'Bäcker',butcher:'Metzger',farmer:'Landwirt'}[id])||id||'Keine Fachkraft hinterlegt';
 
 // Fallbacks greifen nur, wenn ein Rezept für die konkrete Maschine noch keine requiredRole pflegt.
@@ -17,7 +18,7 @@ const MACHINE_ROLE_FALLBACK={
  brewery:{
   brew_kettle:'brew_master',brewhouse:'brew_master',brew_house:'brew_master',sudwerk:'brew_master',sudhaus:'brew_master',
   fermentation_tank:'cellar_worker',fermenter:'cellar_worker',lager_tank:'cellar_worker',fermentation:'cellar_worker',
-  filling_line:'packaging_operator',bottling_line:'packaging_operator',production_line:'machine_operator',
+  filling_line:'packaging_operator',bottling_line:'packaging_operator',micro_bottle_washer:'packaging_operator',bottle_washer:'packaging_operator',production_line:'machine_operator',
   cooling:'maintenance_tech',cooling_system:'maintenance_tech',refrigeration:'maintenance_tech'
  },
  beverage:{mixing_tank:'machine_operator',water_treatment:'machine_operator',filling_line:'packaging_operator'},
@@ -32,7 +33,7 @@ function fallbackRole(company,id,label=''){
  if(key==='brewery'){
   if(/sud|brew|kessel/.test(text))return 'brew_master';
   if(/gär|gaer|ferment|lager.?tank/.test(text))return 'cellar_worker';
-  if(/abfüll|abfuell|füll|fuell|bottl|pack/.test(text))return 'packaging_operator';
+  if(/wasch|wash|abfüll|abfuell|füll|fuell|bottl|pack/.test(text))return 'packaging_operator';
   if(/kühl|kuehl|cool|refrig/.test(text))return 'maintenance_tech';
   if(/produktion|production/.test(text))return 'machine_operator';
  }
@@ -50,14 +51,14 @@ function machineRequirements(company){
   const relevant=recipes.filter(r=>{const ids=compatibleMachineIds(company,r.machineType);return r.machineType===id||ids.includes(id);});
   const roles=[...new Set(relevant.map(r=>r.requiredRole).filter(Boolean))];
   if(!roles.length){const fallback=fallbackRole(company,id,machineLabel(m));if(fallback)roles.push(fallback);}
-  if(!roles.length){rows.push({machine:machineLabel(m),role:null,status:'none'});continue;}
-  for(const role of roles){const hired=staff.some(e=>employeeRole(e)===role||(e.roles||[]).includes(role)),founder=!hired&&founderCanCoverJob(company,role);rows.push({machine:machineLabel(m),role,status:hired?'hired':founder?'founder':'missing'});}
+  if(!roles.length){rows.push({machine:machineLabel(m),machineId:id,role:null,status:'none'});continue;}
+  for(const role of roles){const hired=staff.some(e=>employeeRole(e)===role||(e.roles||[]).includes(role)),founder=!hired&&founderCanCoverJob(company,role);rows.push({machine:machineLabel(m),machineId:id,role,status:hired?'hired':founder?'founder':'missing'});}
  }
  return rows;
 }
 const proto=EconomyDashboard.prototype;
 if(!proto.__worldMachineStaffingOverviewIntegrated){
  proto.__worldMachineStaffingOverviewIntegrated=true;const originalRender=proto.render;
- proto.render=function(panel){const result=originalRender.call(this,panel),production=panel.querySelector('#dashboard-production');if(!production)return result;production.querySelector('.world-machine-staffing-overview')?.remove();const rows=machineRequirements(this.company),box=this.el('div');box.className='world-machine-staffing-overview';Object.assign(box.style,{margin:'12px 0',padding:'10px',border:'1px solid rgba(255,255,255,.16)',borderRadius:'8px',background:'rgba(0,0,0,.12)'});box.append(this.el('strong','👷 Personalbedarf deiner Maschinen'));if(!rows.length){box.append(this.small('Noch keine produktionsrelevante Maschine vorhanden.'));production.append(box);return result;}for(const row of rows){const line=this.el('div');line.dataset.staffRole=row.role||'';Object.assign(line.style,{display:'grid',gridTemplateColumns:'minmax(120px,1fr) minmax(150px,1fr)',gap:'8px',padding:'4px 0',fontSize:'12px'});let text;if(row.status==='hired')text=`✅ ${roleLabel(row.role)} vorhanden`;else if(row.status==='founder')text=`🧑‍🔧 ${roleLabel(row.role)} · durch Gründer abgedeckt`;else if(row.status==='missing')text=`❌ ${roleLabel(row.role)} einstellen`;else text='ℹ️ Keine besondere Fachkraft erforderlich';line.append(this.el('span',row.machine),this.el('strong',text));box.append(line);}const missing=rows.filter(r=>r.status==='missing').length;if(missing)box.append(this.small(`${missing} Personalstelle${missing===1?'':'n'} fehlt/fehlen für deine vorhandene Ausstattung.`));production.append(box);return result;};
+ proto.render=function(panel){const result=originalRender.call(this,panel),production=panel.querySelector('#dashboard-production');if(!production)return result;production.querySelector('.world-machine-staffing-overview')?.remove();const rows=machineRequirements(this.company),box=this.el('div');box.className='world-machine-staffing-overview';Object.assign(box.style,{margin:'12px 0',padding:'10px',border:'1px solid rgba(255,255,255,.16)',borderRadius:'8px',background:'rgba(0,0,0,.12)'});box.append(this.el('strong','👷 Personalbedarf deiner Maschinen'));if(!rows.length){box.append(this.small('Noch keine produktionsrelevante Maschine vorhanden.'));production.append(box);return result;}for(const row of rows){const line=this.el('div');line.dataset.staffRole=row.role||'';line.dataset.machineType=row.machineId||'';Object.assign(line.style,{display:'grid',gridTemplateColumns:'minmax(120px,1fr) minmax(150px,1fr)',gap:'8px',padding:'4px 0',fontSize:'12px'});let text;if(row.status==='hired')text=`✅ ${roleLabel(row.role)} vorhanden`;else if(row.status==='founder')text=`🧑‍🔧 ${roleLabel(row.role)} · durch Gründer abgedeckt`;else if(row.status==='missing')text=`❌ ${roleLabel(row.role)} einstellen`;else text='ℹ️ Keine besondere Fachkraft erforderlich';line.append(this.el('span',row.machine),this.el('strong',text));box.append(line);}const missing=rows.filter(r=>r.status==='missing').length;if(missing)box.append(this.small(`${missing} Personalstelle${missing===1?'':'n'} fehlt/fehlen für deine vorhandene Ausstattung.`));production.append(box);return result;};
 }
-export { machineRequirements };
+export { machineRequirements,machineLabel,fallbackRole };
