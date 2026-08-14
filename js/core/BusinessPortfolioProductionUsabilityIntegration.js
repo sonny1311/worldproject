@@ -50,8 +50,8 @@ function addActiveBusinessActions(dialog,panel){
  activeButton.textContent='✅ Aktiver Betrieb';activeButton.disabled=true;
  if(card.querySelector('[data-world-active-business-actions]'))return true;
  const actions=document.createElement('div');actions.dataset.worldActiveBusinessActions='1';Object.assign(actions.style,{display:'flex',gap:'8px',flexWrap:'wrap',marginTop:'9px'});
- const production=dialog.button('🏭 Produktion öffnen',()=>openOperationalSection(dialog,'production').catch(e=>alert(e.message));
- const supply=dialog.button('📦 Einkauf & Lager',()=>openOperationalSection(dialog,'buy').catch(e=>alert(e.message));
+ const production=dialog.button('🏭 Produktion öffnen',()=>openOperationalSection(dialog,'production').catch(e=>alert(e.message)));
+ const supply=dialog.button('📦 Einkauf & Lager',()=>openOperationalSection(dialog,'buy').catch(e=>alert(e.message)));
  Object.assign(production.style,{background:'#166534',color:'#fff',border:'1px solid #22c55e'});Object.assign(supply.style,{background:'#1e3a8a',color:'#fff',border:'1px solid #60a5fa'});
  actions.append(production,supply);card.append(actions);return true;
 }
