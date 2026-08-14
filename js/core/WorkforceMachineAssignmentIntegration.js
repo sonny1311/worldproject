@@ -6,6 +6,14 @@ import { worldContentRegistry } from './ContentRegistry.js';
 
 const premium=new PremiumEntitlementSystem();
 const MACHINE_STAFFING={
+  micro_brew_kettle:{label:'Kleine Brauanlage 30–50 l',requiredRole:'brew_master',requiredSkill:'brewhouse',energyPerHour:10,maintenanceClass:'light'},
+  brew_kettle:{label:'Sudwerk',requiredRole:'brew_master',requiredSkill:'brewhouse',energyPerHour:24,maintenanceClass:'standard'},
+  brewhouse:{label:'Sudhaus',requiredRole:'brew_master',requiredSkill:'brewhouse',energyPerHour:24,maintenanceClass:'standard'},
+  micro_fermenter:{label:'Kleiner Gärbehälter',requiredRole:'cellar_worker',requiredSkill:'fermentation',energyPerHour:2,maintenanceClass:'light'},
+  fermenter:{label:'Gär-/Lagertank',requiredRole:'cellar_worker',requiredSkill:'fermentation',energyPerHour:4,maintenanceClass:'standard'},
+  fermentation_tank:{label:'Gär-/Lagertank',requiredRole:'cellar_worker',requiredSkill:'fermentation',energyPerHour:4,maintenanceClass:'standard'},
+  manual_bottle_filler:{label:'Manueller Gegendruckfüller',requiredRole:'packaging_operator',requiredSkill:'machine',energyPerHour:1,maintenanceClass:'light'},
+  filling_line:{label:'Abfüllanlage',requiredRole:'packaging_operator',requiredSkill:'machine',energyPerHour:18,maintenanceClass:'standard'},
   micro_bottle_washer:{label:'Kleine Flaschenwaschanlage',requiredRole:'packaging_operator',requiredSkill:'bottle_washing',energyPerHour:8,maintenanceClass:'light'},
   bottle_washer:{label:'Flaschenwaschanlage',requiredRole:'packaging_operator',requiredSkill:'bottle_washing',energyPerHour:15,maintenanceClass:'standard'}
 };
@@ -114,12 +122,15 @@ export function runWorkforceMachineAssignmentTest(){
     machines:{machines:[],seq:1,addMachine({type,label,requiredSkill,requiredWorkers=1,energyPerHour=0,maintenanceClass='standard'}){const m={id:this.seq++,type,label,requiredSkill,requiredWorkers,energyPerHour,maintenanceClass};this.machines.push(m);return m;}},
     workforce:{employees:[{id:1,jobId:'packaging_operator',active:true,extraSkills:[]}],assignments:[],assign(employeeId,{shiftId,machineId}){const a={employeeId,shiftId,machineId};this.assignments.push(a);return a;}},company(){return null;}
   };
-  const company={buildingState:{equipment:[{id:'micro_bottle_washer',instanceId:'washer-1',status:'available'}]},workforceState:{employees:[{id:1,jobId:'packaging_operator',active:true,extraSkills:[]}],assignments:[],machines:[],seq:2,machineSeq:1}};
+  const company={buildingState:{equipment:[{id:'micro_bottle_washer',instanceId:'washer-1',status:'available'},{id:'micro_fermenter',instanceId:'fermenter-1',status:'available'}]},workforceState:{employees:[{id:1,jobId:'packaging_operator',active:true,extraSkills:[]},{id:2,jobId:'cellar_worker',active:true,extraSkills:[]}],assignments:[],machines:[],seq:3,machineSeq:1}};
   const sync=syncPurchasedMachines(fake,company),auto=autoAssignMachineStaff(fake,{enabled:true});
   if(!sync.changed||fake.machines.machines[0]?.label!=='Kleine Flaschenwaschanlage'||fake.machines.machines[0]?.requiredSkill!=='bottle_washing')throw new Error('Flaschenwaschanlage wurde nicht korrekt in die Personalsteuerung übernommen');
   if(!auto.changed||fake.workforce.assignments[0]?.machineId!==fake.machines.machines[0].id)throw new Error('Premium-Personalzuweisung im Dialog fehlgeschlagen');
   const companySync=syncCompanyPurchasedMachines(company),companyAuto=autoAssignCompanyMachineStaff(company,{enabled:true});
-  if(!companySync.changed||!companyAuto.changed||company.workforceState.machines[0]?.label!=='Kleine Flaschenwaschanlage'||company.workforceState.assignments.length!==1)throw new Error('Premium-Personalzuweisung direkt nach Maschinenkauf fehlgeschlagen');
+  const fermenter=company.workforceState.machines.find(m=>m.sourceType==='micro_fermenter');
+  if(!companySync.changed||!companyAuto.changed||!fermenter||fermenter.label!=='Kleiner Gärbehälter')throw new Error('Gärbehälter wurde nicht in die Personalsteuerung übernommen');
+  const cellarAssignment=company.workforceState.assignments.find(a=>a.employeeId===2);
+  if(!cellarAssignment||String(cellarAssignment.machineId)!==String(fermenter.id))throw new Error('Premium-Gärmitarbeiter wurde nicht dem Gärbehälter zugewiesen');
   return true;
 }
 
