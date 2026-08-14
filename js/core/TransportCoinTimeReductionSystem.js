@@ -1,9 +1,11 @@
 // WorldProject - aktive Warentransporte mit Coins beschleunigen.
 // Einheitliche Regel: 1-10 Stunden, 5 Coins je Stunde, max. 50 Coins pro Einzelkauf.
 import { COIN_TIME_REDUCTION } from './ConstructionPremiumCoinSystem.js';
+import { timeMs,writeTimeValue } from './TimeValueUtils.js';
 const n=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;
-function arrivalMs(transport={}){const v=transport.arrivalTime??transport.arrivalAt??transport.finishAt;return v instanceof Date?v.getTime():n(v);}
-function setArrival(transport,ms){if(transport.arrivalTime instanceof Date)transport.arrivalTime=new Date(ms);else if('arrivalAt' in transport)transport.arrivalAt=ms;else if('finishAt' in transport)transport.finishAt=ms;else transport.arrivalTime=new Date(ms);}
+function arrivalKey(transport={}){for(const k of ['arrivalTime','arrivalAt','finishAt'])if(timeMs(transport[k])>0)return k;return'arrivalTime';}
+function arrivalMs(transport={}){return timeMs(transport[arrivalKey(transport)]);}
+function setArrival(transport,ms){const key=arrivalKey(transport);if(!(key in transport)){transport[key]=new Date(ms);return;}writeTimeValue(transport,key,ms);}
 export function transportTimeReductionQuote(company={},transport,hours=1,{now=Date.now()}={}){
  if(!transport)throw new Error('Transport fehlt');
  const end=arrivalMs(transport);if(end<=now)throw new Error('Transport ist bereits angekommen');
@@ -20,5 +22,5 @@ export function reduceTransportTimeWithCoins(company={},transport,hours=1,{now=D
  if(typeof window!=='undefined')window.dispatchEvent(new CustomEvent('world:game-state-dirty',{detail:{reason:'transport-coin-time-reduction'}}));
  return{...q,arrivalTime:new Date(q.newArrivalMs),coinsAfter:company.coins};
 }
-export function runTransportCoinTimeReductionTest(){const now=1000000,c={coins:100},t={id:'t1',arrivalTime:new Date(now+20*3600000),totalHours:20};const r=reduceTransportTimeWithCoins(c,t,10,{now});if(r.cost!==50||c.coins!==50||t.arrivalTime.getTime()!==now+10*3600000||t.totalHours!==10)throw new Error('Transport-Coin-Verkürzung fehlerhaft');return true;}
+export function runTransportCoinTimeReductionTest(){const now=1000000,c={coins:150},t={id:'t1',arrivalTime:new Date(now+20*3600000),totalHours:20};const r=reduceTransportTimeWithCoins(c,t,10,{now});if(r.cost!==50||c.coins!==100||t.arrivalTime.getTime()!==now+10*3600000||t.totalHours!==10)throw new Error('Transport-Coin-Verkürzung fehlerhaft');const iso=new Date(now+5*3600000).toISOString(),p={id:'persisted',arrivalTime:iso,totalHours:5};reduceTransportTimeWithCoins(c,p,1,{now});if(typeof p.arrivalTime!=='string'||Date.parse(p.arrivalTime)!==now+4*3600000)throw new Error('Persistierte Marktlieferung wird beim Beschleunigen beschädigt');return true;}
 if(typeof window!=='undefined')window.worldTransportCoinTimeReduction={quote:transportTimeReductionQuote,reduce:reduceTransportTimeWithCoins,test:runTransportCoinTimeReductionTest};
