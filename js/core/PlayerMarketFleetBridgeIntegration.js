@@ -1,4 +1,4 @@
-// WorldProject – der gemeinsame Marktbutton öffnet den neuen Warenmarkt;
+// WorldProject – der gemeinsame Marktbutton öffnet den Warenmarkt;
 // der bestehende Kunden-/Fuhrparkdialog bleibt von dort direkt erreichbar.
 import { PlayerMarketDialog } from './PlayerMarketDialog.js';
 
@@ -15,6 +15,7 @@ if(!proto.__worldFleetBridgeIntegrated){
         try{
           const dialog=window.worldAccounts?.marketFleetDialog;
           if(!dialog?.open)throw new Error('Fuhrparkbereich ist noch nicht verfügbar');
+          this.close();
           await dialog.open();
         }catch(error){alert(error?.message||String(error));}
       });
@@ -24,4 +25,4 @@ if(!proto.__worldFleetBridgeIntegrated){
     return result;
   };
 }
-export function runPlayerMarketFleetBridgeTest(){return true;}
+export function runPlayerMarketFleetBridgeTest(){const fake={closed:false,close(){this.closed=true;}};if(typeof fake.close!=='function')throw new Error('Markt kann vor Dialogwechsel nicht geschlossen werden');fake.close();if(!fake.closed)throw new Error('Marktdialog bleibt beim Wechsel offen');return true;}
