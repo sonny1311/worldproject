@@ -12,7 +12,8 @@ export async function runBlock18IntegrationTest(){
  for(let i=0;i<5;i++)construction.start({account,company,type:"small_storage",now:Date.now()});
  account.premiumUntil=Date.now()-1;construction.status(account,Date.now());
  const building=construction.jobs.filter(j=>j.status==="building").length,paused=construction.jobs.filter(j=>j.status==="paused_premium").length;
- if(building!==3||paused!==2)throw new Error("Premium-Bauprojekte wurden beim Ablauf nicht korrekt pausiert");
+ if(building!==5||paused!==0)throw new Error("Laufende Premium-Bauprojekte duerfen beim Premium-Ablauf nicht pausiert werden");
+ let blocked=false;try{construction.start({account,company,type:"small_storage",now:Date.now()});}catch{blocked=true;}if(!blocked)throw new Error("Nach Premium-Ablauf darf das erhoehte Baulimit nicht fuer neue Projekte gelten");
 
  account.premiumUntil=Date.now()+3600000;
  const warehouse=new WarehouseSystem({raw:10000,packaging:10000,finished:10000,cold:0});warehouse.stock.raw.malt=500;
@@ -27,5 +28,5 @@ export async function runBlock18IntegrationTest(){
  const transport={prepareOrder(){return {success:true,plan:{vehicleType:"van",distanceKm:20,totalCost:25,evaluation:{cargo:{weightKg:300}}}};},async executeOrder(){return {success:true,plan:{totalCost:25,arrivalTime:new Date()}};}};
  const fulfill=new CommercialFulfillmentSystem({market,warehouse,transport}),f=fulfill.reserve(order.id,300);fulfill.prepareTransport(f.id,{vehicleType:"van",distanceKm:20,cargo:{weightKg:300}});const before=company.money,result=await fulfill.deliver(f.id,{company});
  if(order.status!=="fulfilled"||warehouse.stock.finished.block18_beer!==0||result.invoice.net<=0||company.money<=before)throw new Error("Markt-/Transport-/Zahlungskette im Block18-Test fehlgeschlagen");
- console.log("✅ BLOCK 18 KOMPLETT INTEGRIERT: PREMIUM-PAUSE → PRODUKTIONSQUEUE → LAGER → MARKT → TRANSPORT → ZAHLUNG",{construction:{building,paused},production:300,invoice:result.invoice,companyMoney:company.money});return true;
+ console.log("✅ BLOCK 18 KOMPLETT INTEGRIERT: PREMIUM-LIMIT → LAUFENDE BAUTEN BLEIBEN AKTIV → PRODUKTIONSQUEUE → LAGER → MARKT → TRANSPORT → ZAHLUNG",{construction:{building,paused},production:300,invoice:result.invoice,companyMoney:company.money});return true;
 }
