@@ -4,6 +4,7 @@
 // ============================================
 import "./core/GlobalDarkThemeIntegration.js";
 import "./core/DarkMainNavigationIntegration.js";
+import "./core/DarkCommandCenterHeaderIntegration.js";
 import "./core/TransportVehicleCostIntegration.js";
 import "./core/TransportFuelTimeIntegration.js";
 import "./core/TransportGameplayIntegration.js";
