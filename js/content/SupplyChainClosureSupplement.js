@@ -6,16 +6,18 @@ registerWorldContent({
  recipes:[
   {id:"sawmill_fiberwood",industries:["sawmill"],label:"Faserholz und Hackschnitzel aufbereiten",materials:{roundwood_soft:12},machineType:"sawmill_line",durationMinutes:100,output:4800,outputUnit:"kg",product:"wood_chips",variableCost:65},
   {id:"feed_mix",industries:["feed_mill"],label:"Tierfutter mischen",materials:{corn:500,wheat:300,barley:200},machineType:"feed_mixer",durationMinutes:120,output:1000,outputUnit:"kg",product:"animal_feed",variableCost:75},
+  {id:"egg_cycle",industries:["livestock"],label:"Eier erzeugen",materials:{animal_feed:120,straw:30,water:250},machineType:"animal_barn",durationMinutes:480,output:600,outputUnit:"Stk",product:"eggs",variableCost:28},
   {id:"paper_make",industries:["paper_mill"],label:"Papier herstellen",materials:{wood_chips:1000,water:3500},machineType:"paper_machine",durationMinutes:240,output:920,outputUnit:"kg",product:"paper_roll",variableCost:115},
   {id:"cardboard_make",industries:["paper_mill"],label:"Kartonage herstellen",materials:{wood_chips:1100,water:3000},machineType:"paper_machine",durationMinutes:250,output:1000,outputUnit:"Stk",product:"cardboard",variableCost:125}
  ],
- products:[{id:"wood_chips",industries:["sawmill"],label:"Holzhackschnitzel / Faserholz",unit:"kg"},{id:"cardboard",industries:["paper_mill"],label:"Kartonage",unit:"Stk"}],
+ products:[{id:"wood_chips",industries:["sawmill"],label:"Holzhackschnitzel / Faserholz",unit:"kg"},{id:"cardboard",industries:["paper_mill"],label:"Kartonage",unit:"Stk"},{id:"eggs",industries:["livestock"],label:"Eier",unit:"Stk"}],
  suppliers:[
   fallback("ai_industrial_water",["maltster","sugar_factory","paper_mill","food_chemicals","agri_chemicals"],"KI Wasser-/Prozessversorgung",["water"],{water:.012},24,4),
   fallback("ai_feed_grain",["feed_mill"],"KI Futtermittel-Getreidehandel",["corn","wheat","barley"],{corn:.28,wheat:.31,barley:.29},48,7),
   fallback("ai_sugar_beet",["sugar_factory"],"KI Rübenhandel",["sugar_beet"],{sugar_beet:.055},42,6),
   fallback("ai_paper_fiber",["paper_mill"],"KI Faserholzhandel",["wood_chips"],{wood_chips:.11},70,9),
   fallback("ai_packaging_inputs",["packaging_maker"],"KI Verpackungsgrundstoffe",["cardboard","paper_roll","plastic_granulate","softwood"],{cardboard:.32,paper_roll:.92,plastic_granulate:1.8,softwood:520},68,9),
+  fallback("ai_empty_bottle_returns",["brewery"],"KI Leergutrücklauf Regional",["dirty_bottles","dirty_bottles_050"],{dirty_bottles:.045,dirty_bottles_050:.055},22,4),
   fallback("ai_food_chem_water",["food_chemicals"],"KI Prozesswasser",["water"],{water:.012},20,4),
   fallback("ai_agri_chem_water",["agri_chemicals"],"KI Prozesswasser",["water"],{water:.012},20,4)
  ]
