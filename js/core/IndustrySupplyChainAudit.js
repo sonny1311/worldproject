@@ -10,8 +10,8 @@ export function auditIndustrySupplyChains(){
  for(const [type,profile] of Object.entries(IndustryProfiles)){
   const branch=profile.branchKey,recipes=branchRecipes(branch),inputs=new Set(recipes.flatMap(r=>Object.keys(r.materials||{})));
   for(const item of inputs){
-   const producers=producersFor(item).filter(p=>!p.industries.includes(branch)),suppliers=suppliersFor(branch,item),material=worldContentRegistry.get("materials",item),covered=producers.length>0||suppliers.length>0;
-   rows.push({type,branch,item,label:material?.label||item,covered,playerProducer:producers.length>0,producerIndustries:[...new Set(producers.flatMap(p=>p.industries))],aiFallback:suppliers.length>0,supplierIds:suppliers.map(s=>s.id)});
+   const allProducers=producersFor(item),internal=allProducers.filter(p=>p.industries.includes(branch)),external=allProducers.filter(p=>!p.industries.includes(branch)),suppliers=suppliersFor(branch,item),material=worldContentRegistry.get("materials",item),covered=allProducers.length>0||suppliers.length>0;
+   rows.push({type,branch,item,label:material?.label||item,covered,internalProduction:internal.length>0,internalRecipeIds:internal.map(p=>p.recipeId),playerProducer:external.length>0,producerIndustries:[...new Set(external.flatMap(p=>p.industries))],aiFallback:suppliers.length>0,supplierIds:suppliers.map(s=>s.id)});
   }
  }
  const missing=rows.filter(x=>!x.covered),industries=[...new Set(rows.map(x=>x.type))],success=missing.length===0;
