@@ -9,6 +9,7 @@ import { runOperationalSupplyTransactionTest } from "./OperationalSupplyTransact
 import { runExtendedCoreRegression } from "./ExtendedCoreRegression.js";
 import { persistenceReloadHealth } from "./PersistenceReloadHealth.js";
 import { worldContentRegistry } from "./ContentRegistry.js";
+import { runBusinessExpansionOperationalEffectsTest } from "./BusinessExpansionOperationalEffectsIntegration.js";
 
 export function runCoreRegressionSuite(){
  const results=[],run=(name,fn)=>{try{const value=fn();const success=value===true||value?.success===true;results.push({name,success,value});if(!success)console.error(`❌ CORE-REGRESSION ${name}`,value);}catch(error){results.push({name,success:false,error:error?.message||String(error)});console.error(`❌ CORE-REGRESSION ${name}`,error);}};
@@ -16,6 +17,7 @@ export function runCoreRegressionSuite(){
  run("Advanced Economy",()=>runAdvancedEconomyTest());
  run("Operational Supply 25",()=>runOperationalSupplyChainRegressionTest());
  run("Supply Transactions",()=>runOperationalSupplyTransactionTest({SupplyOrderSystem,WarehouseSystem,supplier:worldContentRegistry.get("suppliers","brew_malt_regional")}));
+ run("Business Expansion Effects",()=>runBusinessExpansionOperationalEffectsTest());
  run("Extended Core",()=>runExtendedCoreRegression());
  const activeCompany=window.worldPlayerCompany;
  if(activeCompany&&typeof activeCompany==="object"&&Object.keys(activeCompany).length>0)run("Persistence Reload",()=>persistenceReloadHealth(activeCompany));
