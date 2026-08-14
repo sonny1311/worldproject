@@ -12,6 +12,9 @@ import { worldContentRegistry } from "./ContentRegistry.js";
 import { runBusinessExpansionOperationalEffectsTest } from "./BusinessExpansionOperationalEffectsIntegration.js";
 import { runIndustryEquipmentCatalogSupplementTest } from "./IndustryEquipmentCatalogSupplement.js";
 import { machineRequirementSatisfied } from "./IndustryMachineCompatibility.js";
+import { visibleEquipmentMarketplace,repairDuplicateIndustryEquipment } from "./IndustryEquipmentMarketplace.js";
+import { runDashboardFinanceLedgerTest } from "./DashboardFinanceLedgerIntegration.js";
+import { runWorkforceMachineAssignmentTest } from "./WorkforceMachineAssignmentIntegration.js";
 
 function runBottleWasherCompatibilityTest(){
  runIndustryEquipmentCatalogSupplementTest();
@@ -19,6 +22,19 @@ function runBottleWasherCompatibilityTest(){
  const fillerOnly={type:"Brauerei",buildingState:{equipment:[{id:"filling_line"}]}};
  if(!machineRequirementSatisfied(small,"bottle_washer"))throw new Error("Kleine Flaschenwaschanlage erfüllt Waschmaschinenbedarf nicht");
  if(machineRequirementSatisfied(fillerOnly,"bottle_washer"))throw new Error("Abfüllanlage darf Flaschenwaschanlage nicht ersetzen");
+ return true;
+}
+function runEquipmentLevelVisibilityTest(){
+ const company={type:"Brauerei",money:50000,growth:{xp:0,level:1,researchPoints:0,research:[],expansions:[],milestones:[]},buildingState:{equipment:[]}};
+ const visible=visibleEquipmentMarketplace(company).map(x=>x.id);
+ if(!visible.includes("micro_bottle_washer"))throw new Error("Kleine Flaschenwaschanlage fehlt auf Betriebslevel 1");
+ if(visible.includes("bottle_washer"))throw new Error("Große Flaschenwaschanlage ist vor Betriebslevel 5 sichtbar");
+ return true;
+}
+function runDuplicateEquipmentRepairTest(){
+ const company={money:1000,buildingState:{equipment:[{id:"micro_bottle_washer",purchasePrice:1800},{id:"micro_bottle_washer",purchasePrice:1800}]},financialLog:[],costLedger:[]};
+ const result=repairDuplicateIndustryEquipment(company,{now:12345});
+ if(!result.repaired||result.removed.length!==1||company.buildingState.equipment.length!==1||company.money!==2800)throw new Error("Doppelte Maschinen werden nicht sicher bereinigt/zurückerstattet");
  return true;
 }
 
@@ -30,6 +46,10 @@ export function runCoreRegressionSuite(){
  run("Supply Transactions",()=>runOperationalSupplyTransactionTest({SupplyOrderSystem,WarehouseSystem,supplier:worldContentRegistry.get("suppliers","brew_malt_regional")}));
  run("Business Expansion Effects",()=>runBusinessExpansionOperationalEffectsTest());
  run("Bottle Washer Compatibility",()=>runBottleWasherCompatibilityTest());
+ run("Equipment Level Visibility",()=>runEquipmentLevelVisibilityTest());
+ run("Duplicate Equipment Repair",()=>runDuplicateEquipmentRepairTest());
+ run("Workforce Machine Assignment",()=>runWorkforceMachineAssignmentTest());
+ run("Finance Ledger",()=>runDashboardFinanceLedgerTest());
  run("Extended Core",()=>runExtendedCoreRegression());
  const activeCompany=window.worldPlayerCompany;
  if(activeCompany&&typeof activeCompany==="object"&&Object.keys(activeCompany).length>0)run("Persistence Reload",()=>persistenceReloadHealth(activeCompany));
