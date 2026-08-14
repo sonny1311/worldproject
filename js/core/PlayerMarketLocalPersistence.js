@@ -1,0 +1,13 @@
+// WorldProject - Entwicklungs-Fallback fuer den Spielermarkt ueber Reload/F5.
+// Wird ignoriert, sobald ein echter serverseitiger Marktadapter aktiv ist.
+import { ensureExchange } from './PlayerMarketExchange.js';
+const KEY='worldproject:player-market:v1';
+const world=()=>window.worldProjectWorld||window.worldWorld||window.worldGameState||window;
+function serverMarketActive(){return Boolean(window.worldServerMarket?.active||window.worldMarketApi?.isServerBacked);}
+function serializableExchange(ex={}){return{orders:(ex.orders||[]).map(o=>{const {companyRef,...rest}=o;return rest;}),trades:ex.trades||[],feesCollected:Number(ex.feesCollected||0),requestIds:ex.requestIds||[]};}
+function rebindCompanyRefs(ex){const c=window.worldPlayerCompany||window.worldActiveServerCompany;if(!c)return;const id=String(c.serverCompanyId||c.id||'');for(const o of ex.orders||[])if(String(o.companyId||'')===id)o.companyRef=c;}
+export function saveLocalPlayerMarket(){if(typeof localStorage==='undefined'||serverMarketActive())return false;try{const ex=ensureExchange(world());localStorage.setItem(KEY,JSON.stringify(serializableExchange(ex)));return true;}catch{return false;}}
+export function restoreLocalPlayerMarket(){if(typeof localStorage==='undefined'||serverMarketActive())return false;try{const raw=localStorage.getItem(KEY);if(!raw)return false;const data=JSON.parse(raw),ex=ensureExchange(world());ex.orders=Array.isArray(data.orders)?data.orders:[];ex.trades=Array.isArray(data.trades)?data.trades:[];ex.feesCollected=Number(data.feesCollected||0);ex.requestIds=Array.isArray(data.requestIds)?data.requestIds:[];rebindCompanyRefs(ex);return true;}catch{return false;}}
+export function installLocalPlayerMarketPersistence(){if(typeof window==='undefined'||window.__worldLocalMarketPersistence)return false;window.__worldLocalMarketPersistence=true;window.addEventListener('world:player-market-dirty',saveLocalPlayerMarket);window.addEventListener('worldproject:company-switched',()=>{rebindCompanyRefs(ensureExchange(world()));});restoreLocalPlayerMarket();return true;}
+export function runLocalPlayerMarketPersistenceTest(){const ex={orders:[{id:'a',companyId:'1',companyRef:{x:1},productId:'malt'}],trades:[{id:'t'}],feesCollected:2,requestIds:['r']},clean=serializableExchange(ex);if(clean.orders[0].companyRef!==undefined||clean.orders.length!==1||clean.trades.length!==1||clean.feesCollected!==2)return false;return true;}
+if(typeof window!=='undefined'){window.worldLocalPlayerMarketPersistence={save:saveLocalPlayerMarket,restore:restoreLocalPlayerMarket,test:runLocalPlayerMarketPersistenceTest};installLocalPlayerMarketPersistence();}
