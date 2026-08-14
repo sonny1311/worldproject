@@ -1,5 +1,5 @@
 // WorldProject – kompakter Regressionstest für die getrennte Admin-Schicht.
-import { AdminControlSystem, AdminSections } from './AdminControlSystem.js';
+import { adminControlSystem as admin, AdminSections } from './AdminControlSystem.js';
 import { setWorldPause, setWorldTimeScale, setMarketFactor, setRegionState } from './AdminWorldControl.js';
 import { AdminWorkspaceController, ADMIN_WORKSPACE_SECTIONS } from './AdminWorkspaceController.js';
 import { adminOperationalSection } from './AdminOperationsData.js';
@@ -11,7 +11,7 @@ import { adminSafetyCheck, validateAdminConfiguration, adminAuditIntegrity } fro
 import { validateAdminNumber, validateAdminText, validateAdminId, validateAdminMutation } from './AdminMutationValidation.js';
 export function runAdminRegressionTest(){
  const checks=[],check=(name,ok,detail=null)=>checks.push({name,success:!!ok,detail});
- const admin=new AdminControlSystem(),actor={id:'test-admin',username:'TestAdmin',role:'admin'},actor2={id:'test-admin-2',username:'TestAdmin2',role:'admin'},world={},players=[{id:'p1',username:'A',coins:100,premium:true},{id:'p2',username:'B',coins:20,premium:false}],companies=[{id:'c1',name:'Betrieb',money:50000,productionJobs:[{id:'j1',status:'queued'}],deliveries:[{id:'d1',status:'ordered',eta:Date.now()+10000}],finishedGoods:{beer:10}}];
+ const actor={id:'test-admin',username:'TestAdmin',role:'admin'},actor2={id:'test-admin-2',username:'TestAdmin2',role:'admin'},world={},players=[{id:'p1',username:'A',coins:100,premium:true},{id:'p2',username:'B',coins:20,premium:false}],companies=[{id:'c1',name:'Betrieb',money:50000,productionJobs:[{id:'j1',status:'queued'}],deliveries:[{id:'d1',status:'ordered',eta:Date.now()+10000}],finishedGoods:{beer:10}}],auditBefore=admin.auditLog.length;
  check('admin role',admin.can(actor,'system.write'));
  check('world permission',admin.can(actor,'world.write'));
  check('products permission',admin.can(actor,'products.write'));
@@ -25,7 +25,7 @@ export function runAdminRegressionTest(){
  try{const req=requestRelease(world,{buildId:'test-build',actor,notes:'Test'});let sameActorBlocked=false;try{approveRelease(world,req.id,actor);}catch{sameActorBlocked=true;}check('second approval separation',sameActorBlocked);approveRelease(world,req.id,actor2);check('release approval',world.adminReleaseControl.approvedBuild==='test-build');const rejectReq=requestRelease(world,{buildId:'test-reject',actor,notes:'Test'});rejectRelease(world,rejectReq.id,actor2,'Nicht freigeben');check('release rejection',rejectReq.status==='rejected');recordRollback(world,{fromBuild:'test-build',toBuild:'old-build',actor,reason:'Testrollback'});check('release rollback',world.adminReleaseControl.approvedBuild==='old-build');}catch(error){check('release workflow',false,error.message);}
  try{const selfSuspend=adminSafetyCheck(actor,{action:'suspend',target:actor.id,reason:'test'});check('self suspension blocked',selfSuspend.allowed===false);const criticalNoReason=adminSafetyCheck(actor,{action:'setting',target:'maintenanceMode',value:true,reason:''});check('critical reason required',criticalNoReason.allowed===false);const cfg=validateAdminConfiguration();check('admin configuration valid',cfg.success===true,cfg.issues);const audit=adminAuditIntegrity();check('audit integrity',audit.success===true,audit);}catch(error){check('admin security',false,error.message);}
  try{check('number validation',validateAdminNumber('42',{min:0,max:100}).valid===true);check('number bounds',validateAdminNumber(101,{min:0,max:100}).valid===false);check('text validation',validateAdminText('Hallo',{label:'Text'}).valid===true);check('id validation',validateAdminId('player-123').valid===true);const mutation=validateAdminMutation({entityType:'player',entityId:'p1',field:'coins',before:100,after:200,reason:'Korrektur'});check('mutation validation',mutation.valid===true&&mutation.preview.risk.level==='high');}catch(error){check('mutation validators',false,error.message);}
- check('audit generated',admin.audit(actor).length>=12,admin.audit(actor).length);
+ const auditAdded=admin.auditLog.length-auditBefore;check('audit generated',auditAdded>=12,auditAdded);
  const workspace=new AdminWorkspaceController({control:{execute:async()=>({success:true})}});try{workspace.navigate('premium');check('workspace navigation',workspace.state.section==='premium');let rejected=false;try{workspace.navigate('does-not-exist');}catch{rejected=true;}check('invalid section rejected',rejected);}catch(error){check('workspace',false,error.message);}
  const failed=checks.filter(x=>!x.success),result={success:failed.length===0,total:checks.length,passed:checks.length-failed.length,failed,checks};
  if(typeof console!=='undefined')console[result.success?'log':'error'](`WORLDPROJECT ADMIN REGRESSION ${result.passed}/${result.total}`,result);
