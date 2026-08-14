@@ -16,6 +16,7 @@ import { visibleEquipmentMarketplace,repairDuplicateIndustryEquipment } from "./
 import { runDashboardFinanceLedgerTest } from "./DashboardFinanceLedgerIntegration.js";
 import { runWorkforceMachineAssignmentTest } from "./WorkforceMachineAssignmentIntegration.js";
 import { runCustomerOrderPresentationTest } from "./CustomerOrderFulfillmentUIBridge.js";
+import { runWarehouseClearanceSaleTest } from "./WarehouseClearanceSaleIntegration.js";
 
 function runBottleWasherCompatibilityTest(){
  runIndustryEquipmentCatalogSupplementTest();
@@ -51,6 +52,7 @@ export function runCoreRegressionSuite(){
  run("Duplicate Equipment Repair",()=>runDuplicateEquipmentRepairTest());
  run("Workforce Machine Assignment",()=>runWorkforceMachineAssignmentTest());
  run("Customer Delivery Quantity",()=>runCustomerOrderPresentationTest());
+ run("Warehouse Clearance Sale",()=>runWarehouseClearanceSaleTest());
  run("Finance Ledger",()=>runDashboardFinanceLedgerTest());
  run("Extended Core",()=>runExtendedCoreRegression());
  const activeCompany=window.worldPlayerCompany;
