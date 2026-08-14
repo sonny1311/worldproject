@@ -23,9 +23,10 @@ export function runWarehouseSpaceRuntimeGuardTest(){
   warehouse.stock.packaging.caps=20000;
   warehouse.stock.packaging.bottles=20000;
   const used=warehouse.used('packaging');
-  if(Math.abs(used-1020)>1e-9)throw new Error(`Gebindelager falsch: erwartet 1.020, erhalten ${used}`);
-  if(Math.abs(warehouse.spaceFor('caps',20000)-20)>1e-9)throw new Error('Kronkorken werden nicht als 1.000er-Gebinde gezählt');
-  if(Math.abs(warehouse.spaceFor('bottles',20000)-1000)>1e-9)throw new Error('Flaschen werden nicht als 20er-Gebinde gezählt');
+  const expected=1+(20000/300);
+  if(Math.abs(used-expected)>1e-9)throw new Error(`Gebindelager falsch: erwartet ${expected}, erhalten ${used}`);
+  if(Math.abs(warehouse.spaceFor('caps',20000)-1)>1e-9)throw new Error('20.000 Kronkorken müssen 1 Europalette belegen');
+  if(Math.abs(warehouse.spaceFor('bottles',300)-1)>1e-9)throw new Error('300 Leerflaschen müssen 1 Europalette belegen');
   return true;
 }
 
