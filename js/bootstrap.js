@@ -51,6 +51,7 @@ import "./core/DashboardFinishedGoodsSummaryIntegration.js";
 import "./core/DashboardSummaryGradientIntegration.js";
 import "./core/DashboardMainNavigationIntegration.js";
 import "./core/OperationalDialogSectionPersistenceIntegration.js";
+import "./core/OperationalDialogCloseGuardIntegration.js";
 import "./core/MachinePurchaseTabIntegration.js";
 import "./core/WarehouseClearanceSaleIntegration.js";
 import "./core/ProductionReadinessPremiumNavigationV2.js";
