@@ -27,6 +27,7 @@ import "./core/UrgentCustomerOrderSystem.js";
 import "./core/ReputationCustomerOrderIntegration.js";
 import "./core/CustomerFreightEconomySystem.js";
 import "./core/CustomerFreightDeliveryIntegration.js";
+import "./core/CustomerOrderFreightPreviewIntegration.js";
 import "./core/CustomerOrderProfitabilityIntegration.js";
 import "./core/UniversalOperationsDialog.js";
 import "./core/LandConstructionExpansionUIIntegration.js";
