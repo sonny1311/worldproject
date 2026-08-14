@@ -40,6 +40,7 @@ import "./core/LiveTrafficDeliveryIntegration.js";
 import "./core/CustomerOrderPricingIntegration.js";
 import "./core/CustomerFreightPricingUIIntegration.js";
 import "./core/ProductionProgressIntegration.js";
+import "./core/ProductionDarkContrastIntegration.js";
 import "./core/BottlingSizeSelectionIntegration.js";
 import "./core/ProductionStatusBannerIntegration.js";
 import "./core/MachineStaffingOverviewIntegration.js";
