@@ -62,6 +62,7 @@ import "./core/PlayerMarketDirectGoodsPurchase.js";
 import "./core/PlayerMarketLocalPersistence.js";
 import "./core/PlayerCoinMarketExchange.js";
 import "./core/PlayerCoinMarketUIIntegration.js";
+import "./core/AllianceExchangeSystem.js";
 import "./core/PlayerMarketNavigationIntegration.js";
 import "./core/PlayerMarketFleetBridgeIntegration.js";
 import "./core/DashboardUsabilityIntegration.js";
