@@ -7,10 +7,13 @@ import { mountAdminConsole } from "./core/AdminConsoleUI.js";
 import { runAdminRegressionTest } from "./core/AdminRegressionTest.js";
 import { runAdminAuditRegression } from "./core/AdminAuditRegression.js";
 import { runAdminRoleRegression } from "./core/AdminRoleRegression.js";
+import { runCurrencyLocalizationRegression } from "./core/CurrencyLocalizationRegression.js";
 import "./core/AdminConsoleSectionViews.js";
 import "./core/AdminConsoleActionViews.js";
 import "./core/AdminAuditAnalytics.js";
 import "./core/AdminAuditConsoleView.js";
+import "./core/AdminCurrencySystem.js";
+import "./core/AdminCurrencyConsoleView.js";
 import "./core/AdminDashboardData.js";
 import "./core/ModerationCaseSystem.js";
 import "./core/LiveOpsSystem.js";
@@ -29,11 +32,13 @@ function runAdminStartupRegressions(){
   let regression={success:false,passed:0,total:0,failed:[{error:"nicht ausgeführt"}]};
   let auditRegression={success:false,passed:0,total:0,failed:[{error:"nicht ausgeführt"}]};
   let roleRegression={success:false,passed:0,total:0,failed:[{error:"nicht ausgeführt"}]};
+  let currencyRegression={success:false,passed:0,total:0,failed:[{error:"nicht ausgeführt"}]};
   try{
     regression=runAdminRegressionTest();
     auditRegression=runAdminAuditRegression();
     roleRegression=runAdminRoleRegression();
-    return {regression,auditRegression,roleRegression};
+    currencyRegression=runCurrencyLocalizationRegression();
+    return {regression,auditRegression,roleRegression,currencyRegression};
   } finally {
     // Regressionen benutzen absichtlich echte Admin-APIs. Ihre Test-Auditzeilen dürfen
     // niemals im produktiven Auditlog des Adminbereichs verbleiben.
@@ -43,17 +48,18 @@ function runAdminStartupRegressions(){
 
 export async function startWorldProjectAdmin({actor,context={},loadAdminUi=null,mount=null}={}){
   adminControlSystem.requireAdmin(actor);
-  const {regression,auditRegression,roleRegression}=runAdminStartupRegressions();
+  const {regression,auditRegression,roleRegression,currencyRegression}=runAdminStartupRegressions();
   if(!regression.success)console.error("❌ WORLDPROJECT ADMIN-REGRESSION",regression);
   if(!auditRegression.success)console.error("❌ WORLDPROJECT ADMIN-AUDIT-REGRESSION",auditRegression);
   if(!roleRegression.success)console.error("❌ WORLDPROJECT ADMIN-ROLLEN-REGRESSION",roleRegression);
+  if(!currencyRegression.success)console.error("❌ WORLDPROJECT WÄHRUNGS-REGRESSION",currencyRegression);
   const frontend=createAdminFrontend(actor,adminControlSystem,context);
   const workspace=new AdminWorkspaceController({control:adminControlSystem,dashboard:typeof window!=="undefined"?window.worldAdminDashboard:null,audit:typeof window!=="undefined"?window.worldAdminAudit:null});
   let ui=null;
-  if(typeof loadAdminUi==="function")await loadAdminUi({actor,adminControlSystem,frontend,workspace,regression,auditRegression,roleRegression});
+  if(typeof loadAdminUi==="function")await loadAdminUi({actor,adminControlSystem,frontend,workspace,regression,auditRegression,roleRegression,currencyRegression});
   else if(typeof document!=="undefined")ui=mountAdminConsole({actor,admin:adminControlSystem,context,frontend,workspace,mount:mount||document.body});
-  console.log("✅ WORLDPROJECT ADMIN-BEREICH FREIGEGEBEN",{regression:`${regression.passed}/${regression.total}`,auditRegression:`${auditRegression.passed}/${auditRegression.total}`,roleRegression:`${roleRegression.passed}/${roleRegression.total}`});
-  return {actor,adminControlSystem,frontend,workspace,ui,regression,auditRegression,roleRegression};
+  console.log("✅ WORLDPROJECT ADMIN-BEREICH FREIGEGEBEN",{regression:`${regression.passed}/${regression.total}`,auditRegression:`${auditRegression.passed}/${auditRegression.total}`,roleRegression:`${roleRegression.passed}/${roleRegression.total}`,currencyRegression:`${currencyRegression.passed}/${currencyRegression.total}`});
+  return {actor,adminControlSystem,frontend,workspace,ui,regression,auditRegression,roleRegression,currencyRegression};
 }
 
 if(typeof window!=="undefined")window.startWorldProjectAdmin=startWorldProjectAdmin;
