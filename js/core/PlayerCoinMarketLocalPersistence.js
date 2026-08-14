@@ -5,10 +5,28 @@ const KEY='worldproject:player-coin-market:v1';
 const world=()=>window.worldProjectWorld||window.worldWorld||window.worldGameState||window;
 const n=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;
 function serverActive(){return Boolean(window.worldServerCoinMarket?.active||window.worldCoinMarketApi?.isServerBacked);}
-function companies(){const out=[],push=c=>{if(c&&typeof c==='object'&&!out.includes(c))out.push(c);};push(window.worldPlayerCompany);push(window.worldActiveServerCompany);for(const root of [window.worldProjectWorld,window.worldWorld,window.worldGameState])for(const c of root?.companies||[])push(c);return out;}
+function companies(){
+ const out=[];
+ const push=c=>{if(c&&typeof c==='object'&&!out.includes(c))out.push(c);};
+ push(window.worldPlayerCompany);
+ push(window.worldActiveServerCompany);
+ for(const root of [window.worldProjectWorld,window.worldWorld,window.worldGameState])for(const c of root?.companies||[])push(c);
+ return out;
+}
 function clean(ex){return{orders:(ex.orders||[]).map(o=>{const{companyRef,...rest}=o;return rest;}),trades:ex.trades||[],feesCollected:n(ex.feesCollected),requestIds:ex.requestIds||[]};}
-export function rebuildCoinMarketReservations(ex,list=companies()){const byId=new Map(list.map(c=>[String(c.serverCompanyId||c.id||''),c]));for(const c of list){c.marketCoinsReserved=0;c.marketCashReserved=0;}for(const o of ex?.orders||[]){if(!['open','partial'].includes(String(o.status||''))||n(o.remaining)<=0)continue;const c=byId.get(String(o.companyId||''));if(!c)continue;o.companyRef=c;if(o.side==='sell')c.marketCoinsReserved=n(c.marketCoinsReserved)+n(o.remaining);else if(o.side==='buy')c.marketCashReserved=n(c.marketCashReserved)+n(o.remaining)*n(o.unitPrice);}return true;}
-export function saveLocalCoinMarket(){if(typeof localStorage==='undefined'||serverActive())return false;try{localStorage.setItem(KEY,JSON.stringify(clean(ensureCoinExchange(world())));return true;}catch{return false;}}
+export function rebuildCoinMarketReservations(ex,list=companies()){
+ const byId=new Map(list.map(c=>[String(c.serverCompanyId||c.id||''),c]));
+ for(const c of list){c.marketCoinsReserved=0;c.marketCashReserved=0;}
+ for(const o of ex?.orders||[]){
+  if(!['open','partial'].includes(String(o.status||''))||n(o.remaining)<=0)continue;
+  const c=byId.get(String(o.companyId||''));if(!c)continue;
+  o.companyRef=c;
+  if(o.side==='sell')c.marketCoinsReserved=n(c.marketCoinsReserved)+n(o.remaining);
+  else if(o.side==='buy')c.marketCashReserved=n(c.marketCashReserved)+n(o.remaining)*n(o.unitPrice);
+ }
+ return true;
+}
+export function saveLocalCoinMarket(){if(typeof localStorage==='undefined'||serverActive())return false;try{localStorage.setItem(KEY,JSON.stringify(clean(ensureCoinExchange(world()))));return true;}catch{return false;}}
 export function restoreLocalCoinMarket(){if(typeof localStorage==='undefined'||serverActive())return false;try{const raw=localStorage.getItem(KEY);if(!raw)return false;const data=JSON.parse(raw),ex=ensureCoinExchange(world());ex.orders=Array.isArray(data.orders)?data.orders:[];ex.trades=Array.isArray(data.trades)?data.trades:[];ex.feesCollected=n(data.feesCollected);ex.requestIds=Array.isArray(data.requestIds)?data.requestIds:[];rebuildCoinMarketReservations(ex);return true;}catch{return false;}}
 export function installLocalCoinMarketPersistence(){if(typeof window==='undefined'||window.__worldLocalCoinMarketPersistence)return false;window.__worldLocalCoinMarketPersistence=true;window.addEventListener('world:coin-market-dirty',saveLocalCoinMarket);window.addEventListener('worldproject:company-switched',()=>rebuildCoinMarketReservations(ensureCoinExchange(world())));restoreLocalCoinMarket();return true;}
 export function runLocalCoinMarketPersistenceTest(){const c={id:'c',marketCoinsReserved:99,marketCashReserved:99},ex={orders:[{id:'a',side:'sell',companyId:'c',remaining:7,unitPrice:2,status:'partial'},{id:'b',side:'buy',companyId:'c',remaining:3,unitPrice:4,status:'open'}],trades:[],feesCollected:0,requestIds:[]};rebuildCoinMarketReservations(ex,[c]);if(c.marketCoinsReserved!==7||c.marketCashReserved!==12||ex.orders.some(o=>o.companyRef!==c))throw new Error('Coin-Markt-Reservierungen werden nach Reload falsch aufgebaut');if(clean(ex).orders.some(o=>'companyRef'in o))throw new Error('Coin-Markt serialisiert Laufzeitreferenzen');return true;}
