@@ -6,6 +6,7 @@ import { AdminWorkspaceController } from "./core/AdminWorkspaceController.js";
 import { mountAdminConsole } from "./core/AdminConsoleUI.js";
 import { runAdminRegressionTest } from "./core/AdminRegressionTest.js";
 import { runAdminAuditRegression } from "./core/AdminAuditRegression.js";
+import { runAdminRoleRegression } from "./core/AdminRoleRegression.js";
 import "./core/AdminConsoleSectionViews.js";
 import "./core/AdminConsoleActionViews.js";
 import "./core/AdminAuditAnalytics.js";
@@ -27,10 +28,12 @@ function runAdminStartupRegressions(){
   const auditCheckpoint=adminControlSystem.auditLog.length;
   let regression={success:false,passed:0,total:0,failed:[{error:"nicht ausgeführt"}]};
   let auditRegression={success:false,passed:0,total:0,failed:[{error:"nicht ausgeführt"}]};
+  let roleRegression={success:false,passed:0,total:0,failed:[{error:"nicht ausgeführt"}]};
   try{
     regression=runAdminRegressionTest();
     auditRegression=runAdminAuditRegression();
-    return {regression,auditRegression};
+    roleRegression=runAdminRoleRegression();
+    return {regression,auditRegression,roleRegression};
   } finally {
     // Regressionen benutzen absichtlich echte Admin-APIs. Ihre Test-Auditzeilen dürfen
     // niemals im produktiven Auditlog des Adminbereichs verbleiben.
@@ -40,16 +43,17 @@ function runAdminStartupRegressions(){
 
 export async function startWorldProjectAdmin({actor,context={},loadAdminUi=null,mount=null}={}){
   adminControlSystem.requireAdmin(actor);
-  const {regression,auditRegression}=runAdminStartupRegressions();
+  const {regression,auditRegression,roleRegression}=runAdminStartupRegressions();
   if(!regression.success)console.error("❌ WORLDPROJECT ADMIN-REGRESSION",regression);
   if(!auditRegression.success)console.error("❌ WORLDPROJECT ADMIN-AUDIT-REGRESSION",auditRegression);
+  if(!roleRegression.success)console.error("❌ WORLDPROJECT ADMIN-ROLLEN-REGRESSION",roleRegression);
   const frontend=createAdminFrontend(actor,adminControlSystem,context);
   const workspace=new AdminWorkspaceController({control:adminControlSystem,dashboard:typeof window!=="undefined"?window.worldAdminDashboard:null,audit:typeof window!=="undefined"?window.worldAdminAudit:null});
   let ui=null;
-  if(typeof loadAdminUi==="function")await loadAdminUi({actor,adminControlSystem,frontend,workspace,regression,auditRegression});
+  if(typeof loadAdminUi==="function")await loadAdminUi({actor,adminControlSystem,frontend,workspace,regression,auditRegression,roleRegression});
   else if(typeof document!=="undefined")ui=mountAdminConsole({actor,admin:adminControlSystem,context,frontend,workspace,mount:mount||document.body});
-  console.log("✅ WORLDPROJECT ADMIN-BEREICH FREIGEGEBEN",{regression:`${regression.passed}/${regression.total}`,auditRegression:`${auditRegression.passed}/${auditRegression.total}`});
-  return {actor,adminControlSystem,frontend,workspace,ui,regression,auditRegression};
+  console.log("✅ WORLDPROJECT ADMIN-BEREICH FREIGEGEBEN",{regression:`${regression.passed}/${regression.total}`,auditRegression:`${auditRegression.passed}/${auditRegression.total}`,roleRegression:`${roleRegression.passed}/${roleRegression.total}`});
+  return {actor,adminControlSystem,frontend,workspace,ui,regression,auditRegression,roleRegression};
 }
 
 if(typeof window!=="undefined")window.startWorldProjectAdmin=startWorldProjectAdmin;
