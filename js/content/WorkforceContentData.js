@@ -5,6 +5,8 @@ export const WorkforceContent={
  jobs:[
   {id:"brew_master",label:"Braumeister",industries:["brewery","Getränke"],baseWageMonthly:4100,skills:["brewhouse","fermentation","brewery_quality","production_release"],requiredFor:["beer_production"],mandatoryForIndustry:true},
   {id:"brewer",label:"Brauer",industries:["brewery","Getränke"],baseWageMonthly:3200,skills:["brewhouse","fermentation"]},
+  {id:"cellar_worker",label:"Keller-/Gärmitarbeiter",industries:["brewery","Getränke"],baseWageMonthly:3050,skills:["fermentation","brewery_quality"]},
+  {id:"packaging_operator",label:"Abfüll-/Verpackungsmitarbeiter",industries:["brewery","Getränke","beverage"],baseWageMonthly:2950,skills:["machine","packing"]},
   {id:"machine_operator",label:"Maschinenführer",industries:["brewery","Getränke","carpentry","bakery","butcher","food","mechanical","metal","plastic"],baseWageMonthly:3000,skills:["machine"]},
   {id:"warehouse_worker",label:"Lagerist",industries:["*"],baseWageMonthly:2850,skills:["warehouse"]},
   {id:"driver",label:"Fahrer",industries:["*"],baseWageMonthly:3000,skills:["transport"]},
@@ -17,7 +19,7 @@ export const WorkforceContent={
   {id:"picker",label:"Kommissionierer",industries:["retail","wholesale","online_retail"],baseWageMonthly:2750,skills:["warehouse","picking"]},
   {id:"packer",label:"Versandmitarbeiter",industries:["wholesale","online_retail"],baseWageMonthly:2750,skills:["packing","shipping"]},
   {id:"ecommerce_specialist",label:"E-Commerce-Mitarbeiter",industries:["online_retail"],baseWageMonthly:3200,skills:["ecommerce","customer_service"]},
-  {id:"maintenance_tech",label:"Instandhaltungstechniker",industries:["*"],baseWageMonthly:3450,skills:["maintenance"]},
+  {id:"maintenance_tech",label:"Betriebstechniker",industries:["*"],baseWageMonthly:3450,skills:["maintenance"]},
   {id:"shift_supervisor",label:"Schichtleiter",industries:["*"],baseWageMonthly:3900,skills:["leadership"]}
  ],
  shifts:[
