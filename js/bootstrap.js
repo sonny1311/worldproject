@@ -67,6 +67,7 @@ import "./core/AllianceExchangeSystem.js";
 import "./core/PlayerMarketNavigationIntegration.js";
 import "./core/PlayerMarketFleetBridgeIntegration.js";
 import "./core/AdaptiveAiSupplyService.js";
+import "./core/AdaptiveAiSupplyRuntimeIntegration.js";
 import "./core/DashboardUsabilityIntegration.js";
 import "./core/DashboardQuickActionsIntegration.js";
 import "./core/DashboardPriorityHintsIntegration.js";
