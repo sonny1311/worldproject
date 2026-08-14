@@ -93,6 +93,8 @@ import "./core/InGameAdminAccessIntegration.js";
 import "./core/DeveloperSecondBusinessTestUnlock.js";
 import "./core/BusinessPortfolioIsolationRegression.js";
 import "./core/ConnectedIndustryEconomyRegression.js";
+import "./core/SolarInvestmentUI.js";
+import { runSolarInvestmentTest } from "./core/SolarInvestmentSystem.js";
 import { runIndustryChainPresentationTest } from "./core/IndustryChainPresentation.js";
 import "./core/CoreRegressionSuite.js";
 import { runAllIndustryPlayabilityAudit } from "./core/AllIndustryPlayabilityAudit.js";
@@ -101,6 +103,7 @@ import { gameAccessGate } from "./core/AccountMultiplayerIntegration.js";
 async function startWorldProject(){
     await gameAccessGate.ensureAccess();
     console.log("✅ ACCOUNT FREIGEGEBEN – SPIEL WIRD GELADEN");
+    window.worldSolarInvestmentHealth=runSolarInvestmentTest();
     window.worldIndustryChainPresentationHealth=runIndustryChainPresentationTest();
     window.worldProjectIndustryHealth=runAllIndustryPlayabilityAudit();
     window.worldAllIndustryEconomyHealth=runAllIndustryEconomyHealth();
