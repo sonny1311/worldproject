@@ -13,6 +13,14 @@ const reasonMap={
  'production-cancelled':()=>`Geplante Produktion wurde gelöscht.`,
  'market-listing-created':()=>`Angebot wurde am Markt eingestellt.`
 };
-export function installGameActionFeedbackBridge(){if(typeof window==='undefined')return false;window.addEventListener('world:game-state-dirty',e=>{const reason=e.detail?.reason,fn=reasonMap[reason];if(fn)feedback(fn(e.detail||{}),{title:'Aktion erfolgreich'});});window.addEventListener('world:construction-completed',e=>{for(const j of e.detail?.finished||[])feedback(`${j.label||'Ausbau'} ist fertig.`,{title:'Bau abgeschlossen'});});window.addEventListener('world:premium-extra-credited',e=>{const count=e.detail?.credited?.length||0;if(count)feedback(`Tagesgutschrift aus ${count} Zusatzpaket${count===1?'':'en'} wurde verbucht.`,{title:'Premium-Paket'});});return true;}
+export function installGameActionFeedbackBridge(){
+ if(typeof window==='undefined')return false;
+ window.addEventListener('world:game-state-dirty',e=>{const reason=e.detail?.reason,fn=reasonMap[reason];if(fn)feedback(fn(e.detail||{}),{title:'Aktion erfolgreich'});});
+ window.addEventListener('world:construction-completed',e=>{for(const j of e.detail?.finished||[])feedback(`${j.label||'Ausbau'} ist fertig.`,{title:'Bau abgeschlossen'});});
+ window.addEventListener('world:business-upgrade-started',e=>feedback(`Ausbau auf Stufe ${e.detail?.targetLevel||'?'} läuft jetzt zeitbasiert.`,{type:'info',title:'Betriebsausbau'}));
+ window.addEventListener('world:business-upgrade-helped',()=>feedback('Freundeshilfe wurde angerechnet und die Restzeit verkürzt.',{title:'Freundeshilfe'}));
+ window.addEventListener('world:business-upgrade-completed',e=>feedback(`Stufe ${e.detail?.targetLevel||'?'} ist fertig. Der neue Bonus ist jetzt aktiv.`,{title:'Ausbau abgeschlossen',duration:5200}));
+ window.addEventListener('world:premium-extra-credited',e=>{const count=e.detail?.credited?.length||0;if(count)feedback(`Tagesgutschrift aus ${count} Zusatzpaket${count===1?'':'en'} wurde verbucht.`,{title:'Premium-Paket'});});return true;
+}
 export function runGameActionFeedbackBridgeTest(){return typeof reasonMap['equipment-purchase']==='function'&&reasonMap['production-started']().includes('gestartet');}
 if(typeof window!=='undefined'){window.worldGameActionFeedbackBridge={install:installGameActionFeedbackBridge,runTest:runGameActionFeedbackBridgeTest};installGameActionFeedbackBridge();}
