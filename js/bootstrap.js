@@ -52,6 +52,7 @@ import "./core/LongDialogUsabilityIntegration.js";
 import "./core/WarehouseSpaceRuntimeGuard.js";
 import "./core/OperationalConsistencyGuard.js";
 import "./core/GameActionFeedbackIntegration.js";
+import "./core/OperationalAttentionFeedbackIntegration.js";
 import "./core/GameActionFeedbackBridge.js";
 import "./core/GameSaveStatusIntegration.js";
 import "./core/ActiveOperationsOverviewUI.js";
