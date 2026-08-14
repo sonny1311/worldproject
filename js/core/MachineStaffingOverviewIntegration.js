@@ -9,7 +9,7 @@ const activeEmployee=e=>e&&e.active!==false&&!['notice','dismissed','terminated'
 const employeeRole=e=>e?.role||e?.jobId||e?.profession||null;
 const machineId=m=>m?.sourceType||m?.type||m?.id||m?.equipmentId||null;
 const machineLabel=m=>m?.name||m?.label||worldContentRegistry.get('machines',machineId(m))?.label||machineId(m)||'Maschine';
-const roleLabel=id=>worldContentRegistry.get('jobs',id)?.label||({brew_master:'Braumeister',brewer:'Brauer',machine_operator:'Maschinen-/Anlagenführer',cellar_worker:'Keller-/Gärmitarbeiter',packaging_operator:'Abfüll-/Verpackungsmitarbeiter',maintenance_technician:'Betriebstechniker',carpenter:'Schreiner',baker:'Bäcker',butcher:'Metzger',farmer:'Landwirt'}[id])||id||'Keine Fachkraft hinterlegt';
+const roleLabel=id=>worldContentRegistry.get('jobs',id)?.label||({brew_master:'Braumeister',brewer:'Brauer',machine_operator:'Maschinen-/Anlagenführer',cellar_worker:'Keller-/Gärmitarbeiter',packaging_operator:'Abfüll-/Verpackungsmitarbeiter',maintenance_tech:'Betriebstechniker',carpenter:'Schreiner',baker:'Bäcker',butcher:'Metzger',farmer:'Landwirt'}[id])||id||'Keine Fachkraft hinterlegt';
 
 // Fallbacks greifen nur, wenn ein Rezept für die konkrete Maschine noch keine requiredRole pflegt.
 // So bleibt die Übersicht bereits spielbar, während Content-Daten schrittweise detaillierter werden.
@@ -18,7 +18,7 @@ const MACHINE_ROLE_FALLBACK={
   brew_kettle:'brew_master',brewhouse:'brew_master',brew_house:'brew_master',sudwerk:'brew_master',sudhaus:'brew_master',
   fermentation_tank:'cellar_worker',fermenter:'cellar_worker',lager_tank:'cellar_worker',fermentation:'cellar_worker',
   filling_line:'packaging_operator',bottling_line:'packaging_operator',production_line:'machine_operator',
-  cooling:'maintenance_technician',cooling_system:'maintenance_technician',refrigeration:'maintenance_technician'
+  cooling:'maintenance_tech',cooling_system:'maintenance_tech',refrigeration:'maintenance_tech'
  },
  beverage:{mixing_tank:'machine_operator',water_treatment:'machine_operator',filling_line:'packaging_operator'},
  bakery:{bakery_oven:'baker',dough_mixer:'baker'},butcher:{meat_cutter:'butcher'},
@@ -33,7 +33,7 @@ function fallbackRole(company,id,label=''){
   if(/sud|brew|kessel/.test(text))return 'brew_master';
   if(/gär|gaer|ferment|lager.?tank/.test(text))return 'cellar_worker';
   if(/abfüll|abfuell|füll|fuell|bottl|pack/.test(text))return 'packaging_operator';
-  if(/kühl|kuehl|cool|refrig/.test(text))return 'maintenance_technician';
+  if(/kühl|kuehl|cool|refrig/.test(text))return 'maintenance_tech';
   if(/produktion|production/.test(text))return 'machine_operator';
  }
  return null;
@@ -58,6 +58,6 @@ function machineRequirements(company){
 const proto=EconomyDashboard.prototype;
 if(!proto.__worldMachineStaffingOverviewIntegrated){
  proto.__worldMachineStaffingOverviewIntegrated=true;const originalRender=proto.render;
- proto.render=function(panel){const result=originalRender.call(this,panel),production=panel.querySelector('#dashboard-production');if(!production)return result;production.querySelector('.world-machine-staffing-overview')?.remove();const rows=machineRequirements(this.company),box=this.el('div');box.className='world-machine-staffing-overview';Object.assign(box.style,{margin:'12px 0',padding:'10px',border:'1px solid rgba(255,255,255,.16)',borderRadius:'8px',background:'rgba(0,0,0,.12)'});box.append(this.el('strong','👷 Personalbedarf deiner Maschinen'));if(!rows.length){box.append(this.small('Noch keine produktionsrelevante Maschine vorhanden.'));production.append(box);return result;}for(const row of rows){const line=this.el('div');Object.assign(line.style,{display:'grid',gridTemplateColumns:'minmax(120px,1fr) minmax(150px,1fr)',gap:'8px',padding:'4px 0',fontSize:'12px'});let text;if(row.status==='hired')text=`✅ ${roleLabel(row.role)} vorhanden`;else if(row.status==='founder')text=`🧑‍🔧 ${roleLabel(row.role)} · durch Gründer abgedeckt`;else if(row.status==='missing')text=`❌ ${roleLabel(row.role)} einstellen`;else text='ℹ️ Keine besondere Fachkraft erforderlich';line.append(this.el('span',row.machine),this.el('strong',text));box.append(line);}const missing=rows.filter(r=>r.status==='missing').length;if(missing)box.append(this.small(`${missing} Personalstelle${missing===1?'':'n'} fehlt/fehlen für deine vorhandene Ausstattung.`));production.append(box);return result;};
+ proto.render=function(panel){const result=originalRender.call(this,panel),production=panel.querySelector('#dashboard-production');if(!production)return result;production.querySelector('.world-machine-staffing-overview')?.remove();const rows=machineRequirements(this.company),box=this.el('div');box.className='world-machine-staffing-overview';Object.assign(box.style,{margin:'12px 0',padding:'10px',border:'1px solid rgba(255,255,255,.16)',borderRadius:'8px',background:'rgba(0,0,0,.12)'});box.append(this.el('strong','👷 Personalbedarf deiner Maschinen'));if(!rows.length){box.append(this.small('Noch keine produktionsrelevante Maschine vorhanden.'));production.append(box);return result;}for(const row of rows){const line=this.el('div');line.dataset.staffRole=row.role||'';Object.assign(line.style,{display:'grid',gridTemplateColumns:'minmax(120px,1fr) minmax(150px,1fr)',gap:'8px',padding:'4px 0',fontSize:'12px'});let text;if(row.status==='hired')text=`✅ ${roleLabel(row.role)} vorhanden`;else if(row.status==='founder')text=`🧑‍🔧 ${roleLabel(row.role)} · durch Gründer abgedeckt`;else if(row.status==='missing')text=`❌ ${roleLabel(row.role)} einstellen`;else text='ℹ️ Keine besondere Fachkraft erforderlich';line.append(this.el('span',row.machine),this.el('strong',text));box.append(line);}const missing=rows.filter(r=>r.status==='missing').length;if(missing)box.append(this.small(`${missing} Personalstelle${missing===1?'':'n'} fehlt/fehlen für deine vorhandene Ausstattung.`));production.append(box);return result;};
 }
 export { machineRequirements };
