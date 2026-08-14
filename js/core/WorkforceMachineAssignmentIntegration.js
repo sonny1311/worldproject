@@ -15,7 +15,10 @@ const MACHINE_STAFFING={
   manual_bottle_filler:{label:'Manueller Gegendruckfüller',requiredRole:'packaging_operator',requiredSkill:'machine',energyPerHour:1,maintenanceClass:'light'},
   filling_line:{label:'Abfüllanlage',requiredRole:'packaging_operator',requiredSkill:'machine',energyPerHour:18,maintenanceClass:'standard'},
   micro_bottle_washer:{label:'Kleine Flaschenwaschanlage',requiredRole:'packaging_operator',requiredSkill:'bottle_washing',energyPerHour:8,maintenanceClass:'light'},
-  bottle_washer:{label:'Flaschenwaschanlage',requiredRole:'packaging_operator',requiredSkill:'bottle_washing',energyPerHour:15,maintenanceClass:'standard'}
+  bottle_washer:{label:'Flaschenwaschanlage',requiredRole:'packaging_operator',requiredSkill:'bottle_washing',energyPerHour:15,maintenanceClass:'standard'},
+  cooling_system:{label:'Kühltechnik',requiredRole:'maintenance_tech',requiredSkill:'maintenance',energyPerHour:12,maintenanceClass:'standard'},
+  cooling:{label:'Kühltechnik',requiredRole:'maintenance_tech',requiredSkill:'maintenance',energyPerHour:12,maintenanceClass:'standard'},
+  refrigeration:{label:'Kühltechnik',requiredRole:'maintenance_tech',requiredSkill:'maintenance',energyPerHour:12,maintenanceClass:'standard'}
 };
 const equipmentType=item=>String(item?.sourceType||item?.type||item?.equipmentId||item?.id||'');
 const accountFor=()=>window.worldCurrentUser||window.worldAccount||{};
@@ -122,7 +125,7 @@ export function runWorkforceMachineAssignmentTest(){
     machines:{machines:[],seq:1,addMachine({type,label,requiredSkill,requiredWorkers=1,energyPerHour=0,maintenanceClass='standard'}){const m={id:this.seq++,type,label,requiredSkill,requiredWorkers,energyPerHour,maintenanceClass};this.machines.push(m);return m;}},
     workforce:{employees:[{id:1,jobId:'packaging_operator',active:true,extraSkills:[]}],assignments:[],assign(employeeId,{shiftId,machineId}){const a={employeeId,shiftId,machineId};this.assignments.push(a);return a;}},company(){return null;}
   };
-  const company={buildingState:{equipment:[{id:'micro_bottle_washer',instanceId:'washer-1',status:'available'},{id:'micro_fermenter',instanceId:'fermenter-1',status:'available'}]},workforceState:{employees:[{id:1,jobId:'packaging_operator',active:true,extraSkills:[]},{id:2,jobId:'cellar_worker',active:true,extraSkills:[]}],assignments:[],machines:[],seq:3,machineSeq:1}};
+  const company={buildingState:{equipment:[{id:'micro_bottle_washer',instanceId:'washer-1',status:'available'},{id:'micro_fermenter',instanceId:'fermenter-1',status:'available'},{id:'cooling_system',instanceId:'cooling-1',status:'available'}]},workforceState:{employees:[{id:1,jobId:'packaging_operator',active:true,extraSkills:[]},{id:2,jobId:'cellar_worker',active:true,extraSkills:[]},{id:3,jobId:'maintenance_tech',active:true,extraSkills:[]}],assignments:[],machines:[],seq:4,machineSeq:1}};
   const sync=syncPurchasedMachines(fake,company),auto=autoAssignMachineStaff(fake,{enabled:true});
   if(!sync.changed||fake.machines.machines[0]?.label!=='Kleine Flaschenwaschanlage'||fake.machines.machines[0]?.requiredSkill!=='bottle_washing')throw new Error('Flaschenwaschanlage wurde nicht korrekt in die Personalsteuerung übernommen');
   if(!auto.changed||fake.workforce.assignments[0]?.machineId!==fake.machines.machines[0].id)throw new Error('Premium-Personalzuweisung im Dialog fehlgeschlagen');
@@ -131,6 +134,10 @@ export function runWorkforceMachineAssignmentTest(){
   if(!companySync.changed||!companyAuto.changed||!fermenter||fermenter.label!=='Kleiner Gärbehälter')throw new Error('Gärbehälter wurde nicht in die Personalsteuerung übernommen');
   const cellarAssignment=company.workforceState.assignments.find(a=>a.employeeId===2);
   if(!cellarAssignment||String(cellarAssignment.machineId)!==String(fermenter.id))throw new Error('Premium-Gärmitarbeiter wurde nicht dem Gärbehälter zugewiesen');
+  const cooling=company.workforceState.machines.find(m=>m.sourceType==='cooling_system');
+  if(!cooling||cooling.label!=='Kühltechnik'||cooling.requiredRole!=='maintenance_tech'||cooling.requiredSkill!=='maintenance')throw new Error('Kühltechnik wurde nicht in die Personalsteuerung übernommen');
+  const techAssignment=company.workforceState.assignments.find(a=>a.employeeId===3);
+  if(!techAssignment||String(techAssignment.machineId)!==String(cooling.id))throw new Error('Premium-Betriebstechniker wurde nicht der Kühltechnik zugewiesen');
   return true;
 }
 
