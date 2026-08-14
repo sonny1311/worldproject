@@ -5,9 +5,17 @@ export const CANONICAL_TO_LEGACY_MATERIAL={
   malt:"malt_kg",hops:"hops_kg",yeast:"yeast_kg",water:"water_l",
   bottles:"bottle_033",bottles_050:"bottle_050",caps:"crown_cap",labels:"label_033",labels_050:"label_050",
   clean_bottles:"clean_bottles",clean_bottles_050:"clean_bottles_050",bottle_wash_chem:"bottle_wash_chem",
-  beer_bulk_pils:"beer_bulk_pils",beer_bulk_lager:"beer_bulk_lager"
+  beer_bulk_pils:"beer_bulk_pils",beer_bulk_lager:"beer_bulk_lager",
+  // Fertigprodukte: alte Economy-/Auftrags-IDs werden zentral auf die operativen IDs abgebildet.
+  beer_lager_033:"lager033_bottle",beer_pils_033:"pils033_bottle",
+  beer_lager_050:"lager050_bottle",beer_pils_050:"pils050_bottle"
 };
 export const LEGACY_TO_CANONICAL_MATERIAL=Object.fromEntries(Object.entries(CANONICAL_TO_LEGACY_MATERIAL).map(([canonical,legacy])=>[legacy,canonical]));
+// Weitere historisch verwendete Kurzformen. Alle Leser sollen denselben kanonischen Bestand sehen.
+Object.assign(LEGACY_TO_CANONICAL_MATERIAL,{
+  lager033:"beer_lager_033",pils033:"beer_pils_033",
+  "lager033 bottle":"beer_lager_033","pils033 bottle":"beer_pils_033"
+});
 
 function currentCompany(){return window.worldPlayerCompany||window.worldEconomyGameplay?.company||window.worldEngine?.company||null;}
 
@@ -15,7 +23,7 @@ export function operationalZoneFor(material){
   const id=canonicalMaterialId(material);
   if(["bottles","clean_bottles","bottles_050","clean_bottles_050","caps","labels","labels_050"].includes(id))return "packaging";
   if(id==="yeast")return "cold";
-  if(["beer_bulk_pils","beer_bulk_lager"].includes(id))return "finished";
+  if(["beer_bulk_pils","beer_bulk_lager","beer_lager_033","beer_pils_033","beer_lager_050","beer_pils_050"].includes(id))return "finished";
   return "raw";
 }
 export function canonicalMaterialId(id){return LEGACY_TO_CANONICAL_MATERIAL[id]||id;}
@@ -41,7 +49,7 @@ export function recoverConfirmedDeliveries(company=currentCompany()){
     const key=orderIdentity(order);if(seen.has(key))return;seen.add(key);
     const material=canonicalMaterialId(rawMaterial),quantity=Math.max(0,Number(rawQuantity)||0);
     if(!material||material==="undefined"||material==="materials.undefined"||quantity<=0)return;
-    recovered.set(material,(recovered.get(material)||0)+quantity);
+    recovered.set(material,(recovered.get(material)||0)+quantity;
   };
 
   for(const order of state.orders||[]){if(order&&order.status==="stored")addOrder(order,order.material||order.itemId,order.quantity??order.amount);}
