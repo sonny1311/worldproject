@@ -13,6 +13,7 @@ import "./core/WarehouseSpaceIntegration.js";
 import "./core/LegacyEconomyWarehouseSpaceBridge.js";
 import "./core/WarehousePackDisplayIntegration.js";
 import "./core/OperationalSupplyChainEquipmentIntegration.js";
+import "./core/MachineConditionProductionGuard.js";
 import "./core/UniversalOperationsDialog.js";
 import "./core/LandConstructionExpansionUIIntegration.js";
 import "./core/WarehouseExpansionUIIntegration.js";
