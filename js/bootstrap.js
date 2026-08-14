@@ -91,6 +91,7 @@ import "./core/PremiumPlanUIIntegration.js";
 import "./core/PremiumExtraPackageUIIntegration.js";
 import "./core/InGameAdminAccessIntegration.js";
 import "./core/DeveloperSecondBusinessTestUnlock.js";
+import "./core/BusinessPortfolioIsolationRegression.js";
 import "./core/ConnectedIndustryEconomyRegression.js";
 import "./core/CoreRegressionSuite.js";
 import { runAllIndustryPlayabilityAudit } from "./core/AllIndustryPlayabilityAudit.js";
