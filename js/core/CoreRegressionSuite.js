@@ -41,9 +41,11 @@ import { runOperationalAttentionFeedbackTest } from "./OperationalAttentionFeedb
 import { runMachineConditionProductionGuardTest } from "./MachineConditionProductionGuard.js";
 import { runMachineConditionVisibilityTest } from "./MachineConditionVisibilityIntegration.js";
 import { runMachineMaintenanceTest } from "./MachineMaintenanceSystem.js";
+import { runReputationSystemTest } from "./ReputationSystem.js";
+import { runUrgentCustomerOrderTest } from "./UrgentCustomerOrderSystem.js";
 
 function runBottleWasherCompatibilityTest(){runIndustryEquipmentCatalogSupplementTest();const small={type:"Brauerei",buildingState:{equipment:[{id:"micro_bottle_washer"}]}},fillerOnly={type:"Brauerei",buildingState:{equipment:[{id:"filling_line"}]}};if(!machineRequirementSatisfied(small,"bottle_washer"))throw new Error("Kleine Flaschenwaschanlage erfüllt Waschmaschinenbedarf nicht");if(machineRequirementSatisfied(fillerOnly,"bottle_washer"))throw new Error("Abfüllanlage darf Flaschenwaschanlage nicht ersetzen");return true;}
-function runEquipmentLevelVisibilityTest(){const company={type:"Brauerei",money:50000,growth:{xp:0,level:1,researchPoints:0,research:[],expansions:[],milestones:[]},buildingState:{equipment:[]}};const visible=visibleEquipmentMarketplace(company).map(x=>x.id);if(!visible.includes("micro_bottle_washer"))throw new Error("Kleine Flaschenwaschanlage fehlt auf Betriebslevel 1");if(visible.includes("bottle_washer"))throw new Error("Große Flaschenwaschanlage ist vor Betriebslevel 5 sichtbar");return true;}
+function runEquipmentLevelVisibilityTest(){runIndustryEquipmentCatalogSupplementTest();const company={type:"Brauerei",money:50000,growth:{xp:0,level:1,researchPoints:0,research:[],expansions:[],milestones:[]},buildingState:{equipment:[]}};const visible=visibleEquipmentMarketplace(company).map(x=>x.id);if(!visible.includes("micro_bottle_washer"))throw new Error("Kleine Flaschenwaschanlage fehlt auf Betriebslevel 1");if(visible.includes("bottle_washer"))throw new Error("Große Flaschenwaschanlage ist vor Betriebslevel 5 sichtbar");return true;}
 function runDuplicateEquipmentRepairTest(){const company={money:1000,buildingState:{equipment:[{id:"micro_bottle_washer",purchasePrice:1800},{id:"micro_bottle_washer",purchasePrice:1800}]},financialLog:[],costLedger:[]};const result=repairDuplicateIndustryEquipment(company,{now:12345});if(!result.repaired||result.removed.length!==1||company.buildingState.equipment.length!==1||company.money!==2800)throw new Error("Doppelte Maschinen werden nicht sicher bereinigt/zurückerstattet");return true;}
 
 export function runCoreRegressionSuite(){
@@ -57,6 +59,8 @@ export function runCoreRegressionSuite(){
  run("Machine Condition Production",()=>runMachineConditionProductionGuardTest());
  run("Machine Condition Visibility",()=>runMachineConditionVisibilityTest());
  run("Machine Maintenance",()=>runMachineMaintenanceTest());
+ run("Reputation",()=>runReputationSystemTest());
+ run("Urgent Customer Orders",()=>runUrgentCustomerOrderTest());
  run("Business Expansion Effects",()=>runBusinessExpansionOperationalEffectsTest());
  run("Unified Expansion Entry",()=>runBusinessExpansionTest());
  run("Timed Business Upgrades",()=>runBusinessUpgradeTest());
