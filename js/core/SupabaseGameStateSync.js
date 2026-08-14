@@ -7,6 +7,8 @@ export class SupabaseGameStateSync {
         for(const event of ["world:state-dirty","world:game-state-dirty"]){
             window.addEventListener(event,()=>this.save().catch(e=>console.warn("Sofortspeichern fehlgeschlagen",e)));
         }
+        if(typeof document!=="undefined")document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")this.save().catch(e=>console.warn("Speichern beim App-/Tabwechsel fehlgeschlagen",e));});
+        window.addEventListener("pagehide",()=>this.save().catch(()=>{}));
     }
 
     start(){if(this.timer)return;this.timer=setInterval(()=>this.save().catch(()=>{}),this.intervalMs);console.log("✅ SUPABASE-SPIELSTANDSYNCHRONISATION AKTIV");}
