@@ -4,7 +4,7 @@ import { customerDeliveryEconomics } from './CustomerFreightEconomySystem.js';
 
 const n=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;
 const company=()=>window.worldPlayerCompany||window.worldActiveServerCompany||window.worldEngine?.company||null;
-const remaining=o=>Math.max(0,n(o?.quantity??o?.amount)-n(o?.delivered??o?.deliveredQuantity??o?.fulfilledQuantity)-n(o?.reserved));
+const remaining=o=>Math.max(0,n(o?.quantity??o?.amount)-n(o?.delivered??o?.deliveredQuantity??o?.fulfilledQuantity));
 const money=v=>`${n(v).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})} €`;
 
 function openOrders(c){return(c?.customerOrders||[]).filter(o=>remaining(o)>0&&!['completed','cancelled','delivered','closed'].includes(String(o.status||'').toLowerCase()));}
