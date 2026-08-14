@@ -2,17 +2,26 @@
 import { createStarterBuilding } from "./IndustryCatalog.js";
 import { canExpand, expansionRequirements } from "./BusinessExpansionSystem.js";
 
+const CORE_RUNTIME_KEYS=new Set(["money","coins","name","industry","type","serverCompanyId","slotNo","setupPhase","buildingState"]);
 export class BusinessPortfolioSystem {
-    constructor({api}={}){this.api=api;this.companies=[];this.activeCompany=null;}
+    constructor({api}={}){this.api=api;this.companies=[];this.activeCompany=null;this.hydratedStateKeys=new Set();}
 
     hydrateCompany(target,serverCompany,wallet={}){
+        // Dieselbe Runtime-Instanz wird absichtlich weiterverwendet, damit bestehende UI-Referenzen gueltig bleiben.
+        // Vor dem Firmenwechsel muessen aber alle dynamischen Felder des vorherigen Betriebs verschwinden.
+        for(const key of this.hydratedStateKeys)if(!CORE_RUNTIME_KEYS.has(key))delete target[key];
+        this.hydratedStateKeys.clear();
         const state=serverCompany.game_state||{};
         target.serverCompanyId=serverCompany.id;target.slotNo=Number(serverCompany.slot_no||1);target.name=serverCompany.name||"";target.industry=serverCompany.industry||"";target.type=serverCompany.company_type||"";target.money=Number(state.money??serverCompany.money??0);target.coins=Number(wallet?.balance||0);target.setupPhase=serverCompany.setup_phase||"empty_building";
-        const stored=serverCompany.building_state;const hasStoredBuilding=stored&&typeof stored==="object"&&!Array.isArray(stored)&&Object.keys(stored).length>0;target.buildingState=hasStoredBuilding?stored:createStarterBuilding(target);
-        for(const[key,value]of Object.entries(state)){if(["money","coins","name","industry","type","serverCompanyId","slotNo","setupPhase","buildingState"].includes(key))continue;target[key]=value;}return target;
+        const stored=serverCompany.building_state;const hasStoredBuilding=stored&&typeof stored==="object"&&!Array.isArray(stored)&&Object.keys(stored).length>0;target.buildingState=hasStoredBuilding?structuredClone(stored):createStarterBuilding(target);
+        for(const[key,value]of Object.entries(state)){if(CORE_RUNTIME_KEYS.has(key))continue;target[key]=typeof structuredClone==="function"?structuredClone(value):value;this.hydratedStateKeys.add(key);}return target;
     }
     async refresh(){const overview=await this.api.accountOverview();this.companies=overview.companies||[];window.worldServerAccountOverview=overview;return overview;}
-    activate(serverCompany,target=window.worldPlayerCompany||{}){const wallet=window.worldServerAccountOverview?.wallet||{};this.hydrateCompany(target,serverCompany,wallet);this.activeCompany=target;window.worldPlayerCompany=target;window.worldActiveServerCompany=serverCompany;window.dispatchEvent(new CustomEvent("worldproject:company-switched",{detail:{company:target,serverCompany}}));return target;}
+    activate(serverCompany,target=window.worldPlayerCompany||{}){
+        const previousId=target?.serverCompanyId??null,wallet=window.worldServerAccountOverview?.wallet||{};this.hydrateCompany(target,serverCompany,wallet);this.activeCompany=target;window.worldPlayerCompany=target;window.worldActiveServerCompany=serverCompany;if(window.worldEngine)window.worldEngine.company=target;
+        const detail={company:target,serverCompany,previousCompanyId:previousId,companyId:serverCompany.id,slotNo:Number(serverCompany.slot_no||1)};
+        window.dispatchEvent(new CustomEvent("worldproject:company-switched",{detail}));window.dispatchEvent(new CustomEvent("worldproject:company-activated",{detail}));window.dispatchEvent(new CustomEvent("world:active-business-changed",{detail}));return target;
+    }
     nextFreeSlot(){const used=new Set(this.companies.map(c=>Number(c.slot_no)).filter(Number.isFinite));let slot=1;while(used.has(slot))slot++;return slot;}
     getExpansionRequirements(){return expansionRequirements(this.companies.length);}
     getExpansionStatus(sourceCompany=this.activeCompany||window.worldPlayerCompany){return canExpand({businesses:this.companies,sourceCompany,managementCapacity:Number(sourceCompany?.managementCapacity||0)});}
