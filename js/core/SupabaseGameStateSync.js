@@ -27,22 +27,20 @@ export class SupabaseGameStateSync {
                 if(clean!==undefined)out[k]=clean;
             }
             return out;
-        }finally{
-            // Only treat references on the current recursion path as cycles.
-            // Shared state arrays/objects used by multiple legacy/current views must
-            // be serialized at every required path so reloads restore consistent data.
-            seen.delete(value);
-        }
+        }finally{seen.delete(value);}
     }
 
     snapshot(){const company=window.worldPlayerCompany;if(!company)return null;const raw=this.sanitize(company)||{};for(const key of ["coins","name","industry","type","serverCompanyId","slotNo","setupPhase","buildingState"])delete raw[key];raw.money=Number(company.money||0);return raw;}
 
     async save(){
         if(this.saving||!window.worldPlayerCompany)return null;const company=window.worldPlayerCompany,state=this.snapshot();if(!state)return null;this.saving=true;
+        window.dispatchEvent(new CustomEvent("world:game-saving"));
         try{
             const result=company.serverCompanyId?await this.api.saveBusinessState(company.serverCompanyId,state):await this.api.saveGameState(state);
             if(company.serverCompanyId&&company.setupPhase&&company.buildingState)await this.api.updateBusinessSetup(company.serverCompanyId,company.setupPhase,company.buildingState);
             window.dispatchEvent(new CustomEvent("world:game-saved",{detail:result}));return result;
+        }catch(error){
+            window.dispatchEvent(new CustomEvent("world:game-save-error",{detail:{message:error?.message||String(error)}}));throw error;
         }finally{this.saving=false;}
     }
 
