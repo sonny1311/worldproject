@@ -14,7 +14,7 @@ function findPersonnelArea(root){
 
 async function openDestination(dashboard,kind){
   if(kind==='procure'){await dashboard.openOperationalSupplyChain('buy');return;}
-  if(kind==='buy_equipment'){await dashboard.openOperationalSupplyChain('production');return;}
+  if(kind==='buy_equipment'){await dashboard.openOperationalSupplyChain('machines');return;}
   if(kind==='hire'){
     const target=findPersonnelArea(dashboard.overlay||document);
     if(target)target.scrollIntoView({behavior:'smooth',block:'center'});
