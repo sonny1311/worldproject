@@ -18,6 +18,7 @@ import "./core/AdminConsoleSectionViews.js";
 import "./core/AdminConsoleActionViews.js";
 import "./core/AdminAuditAnalytics.js";
 import "./core/AdminAuditConsoleView.js";
+import "./core/AdminPersistentAuditView.js";
 import "./core/AdminCurrencySystem.js";
 import "./core/AdminCurrencyConsoleView.js";
 import "./core/AdminSupplierAwardConsoleViews.js";
