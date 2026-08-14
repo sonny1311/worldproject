@@ -28,6 +28,8 @@ import { runConstructionQueueTest } from "./ConstructionQueueSystem.js";
 import { runConstructionPremiumCoinTest } from "./ConstructionPremiumCoinSystem.js";
 import { runLiveTrafficRoutingTest } from "./LiveTrafficRoutingSystem.js";
 import { runLiveTrafficDeliveryIntegrationTest } from "./LiveTrafficDeliveryIntegration.js";
+import { runBusinessUpgradeTest } from "./BusinessUpgradeSystem.js";
+import { runRewardedAdSystemTest } from "./RewardedAdSystem.js";
 
 function runBottleWasherCompatibilityTest(){
  runIndustryEquipmentCatalogSupplementTest();
@@ -58,6 +60,8 @@ export function runCoreRegressionSuite(){
  run("Operational Supply 25",()=>runOperationalSupplyChainRegressionTest());
  run("Supply Transactions",()=>runOperationalSupplyTransactionTest({SupplyOrderSystem,WarehouseSystem,supplier:worldContentRegistry.get("suppliers","brew_malt_regional")}));
  run("Business Expansion Effects",()=>runBusinessExpansionOperationalEffectsTest());
+ run("Timed Business Upgrades",()=>runBusinessUpgradeTest());
+ run("Rewarded Ads",()=>runRewardedAdSystemTest());
  run("Land Construction",()=>runLandConstructionExpansionTest());
  run("Warehouse Construction",()=>runWarehouseConstructionExpansionTest());
  run("Progressive Building Expansion",()=>runProgressiveBuildingExpansionTest());
