@@ -12,7 +12,7 @@ function addQuickActions(dashboard,panel){
   quickButton('🚚 Lieferungen',()=>dashboard.openOperationalSupplyChain?.('deliveries')),
   quickButton('🏭 Produktion',()=>dashboard.openOperationalSupplyChain?.('production')),
   quickButton('⚙️ Ausbau',()=>window.worldTimedBusinessUpgrades?.open?.()),
-  quickButton('🚦 Verkehr',()=>window.worldLiveTrafficDelivery?.open?.()||window.worldLiveTrafficUI?.open?.()),
+  quickButton('🚦 Verkehr',()=>window.worldLiveTraffic?.open?.()),
   quickButton('📋 Läuft gerade',()=>window.worldActiveOperationsUI?.open?.())
  );
  const head=panel.firstElementChild;if(head?.nextSibling)panel.insertBefore(bar,head.nextSibling);else panel.append(bar);
