@@ -13,7 +13,8 @@ const productLabel=id=>worldContentRegistry.get('products',id)?.label||worldCont
 const money=v=>`${n(v).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})} €`;
 const statusLabel=s=>({open:'Offen',partial:'Teilweise geliefert',running:'In Produktion',queued:'Geplant',finished:'Fertig',paused:'Pausiert',in_transit:'Unterwegs',upgrading:'Im Ausbau'}[String(s||'').toLowerCase()]||String(s||'Offen'));
 const kindLabel={production:'🏭 Produktion',delivery:'🚚 Lieferung',construction:'🏗️ Bau/Ausbau',land:'🌍 Grundstück',warehouse_expansion:'🏬 Lagerausbau',machine_upgrade:'🔧 Maschinenupgrade',business_upgrade:'⚙️ Betriebsausbau'};
-function remaining(order={}){return Math.max(0,n(order.quantity??order.amount)-n(order.delivered??order.deliveredQuantity??order.fulfilledQuantity)-n(order.reserved));}
+function remaining(order={}){return Math.max(0,n(order.quantity??order.amount)-n(order.delivered??order.deliveredQuantity??order.fulfilledQuantity));}
+function orderProduct(order={}){return order.productId||order.product||order.itemId||order.outputId||'';}
 function dueText(order={}){const raw=order.dueAt??order.deliveryDeadline??order.deadline;if(!raw)return'Keine feste Frist';const ms=Number(raw)||Date.parse(raw);if(!Number.isFinite(ms))return'Keine feste Frist';const diff=ms-Date.now(),m=Math.ceil(Math.abs(diff)/60000),h=Math.floor(m/60),rest=m%60;return diff<0?`⚠️ ${h?h+' Std. ':''}${rest} Min. überfällig`:`Noch ${h?h+' Std. ':''}${rest} Min.`;}
 function durationText(ms){if(ms===null||ms===undefined)return'—';let min=Math.max(0,Math.ceil(ms/60000));const d=Math.floor(min/1440);min%=1440;const h=Math.floor(min/60),m=min%60;return[d?`${d} T`:null,h?`${h} Std.`:null,`${m} Min.`].filter(Boolean).join(' ');}
 function availableFinished(c,product){try{if(window.worldUnifiedOperationalStock?.has?.(c))return Math.max(0,n(window.worldUnifiedOperationalStock.amount(c,product,{finished:true})));}catch{}return Math.max(0,n(c?.finishedGoods?.[product]));}
@@ -27,7 +28,7 @@ function button(text,fn){const b=document.createElement('button');b.textContent=
 function card(){const x=document.createElement('div');Object.assign(x.style,{background:'#111827',border:'1px solid #334155',borderRadius:'12px',padding:'14px',boxShadow:'0 8px 24px rgba(0,0,0,.16)'});return x;}
 function closeCustomerOverlay(){document.querySelector('[data-world-customer-orders-overlay]')?.remove();}
 function deliverCustomerOrder(order,{rerender=renderHomeOperationsDashboard,closeAfter=false}={}){
- const c=activeCompany();if(!c||!order)return;const product=order.product||order.productId||order.itemId,open=remaining(order),available=availableFinished(c,product),qty=Math.min(open,available);
+ const c=activeCompany();if(!c||!order)return;const product=orderProduct(order),open=remaining(order),available=availableFinished(c,product),qty=Math.min(open,available);
  if(!(qty>0)){alert(`Keine lieferbare Ware vorhanden.\nBenötigt: ${open.toLocaleString('de-DE')}\nIm Fertigwarenlager: ${available.toLocaleString('de-DE')}\n\nBitte zuerst produzieren.`);return;}
  const full=qty>=open,question=full?`${open.toLocaleString('de-DE')} ${productLabel(product)} jetzt an ${order.customerName||order.customer?.name||order.customer||'den Kunden'} liefern?`:`Es sind nur ${qty.toLocaleString('de-DE')} von ${open.toLocaleString('de-DE')} verfügbar.\nDiese Teilmenge jetzt liefern?`;
  if(!confirm(question))return;
@@ -39,7 +40,7 @@ function deliverCustomerOrder(order,{rerender=renderHomeOperationsDashboard,clos
  }catch(e){alert(e?.message||String(e));}
 }
 function customerOrderCard(o,{rerender=renderHomeOperationsDashboard,compact=false}={}){
- const c=activeCompany(),box=card(),urgent=Boolean(o.urgent||o.isUrgent||String(o.kind||'').includes('urgent')),product=o.product||o.productId||o.itemId,rem=remaining(o),available=availableFinished(c,product),price=n(o.unitPrice??o.pricePerUnit??o.price),customer=o.customerName||o.customer?.name||o.customer||'Kunde';
+ const c=activeCompany(),box=card(),urgent=Boolean(o.urgent||o.isUrgent||String(o.kind||'').includes('urgent')),product=orderProduct(o),rem=remaining(o),available=availableFinished(c,product),price=n(o.unitPrice??o.pricePerUnit??o.price),customer=o.customerName||o.customer?.name||o.customer||'Kunde';
  const title=document.createElement('div');title.innerHTML=`<b>${urgent?'⚡ Eilauftrag':'📦 Kundenauftrag'} – ${customer}</b>`;title.style.fontSize='17px';const facts=document.createElement('div');Object.assign(facts.style,{lineHeight:'1.55',marginTop:'8px',color:'#dbeafe'});facts.innerHTML=`Ware: <b>${productLabel(product)}</b><br>Menge offen: <b>${rem.toLocaleString('de-DE')}</b><br>Fertigware verfügbar: <b>${available.toLocaleString('de-DE')}</b><br>Auftragswert offen: <b>${money(rem*price)}</b><br>Lieferfrist: <b>${dueText(o)}</b><br>Status: <b>${statusLabel(o.status)}</b>`;
  const actions=document.createElement('div');Object.assign(actions.style,{display:'flex',gap:'7px',flexWrap:'wrap',marginTop:'10px'});const send=button(available>=rem&&rem>0?'🚚 Auftrag liefern':available>0?'🚚 Teilmenge liefern':'🚚 Ware fehlt',()=>deliverCustomerOrder(o,{rerender}));if(available<=0){send.disabled=true;Object.assign(send.style,{opacity:'.5',cursor:'not-allowed'});}else Object.assign(send.style,{background:'#166534',borderColor:'#22c55e'});actions.append(send,button('🏭 Produktion',()=>openProduction('production')));if(!compact)actions.append(button('📋 Betrieb im Überblick',openAllOperations));box.append(title,facts,actions);return box;
 }
