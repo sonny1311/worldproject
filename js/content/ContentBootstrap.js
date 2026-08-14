@@ -5,6 +5,7 @@ import "./AllIndustryEconomyContent.js";
 import "./AgricultureCropContent.js";
 import "./BrewerySupplySupplement.js";
 import "./ConnectedIndustryChainsContent.js";
+import "./SupplyChainClosureSupplement.js";
 import "./MarketAndFleetContentData.js";
 import "./WorkforceContentData.js";
 import "../core/IndustryChainCatalogSupplement.js";
