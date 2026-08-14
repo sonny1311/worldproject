@@ -1,0 +1,63 @@
+// WorldProject - spielbare Vorlieferanten und Verarbeiter fuer die geschlossene Wirtschaftskette.
+import { IndustryProfiles, IndustryGroups } from "./IndustryCatalog.js";
+
+const roomsDefault=[{id:"production",name:"Produktionsbereich",areaM2:180},{id:"storage",name:"Lager",areaM2:100},{id:"office",name:"Buero",areaM2:20}];
+const add=(type,branchKey,label,equipment,allowedItems=[],products=[],recipes=[],rooms=roomsDefault)=>{
+  if(IndustryProfiles[type])return;
+  const requiredEquipment=equipment.filter(x=>x.required!==false).map(x=>x.id);
+  IndustryProfiles[type]={branchKey,label,starterBuilding:{name:`Leerer Betrieb – ${label}`,areaM2:rooms.reduce((s,r)=>s+r.areaM2,0),rooms:rooms.map(r=>({...r}))},equipment,requiredEquipment,allowedItems,products,recipes};
+};
+const machine=(id,name,price,required=true,room="production")=>({id,name,price,required,room});
+
+add("Forstbetrieb","forestry","Forstbetrieb",[machine("forestry_harvester","Forstmaschine",42000),machine("forwarder","Rueckezug",31000,false)],
+ ["forest_seedlings","diesel"],["roundwood_soft","roundwood_hard"],["forestry_softwood","forestry_hardwood"],
+ [{id:"yard",name:"Forsthof",areaM2:220},{id:"forest",name:"Bewirtschaftete Waldflaeche",areaM2:1500},{id:"storage",name:"Holzlager",areaM2:240},{id:"office",name:"Buero",areaM2:20}]);
+add("Saegewerk","sawmill","Saegewerk",[machine("sawmill_line","Saegewerkslinie",26000),machine("log_loader","Rundholz-Lader",14500,false)],
+ ["roundwood_soft","roundwood_hard"],["softwood","hardwood"],["saw_softwood","saw_hardwood"]);
+add("Muehle","mill","Muehle",[machine("grain_mill","Getreidemuehle",22000),machine("grain_cleaner","Getreidereinigung",8500)],
+ ["wheat"],["flour_wheat"],["mill_wheat"]);
+add("Maelzerei","maltster","Maelzerei",[machine("malting_line","Maelzereianlage",34000),machine("malt_silo","Malzsilo",11000)],
+ ["barley","water"],["malt"],["malt_barley"]);
+add("Hopfenbaubetrieb","hops_farm","Hopfenbaubetrieb",[machine("hop_harvester","Hopfenerntetechnik",26000),machine("hop_dryer","Hopfendarre",14500)],
+ ["fertilizer","diesel"],["raw_hops"],["grow_hops"],
+ [{id:"yard",name:"Betriebshof",areaM2:220},{id:"fields",name:"Hopfenflaechen",areaM2:1200},{id:"storage",name:"Hopfenlager",areaM2:160},{id:"office",name:"Buero",areaM2:20}]);
+add("Zuckerfabrik","sugar_factory","Zuckerfabrik",[machine("sugar_line","Zuckerraffinerie",39000),machine("sugar_silo","Zuckersilo",12000)],
+ ["sugar_beet","water"],["sugar"],["refine_sugar"]);
+add("Futtermuehle","feed_mill","Futtermuehle",[machine("feed_mixer","Futtermischanlage",21000),machine("feed_silo","Futtersilo",9500)],
+ ["feed_grain","wheat","barley"],["animal_feed"],["feed_mix"]);
+add("Molkerei","dairy","Molkerei",[machine("dairy_line","Molkereianlage",31000),machine("dairy_cooling","Milchkuehlung",13000)],
+ ["raw_milk"],["butter","cream"],["dairy_butter","dairy_cream"]);
+add("Schlachthof","slaughterhouse","Schlachthof",[machine("slaughter_line","Verarbeitungslinie",42000),machine("cold_room","Kuehlhaus",18000)],
+ ["cattle","pigs"],["beef","pork"],["slaughter_beef","slaughter_pork"]);
+add("Glaswerk","glassworks","Glaswerk / Flaschenhersteller",[machine("glass_furnace","Glasschmelzofen",52000),machine("bottle_former","Flaschenformmaschine",33000)],
+ ["silica_sand","soda_ash","limestone"],["glass_bottle_033","glass_bottle_050"],["glass_033","glass_050"]);
+add("Verschlusshersteller","closures","Verschlusshersteller",[machine("cap_press","Kronkorkenpresse",28000),machine("cap_coater","Beschichtungsanlage",11500,false)],
+ ["steel_sheet"],["crown_cap"],["caps_make"]);
+add("Papierfabrik","paper_mill","Papierfabrik",[machine("paper_machine","Papiermaschine",43000),machine("pulp_prep","Stoffaufbereitung",16500)],
+ ["wood_pulp","water"],["paper_roll"],["paper_make"]);
+add("Etikettendruckerei","label_print","Etikettendruckerei",[machine("label_press","Etikettendruckmaschine",24000),machine("die_cutter","Stanzanlage",9000)],
+ ["paper_roll","printing_ink"],["label_033","label_050"],["labels_033_make","labels_050_make"]);
+add("Verpackungshersteller","packaging_maker","Verpackungshersteller",[machine("packaging_line","Verpackungslinie",27000),machine("cardboard_cutter","Kartonstanze",10500)],
+ ["cardboard","paper_roll"],["shipping_box","bakery_bag","meat_packaging","fruit_crate"],["packaging_make"]);
+add("Stahlwerk","steelworks","Stahlwerk",[machine("rolling_mill","Walzwerk",56000),machine("steel_furnace","Stahlofen",48000,false)],
+ ["steel_coil"],["steel_sheet","steel_bar"],["steel_sheet_make","steel_bar_make"]);
+add("Kunststoffrohstoffwerk","polymer","Kunststoffrohstoffwerk",[machine("polymer_line","Polymeranlage",49000),machine("pelletizer","Granulieranlage",19000)],
+ ["plastic_feedstock"],["plastic_granulate"],["plastic_granulate_make"]);
+add("Lebensmittelchemie","food_chemicals","Lebensmittelchemie",[machine("chemical_mixer","Lebensmittel-Mischreaktor",32000),machine("lab_station","Qualitaetslabor",12000)],
+ ["water"],["citric_acid","beverage_flavour","bottle_wash_chem"],["food_chemicals"]);
+add("Agrarchemie","agri_chemicals","Agrarchemie",[machine("fertilizer_line","Duengeranlage",36000),machine("bulk_loader","Schuettgutverladung",9000,false)],
+ ["water"],["fertilizer"],["fertilizer_make"]);
+
+const addGroup=(name,types)=>{IndustryGroups[name]??=[];for(const type of types)if(!IndustryGroups[name].includes(type))IndustryGroups[name].push(type);};
+addGroup("Rohstoffgewinnung",["Forstbetrieb","Hopfenbaubetrieb"]);
+addGroup("Agrarverarbeitung",["Muehle","Maelzerei","Zuckerfabrik","Futtermuehle","Molkerei","Schlachthof"]);
+addGroup("Grundstoffindustrie",["Saegewerk","Glaswerk","Stahlwerk","Kunststoffrohstoffwerk","Papierfabrik","Lebensmittelchemie","Agrarchemie"]);
+addGroup("Verpackung",["Verschlusshersteller","Etikettendruckerei","Verpackungshersteller"]);
+
+export function runIndustryChainCatalogTest(){
+ const required=["Forstbetrieb","Saegewerk","Muehle","Maelzerei","Hopfenbaubetrieb","Glaswerk","Verschlusshersteller","Etikettendruckerei","Futtermuehle","Molkerei","Schlachthof","Stahlwerk","Kunststoffrohstoffwerk"];
+ const missing=required.filter(x=>!IndustryProfiles[x]);
+ const success=missing.length===0&&IndustryProfiles["Muehle"].products.includes("flour_wheat")&&IndustryProfiles["Maelzerei"].products.includes("malt")&&IndustryProfiles["Glaswerk"].products.includes("glass_bottle_033");
+ if(!success)throw new Error(`Wirtschaftsketten-Gewerbe fehlen: ${missing.join(", ")}`);
+ return {success,count:required.length};
+}
