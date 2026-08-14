@@ -22,6 +22,8 @@ import { runWarehouseClearanceSaleTest } from "./WarehouseClearanceSaleIntegrati
 import { runWarehouseSpaceRuntimeGuardTest } from "./WarehouseSpaceRuntimeGuard.js";
 import { runPlayerMarketOperationalStockTest } from "./PlayerMarketExchange.js";
 import { runPlayerMarketDialogShapeTest } from "./PlayerMarketDialog.js";
+import { runPlayerCoinMarketTest } from "./PlayerCoinMarketExchange.js";
+import { runPlayerCoinMarketUITest } from "./PlayerCoinMarketUIIntegration.js";
 import { runLandConstructionExpansionTest } from "./LandConstructionExpansionSystem.js";
 import { runWarehouseConstructionExpansionTest } from "./WarehouseConstructionExpansionSystem.js";
 import { runProgressiveBuildingExpansionTest } from "./ProgressiveBuildingExpansionSystem.js";
@@ -99,6 +101,8 @@ export function runCoreRegressionSuite(){
  run("Warehouse Pack Space",()=>runWarehouseSpaceRuntimeGuardTest());
  run("Player Market Operational Stock",()=>runPlayerMarketOperationalStockTest());
  run("Player Market Categories",()=>runPlayerMarketDialogShapeTest());
+ run("Player Coin Market",()=>runPlayerCoinMarketTest());
+ run("Player Coin Market UI",()=>runPlayerCoinMarketUITest());
  run("Finance Ledger",()=>runDashboardFinanceLedgerTest());
  run("Extended Core",()=>runExtendedCoreRegression());
  const activeCompany=window.worldPlayerCompany;if(activeCompany&&typeof activeCompany==="object"&&Object.keys(activeCompany).length>0)run("Persistence Reload",()=>persistenceReloadHealth(activeCompany));
