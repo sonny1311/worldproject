@@ -1,20 +1,22 @@
 // ORVUNO - persistenter Spielstand ueber Supabase
 export class SupabaseGameStateSync {
-    constructor({api,intervalMs=5000}={}){
-        this.api=api;this.intervalMs=intervalMs;this.timer=null;this.saving=false;this.retryTimer=null;this.retryAttempt=0;
+    constructor({api,intervalMs=5000,dirtyDelayMs=900}={}){
+        this.api=api;this.intervalMs=intervalMs;this.dirtyDelayMs=dirtyDelayMs;this.timer=null;this.dirtyTimer=null;this.saving=false;this.retryTimer=null;this.retryAttempt=0;
         for(const event of ["worldproject:company-founded","worldproject:company-loaded","worldproject:company-switched"]){
             window.addEventListener(event,()=>{this.restoreRuntimeIfNeeded();this.start();});
         }
         window.addEventListener("world:server-balances-changed",()=>this.refreshBalances());
         for(const event of ["world:state-dirty","world:game-state-dirty"]){
-            window.addEventListener(event,()=>this.save().catch(e=>console.warn("Sofortspeichern fehlgeschlagen",e)));
+            window.addEventListener(event,()=>this.scheduleBackgroundSave());
         }
-        if(typeof document!=="undefined")document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")this.save().catch(e=>console.warn("Speichern beim App-/Tabwechsel fehlgeschlagen",e));});
-        window.addEventListener("pagehide",()=>this.save().catch(()=>{}));
+        if(typeof document!=="undefined")document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"){this.clearDirtyTimer();this.save().catch(e=>console.warn("Speichern beim App-/Tabwechsel fehlgeschlagen",e));}});
+        window.addEventListener("pagehide",()=>{this.clearDirtyTimer();this.save().catch(()=>{});});
         window.addEventListener("online",()=>{if(this.retryAttempt>0||window.worldPlayerCompany)this.save({retry:true}).catch(()=>{});});
     }
 
     start(){if(this.timer)return;this.timer=setInterval(()=>this.save().catch(()=>{}),this.intervalMs);console.log("✅ SUPABASE-SPIELSTANDSYNCHRONISATION AKTIV");}
+    clearDirtyTimer(){if(this.dirtyTimer){clearTimeout(this.dirtyTimer);this.dirtyTimer=null;}}
+    scheduleBackgroundSave(){this.clearDirtyTimer();this.dirtyTimer=setTimeout(()=>{this.dirtyTimer=null;this.save().catch(e=>console.warn("Hintergrundspeichern fehlgeschlagen",e));},this.dirtyDelayMs);}
     scheduleRetry(){if(this.retryTimer||this.retryAttempt>=5)return;this.retryAttempt++;const delay=Math.min(60000,2000*Math.pow(2,this.retryAttempt-1));this.retryTimer=setTimeout(()=>{this.retryTimer=null;this.save({retry:true}).catch(()=>{});},delay);window.dispatchEvent(new CustomEvent("world:game-save-retry",{detail:{attempt:this.retryAttempt,delay}}));}
     clearRetry(){if(this.retryTimer){clearTimeout(this.retryTimer);this.retryTimer=null;}this.retryAttempt=0;}
 
