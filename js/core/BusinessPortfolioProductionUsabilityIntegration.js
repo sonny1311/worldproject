@@ -1,4 +1,5 @@
 // WorldProject – macht den Gewerbekatalog im Dark-UI lesbar und stellt direkten Produktionszugang wieder her.
+import './BusinessPortfolioStickyCloseIntegration.js';
 import { BusinessPortfolioDialog } from './BusinessPortfolioDialog.js';
 import { OperationalSupplyChainDialog } from './OperationalSupplyChainDialog.js';
 import { applyFocus } from './OperationalDialogSectionPersistenceIntegration.js';
