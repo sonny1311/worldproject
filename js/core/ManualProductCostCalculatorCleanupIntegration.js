@@ -1,3 +1,5 @@
+import './BusinessPortfolioVisualPolishIntegration.js';
+
 // ORVUNO – entfernt den alten manuellen Produktkosten-/Deckungsbeitragsrechner aus der Spieleroberfläche.
 // Die echten automatischen Kosten-, Buchungs- und Wirtschaftssysteme bleiben unverändert.
 
