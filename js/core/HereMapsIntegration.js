@@ -1,3 +1,4 @@
+import './LocalHereTrafficFetchBridge.js';
 import { loadLocalConfig, getHereApiKey } from '../config.js';
 
 const SDK_BASE='https://js.api.here.com/v3/3.1';
