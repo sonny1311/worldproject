@@ -8,6 +8,7 @@ const TYPE_LABELS={
   storage_expansion:'Lagerausbau',
   machine_upgrade:'Maschinen-Upgrade',
   solar_investment:'Solaranlage / Energieinvestition',
+  business_creation:'Betriebsgründung',
   vehicle_service:'Fahrzeugwartung',
   fleet_trip:'Fahrtkosten',
   customer_sale:'Kundenverkauf',
@@ -51,9 +52,9 @@ if(!proto.__worldFinanceLedgerIntegrated){
 }
 
 export function runDashboardFinanceLedgerTest(){
-  const c={financialLog:[{type:'supplier_order',amount:-100,time:1},{type:'customer_sale',amount:160,time:2},{type:'warehouse_clearance_sale',amount:20,time:3},{type:'solar_investment',amount:-5000,time:4}]};
-  const totals=financeLedgerTotals(c),rows=financeLedgerRows(c,{limit:4});
-  if(totals.income!==180||totals.expense!==5100||rows[0].label!=='Solaranlage / Energieinvestition')throw new Error('Ein-/Ausgabenliste fehlerhaft');
+  const c={financialLog:[{type:'supplier_order',amount:-100,time:1},{type:'customer_sale',amount:160,time:2},{type:'warehouse_clearance_sale',amount:20,time:3},{type:'solar_investment',amount:-5000,time:4},{type:'business_creation',amount:-75000,time:5}]};
+  const totals=financeLedgerTotals(c),rows=financeLedgerRows(c,{limit:5});
+  if(totals.income!==180||totals.expense!==80100||rows[0].label!=='Betriebsgründung'||rows[1].label!=='Solaranlage / Energieinvestition')throw new Error('Ein-/Ausgabenliste fehlerhaft');
   return true;
 }
 if(typeof window!=='undefined')window.runDashboardFinanceLedgerTest=runDashboardFinanceLedgerTest;
