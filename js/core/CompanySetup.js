@@ -1,4 +1,4 @@
-// WorldProject - Unternehmensgründung mit leerem Startgebäude
+// ORVUNO - Unternehmensgründung mit leerem Startgebäude
 import { IndustryGroups, createStarterBuilding } from "./IndustryCatalog.js";
 
 export class CompanySetup {
@@ -13,22 +13,15 @@ export class CompanySetup {
             window.worldServerAccountOverview=overview;
             return overview;
         }
-        // Fallback: bestehende Betriebe und Coin-Wallet direkt über die bereits authentifizierte REST-API laden.
         const user=await api.me();
         const companies=await api.rest(`companies?user_id=eq.${encodeURIComponent(user.id)}&select=*&order=slot_no.asc`);
         let wallet={balance:0};
-        try{
-            const rows=await api.rest(`coin_wallets?user_id=eq.${encodeURIComponent(user.id)}&select=*`);
-            if(rows?.[0])wallet=rows[0];
-        }catch(error){console.warn("Coin-Wallet konnte nicht geladen werden",error);}
-        const overview={user,companies:Array.isArray(companies)?companies:[],wallet};
-        window.worldServerAccountOverview=overview;
-        return overview;
+        try{const rows=await api.rest(`coin_wallets?user_id=eq.${encodeURIComponent(user.id)}&select=*`);if(rows?.[0])wallet=rows[0];}catch(error){console.warn("Coin-Wallet konnte nicht geladen werden",error);}
+        const overview={user,companies:Array.isArray(companies)?companies:[],wallet};window.worldServerAccountOverview=overview;return overview;
     }
 
     async show(){
-        if(this.overlay||this.loading)return;
-        this.loading=true;
+        if(this.overlay||this.loading)return;this.loading=true;
         try{
             const overview=await this.loadAccountOverview();
             if(overview?.companies?.length){
@@ -36,20 +29,13 @@ export class CompanySetup {
                 this.hydrateCompany(serverCompany,overview.wallet);
                 window.worldPlayerCompany=this.company;window.worldActiveServerCompany=serverCompany;
                 window.dispatchEvent(new CustomEvent("worldproject:company-loaded",{detail:{company:this.company,serverCompany}}));
-                if(this.onComplete)this.onComplete(this.company);
-                return;
+                if(this.onComplete)this.onComplete(this.company);return;
             }
-            // Nur wenn die Serverabfrage erfolgreich war und wirklich kein Betrieb existiert,
-            // darf die Erstgründung erscheinen.
             this.createOverlay();this.updateTypes();document.body.appendChild(this.overlay);
         }catch(error){
             console.error("Betriebsstatus konnte nicht sicher geladen werden",error);
-            // Bei einem Lade-/Netzwerkfehler niemals fälschlich eine erneute Erstgründung anbieten.
-            setTimeout(()=>{this.loading=false;this.show();},1500);
-            return;
-        }finally{
-            this.loading=false;
-        }
+            setTimeout(()=>{this.loading=false;this.show();},1500);return;
+        }finally{this.loading=false;}
     }
 
     hydrateCompany(serverCompany,wallet={}){
@@ -59,27 +45,29 @@ export class CompanySetup {
     }
 
     createOverlay(){
-        this.overlay=document.createElement("div");Object.assign(this.overlay.style,{position:"fixed",inset:"0",background:"rgba(0,0,0,.78)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:"1000"});
-        const panel=document.createElement("div");Object.assign(panel.style,{width:"470px",padding:"30px",background:"#fff",borderRadius:"12px",boxShadow:"0 10px 40px rgba(0,0,0,.4)",fontFamily:"Arial,sans-serif"});
-        const title=document.createElement("h1");title.textContent="Ersten Betrieb gründen";title.style.marginTop="0";panel.appendChild(title);
-        const info=document.createElement("div");info.textContent="Du startest mit einem leeren Gebäude. Maschinen, Einrichtung und Rohstoffe musst du danach selbst kaufen.";Object.assign(info.style,{padding:"10px",background:"#eef3f8",borderRadius:"8px",marginBottom:"14px"});panel.appendChild(info);
-        const nameInput=document.createElement("input");nameInput.type="text";nameInput.placeholder="Firmenname";Object.assign(nameInput.style,{width:"100%",boxSizing:"border-box",padding:"10px",margin:"7px 0",fontSize:"16px"});panel.appendChild(nameInput);
-        this.industrySelect=document.createElement("select");Object.assign(this.industrySelect.style,{width:"100%",padding:"10px",margin:"7px 0"});for(const industry of Object.keys(this.industries)){const o=document.createElement("option");o.value=industry;o.textContent=industry;this.industrySelect.appendChild(o);}this.industrySelect.addEventListener("change",()=>this.updateTypes());panel.appendChild(this.industrySelect);
-        this.typeSelect=document.createElement("select");Object.assign(this.typeSelect.style,{width:"100%",padding:"10px",margin:"7px 0"});panel.appendChild(this.typeSelect);
-        const button=document.createElement("button");button.textContent="Betrieb gründen";Object.assign(button.style,{width:"100%",padding:"12px",marginTop:"20px",fontSize:"16px",cursor:"pointer"});
+        this.overlay=document.createElement("div");Object.assign(this.overlay.style,{position:"fixed",inset:"0",background:"radial-gradient(circle at 50% 15%,#17263d,#03070c 72%)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:"19000",padding:"22px",fontFamily:"Arial,sans-serif"});
+        const panel=document.createElement("div");Object.assign(panel.style,{width:"min(620px,94vw)",padding:"34px",background:"#101a2b",color:"#f8fafc",border:"1px solid #394457",borderRadius:"18px",boxShadow:"0 24px 80px rgba(0,0,0,.55)"});
+        const brand=document.createElement("div");brand.textContent="ORVUNO";Object.assign(brand.style,{color:"#f4bd43",fontWeight:"900",letterSpacing:"3px",fontSize:"15px",marginBottom:"8px"});panel.appendChild(brand);
+        const title=document.createElement("h1");title.textContent="Deinen ersten Betrieb gründen";Object.assign(title.style,{margin:"0 0 10px",fontSize:"30px"});panel.appendChild(title);
+        const info=document.createElement("div");info.innerHTML="Du startest bewusst klein: <b>leeres Startgebäude, begrenztes Kapital und keine fertige Produktion.</b><br><br>Nach der Gründung führst du deinen Betrieb Schritt für Schritt durch Einrichtung, Maschinenkauf, Personal, Rohstoffe und die erste Produktion.";Object.assign(info.style,{padding:"14px",background:"#172235",border:"1px solid #334155",borderRadius:"10px",marginBottom:"20px",lineHeight:"1.5",color:"#dce3ed"});panel.appendChild(info);
+        const label=(text)=>{const l=document.createElement("div");l.textContent=text;Object.assign(l.style,{fontWeight:"800",margin:"12px 0 5px"});return l;};
+        const nameInput=document.createElement("input");nameInput.type="text";nameInput.placeholder="z. B. ORVUNO Brauerei GmbH";Object.assign(nameInput.style,{width:"100%",boxSizing:"border-box",padding:"12px",background:"#0b1320",color:"#fff",border:"1px solid #475569",borderRadius:"9px",fontSize:"16px"});panel.append(label("Firmenname"),nameInput);
+        this.industrySelect=document.createElement("select");Object.assign(this.industrySelect.style,{width:"100%",padding:"12px",background:"#0b1320",color:"#fff",border:"1px solid #475569",borderRadius:"9px",fontSize:"15px"});for(const industry of Object.keys(this.industries)){const o=document.createElement("option");o.value=industry;o.textContent=industry;this.industrySelect.appendChild(o);}this.industrySelect.addEventListener("change",()=>this.updateTypes());panel.append(label("Branche"),this.industrySelect);
+        this.typeSelect=document.createElement("select");Object.assign(this.typeSelect.style,{width:"100%",padding:"12px",background:"#0b1320",color:"#fff",border:"1px solid #475569",borderRadius:"9px",fontSize:"15px"});panel.append(label("Gewerbe"),this.typeSelect);
+        const tip=document.createElement("div");tip.textContent="Tipp: Wähle das Gewerbe, das du wirklich spielen möchtest. Weitere Betriebe kannst du später als Teil deines Konzerns gründen.";Object.assign(tip.style,{fontSize:"13px",color:"#9fb0c6",marginTop:"14px",lineHeight:"1.4"});panel.append(tip);
+        const button=document.createElement("button");button.textContent="Betrieb gründen und starten";Object.assign(button.style,{width:"100%",padding:"14px",marginTop:"22px",fontSize:"16px",cursor:"pointer",border:0,borderRadius:"10px",background:"#3868ee",color:"#fff",fontWeight:"900"});
         button.addEventListener("click",async()=>{
-            const name=nameInput.value.trim();if(!name){alert("Bitte einen Firmennamen eingeben.");return;}button.disabled=true;
+            const name=nameInput.value.trim();if(!name){alert("Bitte einen Firmennamen eingeben.");return;}button.disabled=true;button.textContent="Betrieb wird angelegt …";
             try{
                 const api=window.worldAccounts.authApi;
                 const result=await api.createBusiness({name,industry:this.industrySelect.value,companyType:this.typeSelect.value,slotNo:1});
                 this.hydrateCompany(result.company,{balance:window.worldServerAccountOverview?.wallet?.balance||0});
                 this.company.setupPhase="empty_building";this.company.buildingState=createStarterBuilding(this.company);
                 await api.updateBusinessSetup(result.company.id,this.company.setupPhase,this.company.buildingState);
-                window.worldServerAccountOverview=null;
-                const overview=await this.loadAccountOverview();
+                window.worldServerAccountOverview=null;const overview=await this.loadAccountOverview();
                 window.worldPlayerCompany=this.company;window.worldActiveServerCompany=result.company;
                 window.dispatchEvent(new CustomEvent("worldproject:company-founded",{detail:{company:this.company,serverCompany:result.company,overview}}));this.close();if(this.onComplete)this.onComplete(this.company);
-            }catch(error){alert(`Betrieb konnte nicht gespeichert werden: ${error.message}`);button.disabled=false;}
+            }catch(error){alert(`Betrieb konnte nicht gespeichert werden: ${error.message}`);button.disabled=false;button.textContent="Betrieb gründen und starten";}
         });
         panel.appendChild(button);this.overlay.appendChild(panel);
     }
