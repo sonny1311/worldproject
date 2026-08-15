@@ -6,6 +6,7 @@ import "./core/GlobalDarkThemeIntegration.js";
 import "./core/DarkMainNavigationIntegration.js";
 import "./core/DarkCommandCenterHeaderIntegration.js";
 import "./core/HomeOperationsDashboardIntegration.js";
+import "./core/HomeDeliveryCoinShortcutIntegration.js";
 import "./core/HomeWarehouseAndPartialDeliveryIntegration.js";
 import "./core/CustomerOrderProductIdCompatibilityIntegration.js";
 import "./core/CustomerOrderRuntimeHydrationIntegration.js";
