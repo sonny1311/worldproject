@@ -49,7 +49,7 @@ export function recoverConfirmedDeliveries(company=currentCompany()){
     const key=orderIdentity(order);if(seen.has(key))return;seen.add(key);
     const material=canonicalMaterialId(rawMaterial),quantity=Math.max(0,Number(rawQuantity)||0);
     if(!material||material==="undefined"||material==="materials.undefined"||quantity<=0)return;
-    recovered.set(material,(recovered.get(material)||0)+quantity;
+    recovered.set(material,(recovered.get(material)||0)+quantity);
   };
 
   for(const order of state.orders||[]){if(order&&order.status==="stored")addOrder(order,order.material||order.itemId,order.quantity??order.amount);}
