@@ -19,6 +19,7 @@ import "./core/LegacyEconomyWarehouseSpaceBridge.js";
 import "./core/UnifiedOperationalStockBridge.js";
 import "./core/WarehousePackDisplayIntegration.js";
 import "./core/OperationalSupplyChainEquipmentIntegration.js";
+import "./core/OperationalWarehouseVisualFixIntegration.js";
 import "./core/MachineConditionProductionGuard.js";
 import "./core/MachineMaintenanceSystem.js";
 import "./core/MachineConditionVisibilityIntegration.js";
