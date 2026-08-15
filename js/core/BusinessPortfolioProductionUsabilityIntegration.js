@@ -2,6 +2,7 @@
 import './BusinessPortfolioStickyCloseIntegration.js';
 import { BusinessPortfolioDialog } from './BusinessPortfolioDialog.js';
 import { OperationalSupplyChainDialog } from './OperationalSupplyChainDialog.js';
+import { universalOperationsDialog } from './UniversalOperationsDialog.js';
 import { applyFocus } from './OperationalDialogSectionPersistenceIntegration.js';
 
 const proto=BusinessPortfolioDialog.prototype;
@@ -30,6 +31,13 @@ function styleCatalog(panel){
  return true;
 }
 
+function translatePropertyMode(panel){
+ for(const option of panel?.querySelectorAll?.('option')||[]){
+  if(option.value==='rent')option.textContent='Miete';
+  if(option.value==='buy')option.textContent='Kauf';
+ }
+}
+
 async function openOperationalSection(owner,section='production'){
  const company=window.worldPlayerCompany||owner?.portfolio?.activeCompany;
  if(!company)throw new Error('Kein aktiver Betrieb vorhanden');
@@ -44,17 +52,26 @@ async function openOperationalSection(owner,section='production'){
  return true;
 }
 
+function openExpansion(owner){
+ const company=window.worldPlayerCompany||owner?.portfolio?.activeCompany;
+ if(!company)throw new Error('Kein aktiver Betrieb vorhanden');
+ owner?.close?.();
+ universalOperationsDialog.open('expansion');
+ return true;
+}
+
 function addActiveBusinessActions(dialog,panel){
  if(!panel?.querySelectorAll)return false;
- const activeButton=[...panel.querySelectorAll('button')].find(b=>String(b.textContent||'').trim()==='Aktiver Betrieb');
+ const activeButton=[...panel.querySelectorAll('button')].find(b=>['Aktiver Betrieb','✅ Aktiver Betrieb'].includes(String(b.textContent||'').trim()));
  const card=activeButton?.parentElement;if(!card)return false;
  activeButton.textContent='✅ Aktiver Betrieb';activeButton.disabled=true;
  if(card.querySelector('[data-world-active-business-actions]'))return true;
  const actions=document.createElement('div');actions.dataset.worldActiveBusinessActions='1';Object.assign(actions.style,{display:'flex',gap:'8px',flexWrap:'wrap',marginTop:'9px'});
+ const expansion=dialog.button('🏗️ Grundstück & Betrieb ausbauen',()=>{try{openExpansion(dialog);}catch(e){alert(e.message);}});
  const production=dialog.button('🏭 Produktion öffnen',()=>openOperationalSection(dialog,'production').catch(e=>alert(e.message)));
  const supply=dialog.button('📦 Einkauf & Lager',()=>openOperationalSection(dialog,'buy').catch(e=>alert(e.message)));
- Object.assign(production.style,{background:'#166534',color:'#fff',border:'1px solid #22c55e'});Object.assign(supply.style,{background:'#1e3a8a',color:'#fff',border:'1px solid #60a5fa'});
- actions.append(production,supply);card.append(actions);return true;
+ Object.assign(expansion.style,{background:'#92400e',color:'#fff',border:'1px solid #f59e0b',fontSize:'15px',padding:'10px 13px'});Object.assign(production.style,{background:'#166534',color:'#fff',border:'1px solid #22c55e'});Object.assign(supply.style,{background:'#1e3a8a',color:'#fff',border:'1px solid #60a5fa'});
+ actions.append(expansion,production,supply);card.append(actions);return true;
 }
 
 function installTopProductionButton(){
@@ -68,8 +85,8 @@ if(!proto.__worldBusinessPortfolioProductionUsability){
  const originalRender=proto.render;
  proto.render=async function(panel,...args){
   const result=await originalRender.call(this,panel,...args);
-  styleCatalog(panel);addActiveBusinessActions(this,panel);
-  requestAnimationFrame(()=>{styleCatalog(panel);addActiveBusinessActions(this,panel);});
+  styleCatalog(panel);translatePropertyMode(panel);addActiveBusinessActions(this,panel);
+  requestAnimationFrame(()=>{styleCatalog(panel);translatePropertyMode(panel);addActiveBusinessActions(this,panel);});
   return result;
  };
 }
@@ -82,5 +99,5 @@ export function installBusinessPortfolioProductionUsability(){
  for(const ev of ['world:access-granted','worldproject:company-loaded','worldproject:company-switched'])window.addEventListener(ev,()=>setTimeout(apply,0));
  return true;
 }
-export function runBusinessPortfolioProductionUsabilityTest(){return proto.__worldBusinessPortfolioProductionUsability===true&&typeof openOperationalSection==='function';}
+export function runBusinessPortfolioProductionUsabilityTest(){return proto.__worldBusinessPortfolioProductionUsability===true&&typeof openOperationalSection==='function'&&typeof openExpansion==='function';}
 if(typeof window!=='undefined'){window.worldBusinessPortfolioProductionUsability={install:installBusinessPortfolioProductionUsability,test:runBusinessPortfolioProductionUsabilityTest};installBusinessPortfolioProductionUsability();}
