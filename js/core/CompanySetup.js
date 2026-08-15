@@ -4,10 +4,13 @@ import { IndustryGroups, createStarterBuilding } from "./IndustryCatalog.js";
 export class CompanySetup {
     constructor(company,onComplete){this.company=company;this.onComplete=onComplete;this.overlay=null;this.industrySelect=null;this.typeSelect=null;this.industries=IndustryGroups;this.loading=false;}
 
-    async loadAccountOverview(){
-        if(window.worldServerAccountOverview?.companies)return window.worldServerAccountOverview;
+    async loadAccountOverview({fresh=true}={}){
         const api=window.worldAccounts?.authApi;
         if(!api)throw new Error("Account-API noch nicht verfügbar");
+        // Beim eigentlichen Spielstart niemals blind die beim Login zwischengespeicherte Übersicht verwenden.
+        // Der Betriebszustand wird frisch vom Server gelesen, damit Lager/Aufträge/Produktion garantiert
+        // aus dem aktuellen game_state hydratisiert werden.
+        if(!fresh&&window.worldServerAccountOverview?.companies)return window.worldServerAccountOverview;
         if(typeof api.accountOverview==="function"){
             const overview=await api.accountOverview();
             window.worldServerAccountOverview=overview;
@@ -23,13 +26,18 @@ export class CompanySetup {
     async show(){
         if(this.overlay||this.loading)return;this.loading=true;
         try{
-            const overview=await this.loadAccountOverview();
+            const overview=await this.loadAccountOverview({fresh:true});
             if(overview?.companies?.length){
                 const serverCompany=overview.companies.find(c=>Number(c.slot_no)===1)||overview.companies[0];
                 this.hydrateCompany(serverCompany,overview.wallet);
                 window.worldPlayerCompany=this.company;window.worldActiveServerCompany=serverCompany;
-                window.dispatchEvent(new CustomEvent("worldproject:company-loaded",{detail:{company:this.company,serverCompany}}));
-                if(this.onComplete)this.onComplete(this.company);return;
+                const portfolio=window.worldAccounts?.businessPortfolio;if(portfolio){portfolio.companies=overview.companies;portfolio.activeCompany=this.company;}
+                window.dispatchEvent(new CustomEvent("worldproject:company-loaded",{detail:{company:this.company,serverCompany,overview}}));
+                if(this.onComplete)this.onComplete(this.company);
+                // Einige UI-Integrationen reagieren zeitversetzt auf company-loaded. Danach noch einmal
+                // aus derselben hydratisierten Instanz rendern, statt eine leere Startinstanz zu zeigen.
+                for(const delay of [0,100,500])setTimeout(()=>window.worldHomeOperationsDashboard?.render?.(),delay);
+                return;
             }
             this.createOverlay();this.updateTypes();document.body.appendChild(this.overlay);
         }catch(error){
@@ -41,7 +49,9 @@ export class CompanySetup {
     hydrateCompany(serverCompany,wallet={}){
         const portfolio=window.worldAccounts?.businessPortfolio;
         if(portfolio?.hydrateCompany)return portfolio.hydrateCompany(this.company,serverCompany,wallet);
-        this.company.serverCompanyId=serverCompany.id;this.company.slotNo=Number(serverCompany.slot_no||1);this.company.name=serverCompany.name||"";this.company.industry=serverCompany.industry||"";this.company.type=serverCompany.company_type||"";this.company.money=Number(serverCompany.money||0);this.company.coins=Number(wallet?.balance||0);this.company.setupPhase=serverCompany.setup_phase||"empty_building";this.company.buildingState=serverCompany.building_state||createStarterBuilding(this.company);return this.company;
+        this.company.serverCompanyId=serverCompany.id;this.company.slotNo=Number(serverCompany.slot_no||1);this.company.name=serverCompany.name||"";this.company.industry=serverCompany.industry||"";this.company.type=serverCompany.company_type||"";this.company.money=Number(serverCompany.game_state?.money??serverCompany.money??0);this.company.coins=Number(wallet?.balance||0);this.company.setupPhase=serverCompany.setup_phase||"empty_building";this.company.buildingState=serverCompany.building_state||createStarterBuilding(this.company);
+        for(const [key,value] of Object.entries(serverCompany.game_state||{})){if(["money","coins","name","industry","type","serverCompanyId","slotNo","setupPhase","buildingState"].includes(key))continue;this.company[key]=typeof structuredClone==="function"?structuredClone(value):JSON.parse(JSON.stringify(value));}
+        return this.company;
     }
 
     createOverlay(){
@@ -64,7 +74,7 @@ export class CompanySetup {
                 this.hydrateCompany(result.company,{balance:window.worldServerAccountOverview?.wallet?.balance||0});
                 this.company.setupPhase="empty_building";this.company.buildingState=createStarterBuilding(this.company);
                 await api.updateBusinessSetup(result.company.id,this.company.setupPhase,this.company.buildingState);
-                window.worldServerAccountOverview=null;const overview=await this.loadAccountOverview();
+                window.worldServerAccountOverview=null;const overview=await this.loadAccountOverview({fresh:true});
                 window.worldPlayerCompany=this.company;window.worldActiveServerCompany=result.company;
                 window.dispatchEvent(new CustomEvent("worldproject:company-founded",{detail:{company:this.company,serverCompany:result.company,overview}}));this.close();if(this.onComplete)this.onComplete(this.company);
             }catch(error){alert(`Betrieb konnte nicht gespeichert werden: ${error.message}`);button.disabled=false;button.textContent="Betrieb gründen und starten";}
