@@ -27,10 +27,15 @@ export class BusinessPortfolioSystem {
     getExpansionStatus(sourceCompany=this.activeCompany||window.worldPlayerCompany){return canExpand({businesses:this.companies,sourceCompany,managementCapacity:Number(sourceCompany?.managementCapacity||0)});}
 
     async createBusiness(data={}){
-        if(this.companies.length>0){const status=this.getExpansionStatus(data.sourceCompany||this.activeCompany||window.worldPlayerCompany);if(!status.allowed){const e=new Error(`Expansion noch nicht möglich: ${status.reasons.join(", ")}`);e.expansionStatus=status;throw e;}data.expansionCost=status.requirements.creationCost;}
-        const slotNo=data.slotNo||this.nextFreeSlot();const result=await this.api.createBusiness({...data,slotNo});
-        const starter=createStarterBuilding({type:data.companyType||data.type,industry:data.industry});await this.api.updateBusinessSetup(result.company.id,"empty_building",starter);await this.refresh();
-        const company=this.companies.find(c=>c.id===result.company.id)||{...result.company,building_state:starter,setup_phase:"empty_building"};return {success:true,company};
+        const hasExisting=this.companies.length>0,sourceCompany=data.sourceCompany||this.activeCompany||window.worldPlayerCompany;
+        if(hasExisting){const status=this.getExpansionStatus(sourceCompany);if(!status.allowed){const e=new Error(`Expansion noch nicht möglich: ${status.reasons.join(", ")}`);e.expansionStatus=status;throw e;}data.expansionCost=status.requirements.creationCost;}
+        const slotNo=data.slotNo||this.nextFreeSlot();
+        const result=hasExisting
+            ?await this.api.createPaidBusiness({...data,slotNo,sourceCompany,sourceCompanyId:sourceCompany?.serverCompanyId||sourceCompany?.id})
+            :await this.api.createBusiness({...data,slotNo});
+        const starter=createStarterBuilding({type:data.companyType||data.type,industry:data.industry});await this.api.updateBusinessSetup(result.company.id,"empty_building",starter);const overview=await this.refresh();
+        if(hasExisting&&sourceCompany?.serverCompanyId){const freshSource=overview.companies?.find(c=>String(c.id)===String(sourceCompany.serverCompanyId));if(freshSource)sourceCompany.money=Number(freshSource.game_state?.money??freshSource.money??sourceCompany.money??0);window.dispatchEvent(new CustomEvent("world:server-balances-changed",{detail:{reason:"business-expansion",creationCost:data.expansionCost}}));}
+        const company=this.companies.find(c=>c.id===result.company.id)||{...result.company,building_state:starter,setup_phase:"empty_building"};return {success:true,company,creationCost:hasExisting?data.expansionCost:0};
     }
     async transferMoney(fromCompanyId,toCompanyId,amount){const result=await this.api.transferBusinessMoney(fromCompanyId,toCompanyId,amount);await this.refresh();window.dispatchEvent(new CustomEvent("world:server-balances-changed"));return result;}
 
