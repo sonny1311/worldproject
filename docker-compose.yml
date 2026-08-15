@@ -38,5 +38,18 @@ services:
     ports:
       - "3001:3001"
 
+  traffic:
+    build:
+      context: ./server
+    container_name: worldproject-traffic
+    restart: unless-stopped
+    command: ["node","src/traffic-server.js"]
+    environment:
+      TRAFFIC_PORT: 3002
+      FRONTEND_ORIGIN: http://127.0.0.1:5500
+      HERE_API_KEY: ${HERE_API_KEY:-}
+    ports:
+      - "3002:3002"
+
 volumes:
   worldproject_pgdata:
