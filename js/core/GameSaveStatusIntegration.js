@@ -1,7 +1,23 @@
-// WorldProject – zeigt dem Spieler jederzeit verständlich den Speicherstatus.
-const STATE_LABELS={saved:'✅ Gespeichert',saving:'💾 Speichert …',retry:'🔄 Speichern wird erneut versucht …',dirty:'• Änderungen offen',error:'⚠️ Speichern fehlgeschlagen'};
-function ensureBadge(){let b=document.querySelector('[data-world-save-status]');if(b)return b;b=document.createElement('button');b.type='button';b.dataset.worldSaveStatus='1';b.title='Status des aktuellen Spielstands';Object.assign(b.style,{position:'fixed',right:'16px',top:'12px',zIndex:45000,border:'1px solid #475569',borderRadius:'999px',padding:'6px 10px',fontSize:'12px',fontWeight:'800',background:'#0f172a',color:'#e2e8f0',boxShadow:'0 3px 10px rgba(0,0,0,.25)',cursor:'default'});document.body.append(b);return b;}
-function setState(state,detail=''){if(typeof document==='undefined')return;const b=ensureBadge();b.dataset.state=state;b.textContent=STATE_LABELS[state]||state;b.title=detail||'Status des aktuellen Spielstands';if(state==='error')b.style.outline='2px solid #ef4444';else if(state==='retry')b.style.outline='2px solid #f59e0b';else b.style.outline='none';}
-export function installGameSaveStatus(){if(typeof window==='undefined'||typeof document==='undefined')return false;setState('saved','Noch keine ungespeicherten Änderungen erkannt.');for(const event of ['world:state-dirty','world:game-state-dirty'])window.addEventListener(event,()=>setState('dirty','Änderungen werden automatisch gespeichert.'));window.addEventListener('world:game-saving',e=>setState(e.detail?.retry?'retry':'saving',e.detail?.retry?`Wiederholungsversuch ${Number(e.detail?.attempt||0)+1}`:''));window.addEventListener('world:game-saved',()=>setState('saved',`Zuletzt gespeichert: ${new Date().toLocaleTimeString('de-DE')}`));window.addEventListener('world:game-save-error',e=>setState('error',e.detail?.message||'Speichern ist fehlgeschlagen.'));window.addEventListener('world:game-save-retry',e=>setState('retry',`Automatischer Wiederholungsversuch ${e.detail?.attempt||1} folgt in ${Math.ceil(Number(e.detail?.delay||0)/1000)} Sekunden.`));return true;}
-export function runGameSaveStatusTest(){return STATE_LABELS.saved.includes('Gespeichert')&&STATE_LABELS.error.includes('fehlgeschlagen')&&STATE_LABELS.retry.includes('erneut');}
-if(typeof window!=='undefined'){window.worldGameSaveStatus={install:installGameSaveStatus,setState,runTest:runGameSaveStatusTest};installGameSaveStatus();}
+// ORVUNO – Speichern bleibt vollständig im Hintergrund und erzeugt keine Spieler-UI.
+function removeLegacySaveBadge(){
+ if(typeof document==='undefined')return false;
+ const badge=document.querySelector('[data-world-save-status]');
+ if(badge)badge.remove();
+ return true;
+}
+function setState(state,detail=''){
+ // Kompatibilitäts-API für ältere Integrationen: bewusst ohne sichtbare Oberfläche.
+ if(state==='error')console.warn('ORVUNO Hintergrundspeichern fehlgeschlagen',detail||'Unbekannter Fehler');
+ return true;
+}
+export function installGameSaveStatus(){
+ if(typeof window==='undefined'||typeof document==='undefined')return false;
+ removeLegacySaveBadge();
+ window.addEventListener('world:game-save-error',e=>setState('error',e.detail?.message||'Speichern ist fehlgeschlagen.'));
+ return true;
+}
+export function runGameSaveStatusTest(){return typeof setState==='function'&&typeof removeLegacySaveBadge==='function';}
+if(typeof window!=='undefined'){
+ window.worldGameSaveStatus={install:installGameSaveStatus,setState,runTest:runGameSaveStatusTest};
+ installGameSaveStatus();
+}
