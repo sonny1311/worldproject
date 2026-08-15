@@ -1,27 +1,58 @@
 $ErrorActionPreference = "Stop"
+$Root = Split-Path -Parent $MyInvocation.MyCommand.Path
+$Server = Join-Path $Root "server"
 
-Write-Host "WorldProject: PostgreSQL + API werden gestartet..." -ForegroundColor Cyan
+Write-Host "ORVUNO: lokaler HERE-Verkehrsdienst wird gestartet..." -ForegroundColor Cyan
 
-if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
-    Write-Host "Docker wurde nicht gefunden. Bitte Docker Desktop installieren und starten." -ForegroundColor Red
+if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
+    Write-Host "Node.js wurde nicht gefunden." -ForegroundColor Red
+    exit 1
+}
+if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
+    Write-Host "npm wurde nicht gefunden." -ForegroundColor Red
+    exit 1
+}
+if (-not (Test-Path (Join-Path $Root ".env"))) {
+    Write-Host "Die lokale .env-Datei fehlt. Dort muss HERE_API_KEY eingetragen sein." -ForegroundColor Red
     exit 1
 }
 
-docker compose up -d --build
+if (-not (Test-Path (Join-Path $Server "node_modules"))) {
+    Write-Host "Einmalige Vorbereitung: Server-Pakete werden installiert..." -ForegroundColor Yellow
+    Push-Location $Server
+    try { npm install } finally { Pop-Location }
+}
 
-Write-Host ""
-Write-Host "Warte auf die API..." -ForegroundColor Yellow
-for ($i = 0; $i -lt 40; $i++) {
+try {
+    $health = Invoke-RestMethod -Uri "http://127.0.0.1:3002/health" -TimeoutSec 1
+    if ($health.success) {
+        Write-Host "HERE-Verkehrsdienst läuft bereits auf Port 3002." -ForegroundColor Green
+        Write-Host "Frontend weiter mit VS Code Live Server auf http://127.0.0.1:5500 starten." -ForegroundColor Green
+        exit 0
+    }
+} catch {}
+
+$command = "Set-Location -LiteralPath '$Server'; npm run traffic"
+Start-Process powershell -ArgumentList @('-NoExit','-ExecutionPolicy','Bypass','-Command',$command)
+
+Write-Host "Warte auf den HERE-Verkehrsdienst..." -ForegroundColor Yellow
+for ($i = 0; $i -lt 30; $i++) {
     try {
-        $r = Invoke-RestMethod -Uri "http://localhost:3001/api/health" -TimeoutSec 2
+        $r = Invoke-RestMethod -Uri "http://127.0.0.1:3002/health" -TimeoutSec 1
         if ($r.success) {
-            Write-Host "WorldProject API + PostgreSQL laufen." -ForegroundColor Green
+            if ($r.hereConfigured) {
+                Write-Host "ORVUNO HERE-Verkehr läuft und der API-Key wurde geladen." -ForegroundColor Green
+            } else {
+                Write-Host "Dienst läuft, aber HERE_API_KEY wurde nicht geladen." -ForegroundColor Red
+                exit 1
+            }
+            Write-Host "Kein Docker und keine lokale PostgreSQL-Datenbank für den Verkehrstest nötig." -ForegroundColor Green
             Write-Host "Frontend weiter mit VS Code Live Server auf http://127.0.0.1:5500 starten." -ForegroundColor Green
             exit 0
         }
     } catch {}
-    Start-Sleep -Seconds 2
+    Start-Sleep -Seconds 1
 }
 
-Write-Host "API wurde nicht rechtzeitig bereit. Mit 'docker compose logs api postgres' kannst du die Logs ansehen." -ForegroundColor Red
+Write-Host "HERE-Verkehrsdienst wurde nicht rechtzeitig bereit. Bitte das neu geöffnete PowerShell-Fenster prüfen." -ForegroundColor Red
 exit 1
