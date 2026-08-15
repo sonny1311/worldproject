@@ -6,17 +6,24 @@ const PORT=Number(process.env.TRAFFIC_PORT||3002);
 const FRONTEND_ORIGIN=process.env.FRONTEND_ORIGIN||"http://127.0.0.1:5500";
 const HERE_API_KEY=String(process.env.HERE_API_KEY||"").trim();
 
-app.use(cors({origin:FRONTEND_ORIGIN,credentials:true}));
+app.use(cors({origin:true,credentials:true}));
 app.use(express.json({limit:"100kb"}));
 
 const num=v=>Number.isFinite(Number(v))?Number(v):0;
 const text=v=>String(v??'').trim();
 
-async function hereJson(url){
- const response=await fetch(url);
- const data=await response.json().catch(()=>null);
- if(!response.ok)throw new Error(data?.title||data?.error||data?.message||`HERE HTTP ${response.status}`);
- return data;
+async function hereJson(url,{timeoutMs=12000}={}){
+ const controller=new AbortController();
+ const timer=setTimeout(()=>controller.abort(),timeoutMs);
+ try{
+  const response=await fetch(url,{signal:controller.signal});
+  const data=await response.json().catch(()=>null);
+  if(!response.ok)throw new Error(data?.title||data?.error||data?.message||`HERE HTTP ${response.status}`);
+  return data;
+ }catch(error){
+  if(error?.name==='AbortError')throw new Error(`HERE antwortet nicht innerhalb von ${Math.round(timeoutMs/1000)} Sekunden`);
+  throw error;
+ }finally{clearTimeout(timer);}
 }
 
 async function geocode(point){
@@ -48,7 +55,10 @@ app.post('/api/traffic/route',async(req,res)=>{
   url.searchParams.set('destination',`${destination.lat},${destination.lng}`);
   url.searchParams.set('return','summary,typicalDuration,incidents,routeLabels');
   url.searchParams.set('lang','de-DE');
-  url.searchParams.set('departureTime',text(req.body?.departureTime)||'any');
+  // Kein departureTime=any: Ohne departureTime verwendet HERE den aktuellen Zeitpunkt
+  // und bezieht Live-Verkehr standardmaessig in die zeitabhaengige Route ein.
+  const departureTime=text(req.body?.departureTime);
+  if(departureTime&&departureTime!=='any')url.searchParams.set('departureTime',departureTime);
   if(num(vehicle.grossWeightKg)>0)url.searchParams.set('vehicle[grossWeight]',String(Math.round(num(vehicle.grossWeightKg))));
   if(num(vehicle.axleWeightKg)>0)url.searchParams.set('vehicle[weightPerAxle]',String(Math.round(num(vehicle.axleWeightKg))));
   if(num(vehicle.heightM)>0)url.searchParams.set('vehicle[height]',String(num(vehicle.heightM)));
