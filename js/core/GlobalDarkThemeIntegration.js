@@ -14,6 +14,10 @@ input,select,textarea{background:#0f172a!important;color:#f8fafc!important;borde
 option{background:#111827;color:#f8fafc}
 table{color:#f8fafc;border-color:#334155}th{background:#1e293b!important;color:#f8fafc!important}td{border-color:#334155!important}
 hr{border-color:#334155}a{color:#93c5fd}
+progress{appearance:none;-webkit-appearance:none;background:#0b1220!important;border:1px solid #334155!important;border-radius:999px!important;overflow:hidden;color:#3b82f6!important}
+progress::-webkit-progress-bar{background:#0b1220!important;border-radius:999px!important}
+progress::-webkit-progress-value{background:linear-gradient(90deg,#2563eb,#38bdf8)!important;border-radius:999px!important}
+progress::-moz-progress-bar{background:linear-gradient(90deg,#2563eb,#38bdf8)!important;border-radius:999px!important}
 [style*="background:#fff"],[style*="background: #fff"],[style*="background:white"],[style*="background: white"],[style*="background:#fafafa"],[style*="background: #fafafa"],[style*="background:#f5f5f5"],[style*="background: #f5f5f5"],[style*="background:#eef3f8"],[style*="background: #eef3f8"],[style*="background: rgb(255, 255, 255)"],[style*="background: rgb(250, 250, 250)"],[style*="background: rgb(248, 250, 252)"],[style*="background: rgb(245, 245, 245)"]{background:#111827!important;color:#f8fafc!important}
 [style*="color:#111"],[style*="color: #111"],[style*="color: rgb(17, 24, 39)"],[style*="color: rgb(17, 17, 17)"]{color:#f8fafc!important}
 [style*="border:1px solid #ddd"],[style*="border: 1px solid #ddd"],[style*="border:1px solid #bbb"],[style*="border: 1px solid #bbb"]{border-color:#475569!important}
@@ -34,12 +38,15 @@ hr{border-color:#334155}a{color:#93c5fd}
 [data-premium-extra-packages] article{background:#111827!important;color:#f8fafc!important}
 .world-dark-surface{background:#111827!important;color:#f8fafc!important;border-color:#334155!important}
 .world-assignment-status{box-shadow:none!important}
+/* Die feste linke Hauptnavigation muss immer vor normalen Inhalts-/Dialogschichten bedienbar bleiben. */
+#world-main-nav,.world-sidebar,[data-world-sidebar]{pointer-events:auto!important}
+#world-main-nav button,#world-main-nav a,.world-sidebar button,.world-sidebar a,[data-world-sidebar] button,[data-world-sidebar] a{pointer-events:auto!important}
 `;
 const LIGHT_BACKGROUNDS=new Set([
- 'rgb(255, 255, 255)','rgb(250, 250, 250)','rgb(245, 245, 245)','rgb(248, 249, 250)','rgb(248, 250, 252)','rgb(238, 243, 248)','rgb(238, 245, 255)','rgb(234, 242, 255)'
+ 'rgb(255, 255, 255)','rgb(250, 250, 250)','rgb(245, 245, 245)','rgb(248, 249, 250)','rgb(248, 250, 252)','rgb(238, 243, 248)','rgb(238, 245, 255)','rgb(234, 242, 255)','rgb(249, 250, 251)','rgb(243, 244, 246)','rgb(229, 231, 235)'
 ]);
 function installStyle(){if(typeof document==='undefined')return false;let style=document.getElementById(STYLE_ID);if(style)return true;style=document.createElement('style');style.id=STYLE_ID;style.textContent=css;document.head.append(style);document.documentElement.dataset.worldTheme='dark';return true;}
 function darkenDynamic(root=document){const nodes=[];if(root?.matches?.('div,section,article,aside,main'))nodes.push(root);for(const el of root.querySelectorAll?.('div,section,article,aside,main')||[])nodes.push(el);for(const el of nodes){const s=getComputedStyle(el),bg=s.backgroundColor;if(LIGHT_BACKGROUNDS.has(bg))el.classList.add('world-dark-surface');}}
 export function installGlobalDarkTheme(){if(typeof document==='undefined')return false;installStyle();const apply=()=>darkenDynamic(document);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply);else apply();const observer=new MutationObserver(rows=>{for(const row of rows)for(const node of row.addedNodes)if(node.nodeType===1)darkenDynamic(node);});observer.observe(document.documentElement,{childList:true,subtree:true});return true;}
-export function runGlobalDarkThemeTest(){return css.includes('--wp-bg')&&css.includes('data-operation-filter')&&LIGHT_BACKGROUNDS.has('rgb(248, 250, 252)');}
+export function runGlobalDarkThemeTest(){return css.includes('--wp-bg')&&css.includes('data-operation-filter')&&css.includes('progress::-webkit-progress-bar')&&LIGHT_BACKGROUNDS.has('rgb(248, 250, 252)');}
 if(typeof window!=='undefined'){window.worldGlobalDarkTheme={install:installGlobalDarkTheme,runTest:runGlobalDarkThemeTest};installGlobalDarkTheme();}
