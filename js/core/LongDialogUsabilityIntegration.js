@@ -5,6 +5,22 @@ import { OperationalSupplyChainDialog } from "./OperationalSupplyChainDialog.js"
 import { BusinessPortfolioDialog } from "./BusinessPortfolioDialog.js";
 import { AccountProfileDialog } from "./AccountProfileDialog.js";
 
+function resolveHeader(panel,close){
+ if(!panel||!close)return null;
+ if(close.parentElement!==panel)return close.parentElement;
+ const candidate=[...panel.children].find(el=>el!==close&&el.querySelector?.('h1,h2'));
+ if(candidate){
+  candidate.append(close);
+  Object.assign(candidate.style,{display:'flex',justifyContent:'space-between',alignItems:'center',gap:'12px'});
+  return candidate;
+ }
+ const head=document.createElement('div');
+ Object.assign(head.style,{display:'flex',justifyContent:'flex-end',alignItems:'center'});
+ panel.insertBefore(head,panel.firstChild);
+ head.append(close);
+ return head;
+}
+
 function enhanceCloseHeader(panel){
  if(!panel?.querySelectorAll)return false;
  const close=[...panel.querySelectorAll("button")].find(b=>String(b.textContent||"").trim()==="✕");
@@ -13,10 +29,10 @@ function enhanceCloseHeader(panel){
  const overlay=panel.parentElement;
  if(overlay){Object.assign(overlay.style,{zIndex:"300000",alignItems:"flex-start",justifyContent:"center",padding:"88px 20px 20px",boxSizing:"border-box"});}
  Object.assign(panel.style,{position:"relative",maxHeight:"calc(100vh - 108px)",overflow:"auto",background:"#111827",color:"#f8fafc",border:"1px solid #334155",boxSizing:"border-box"});
- const head=close.parentElement;
+ const head=resolveHeader(panel,close);
  if(!head)return false;
- Object.assign(head.style,{position:"sticky",top:"0",zIndex:"300010",background:"#111827",padding:"8px 0",borderBottom:"1px solid #334155"});
- Object.assign(close.style,{position:"relative",zIndex:"300020",background:"#1e293b",color:"#f8fafc",border:"1px solid #64748b",fontSize:"20px",lineHeight:"1",padding:"9px 12px",boxShadow:"0 4px 14px rgba(0,0,0,.35)"});
+ Object.assign(head.style,{position:"sticky",top:"0",zIndex:"300010",background:"#111827",padding:"8px 0",borderBottom:"1px solid #334155",boxShadow:'0 4px 12px rgba(0,0,0,.28)'});
+ Object.assign(close.style,{position:"relative",top:'auto',float:'none',margin:'0 0 0 12px',zIndex:"300020",background:"#1e293b",color:"#f8fafc",border:"1px solid #64748b",fontSize:"20px",lineHeight:"1",padding:"9px 12px",boxShadow:"0 4px 14px rgba(0,0,0,.35)",flex:'0 0 auto'});
  return true;
 }
 
