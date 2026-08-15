@@ -1,0 +1,9 @@
+// WorldProject – Vergleich Fremdeinkauf vs. eigene Vorstufe im selben Spieler-Konzern.
+import { IndustryProfiles } from './IndustryCatalog.js';
+import { marketPriceAdvice } from './MarketPriceAdvisor.js';
+const n=v=>Number.isFinite(Number(v))?Number(v):0;
+function companyType(c){return c?.company_type||c?.type||'';}
+export function ownedProducersFor(accountOverview,productId){return (accountOverview?.companies||[]).filter(c=>{const p=IndustryProfiles[companyType(c)];return (p?.products||[]).includes(productId);});}
+export function verticalIntegrationAdvice(world,accountOverview,productId,{externalUnitPrice=0}={}){const producers=ownedProducersFor(accountOverview,productId),options=[];for(const p of producers){let cost=0;try{cost=marketPriceAdvice(world,p.game_state?{...p,...p.game_state}:p,productId).estimatedUnitCost;}catch{}if(cost>0)options.push({companyId:p.id,name:p.name||companyType(p),unitCost:cost});}options.sort((a,b)=>a.unitCost-b.unitCost);const best=options[0]||null,external=n(externalUnitPrice),saving=best&&external>0?external-best.unitCost:null;return{productId,hasOwnProducer:producers.length>0,producers,options,bestOwn:best,externalUnitPrice:external,savingPerUnit:saving,ownCheaper:saving!==null&&saving>0};}
+export function runVerticalIntegrationAdvisorTest(){const account={companies:[{id:1,name:'Eigenes Glaswerk',company_type:'Glaswerk',game_state:{unitCosts:{bottles:.07}}}]};const a=verticalIntegrationAdvice({},account,'bottles',{externalUnitPrice:.1});if(!a.hasOwnProducer||!a.bestOwn||Math.abs(a.bestOwn.unitCost-.07)>.0001||Math.abs(a.savingPerUnit-.03)>.0001)throw new Error('Vertikale Integration spart nicht nur die externe Marge korrekt');return{success:true};}
+if(typeof window!=='undefined')window.worldVerticalIntegrationAdvisor={advise:verticalIntegrationAdvice,producers:ownedProducersFor};
