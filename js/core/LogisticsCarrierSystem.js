@@ -42,8 +42,6 @@ export function marketTransportSnapshot(){
 
 export function activeAiCarriers(snapshot=marketTransportSnapshot()){
  const coverage=Math.max(0,Math.min(1,Number(snapshot.coverage)||0));
- // Je mehr Spieler teilnehmen, desto mehr Gesamtnachfrage entsteht. KI wird deshalb zunaechst mit skaliert,
- // aber bei ausreichender Spielerabdeckung schrittweise bis auf eine kleine Sicherheitsreserve reduziert.
  const demand=Math.max(1,Number(snapshot.demand)||1);
  const needed=Math.ceil(demand/12);
  const factor=coverage>=.95?.2:coverage>=.75?.4:coverage>=.5?.65:1;
@@ -79,4 +77,7 @@ export function runLogisticsCarrierSystemTest(){
  return true;
 }
 
-if(typeof window!=='undefined')window.worldLogisticsCarriers={supplierHubFor,assignCarrier,prepareLogistics,activeAiCarriers,marketTransportSnapshot,runTest:runLogisticsCarrierSystemTest};
+if(typeof window!=='undefined'){
+ window.worldLogisticsCarriers={supplierHubFor,assignCarrier,prepareLogistics,activeAiCarriers,marketTransportSnapshot,runTest:runLogisticsCarrierSystemTest};
+ try{window.worldLogisticsCarrierHealth={success:runLogisticsCarrierSystemTest(),snapshot:marketTransportSnapshot()};}catch(error){window.worldLogisticsCarrierHealth={success:false,error:error?.message||String(error)};console.error('❌ HEALTH Logistik/Spedition',error);}
+}
