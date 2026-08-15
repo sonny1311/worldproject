@@ -11,6 +11,7 @@ import "./core/HomeWarehouseAndPartialDeliveryIntegration.js";
 import "./core/CustomerOrderProductIdCompatibilityIntegration.js";
 import "./core/CustomerOrderRuntimeHydrationIntegration.js";
 import "./core/HomeDashboardViewportIntegration.js";
+import "./core/OrvunoCommandCenterLayoutIntegration.js";
 import "./core/TransportVehicleCostIntegration.js";
 import "./core/TransportFuelTimeIntegration.js";
 import "./core/TransportGameplayIntegration.js";
