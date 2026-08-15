@@ -1,6 +1,9 @@
 -- WorldProject: entfernt die historische 4-Betriebe-Grenze aus der serverseitigen Gruendungsfunktion.
 -- Bestehende Betriebe/Daten werden nicht veraendert. slot_no bleibt SMALLINT und damit praktisch sehr gross genug.
 
+-- Migration 005 hatte auf frischen Installationen noch einen 1..4-Check angelegt.
+ALTER TABLE public.companies DROP CONSTRAINT IF EXISTS companies_slot_no_check;
+
 CREATE OR REPLACE FUNCTION public.create_player_business(p_name TEXT,p_industry TEXT,p_company_type TEXT,p_slot_no SMALLINT)
 RETURNS public.companies LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
 DECLARE v_user_id BIGINT; v_company public.companies;
