@@ -1,6 +1,7 @@
 // WorldProject - zentrale Schnellleiste im Wirtschaftsdashboard.
 // Haelt die wichtigsten Alltagsaktionen ohne Scroll-/Suchwege erreichbar.
 import { EconomyDashboard } from './EconomyDashboard.js';
+import './DevelopmentHealthPanel.js';
 
 const originalRender=EconomyDashboard.prototype.render;
 function quickButton(label,fn){const b=document.createElement('button');b.type='button';b.textContent=label;Object.assign(b.style,{border:'1px solid #475569',borderRadius:'9px',padding:'9px 11px',cursor:'pointer',fontWeight:'800',background:'#0f172a',color:'#fff',whiteSpace:'nowrap'});b.addEventListener('click',fn);return b;}
@@ -15,7 +16,8 @@ function addQuickActions(dashboard,panel){
   quickButton('☀️ Solar',()=>window.openWorldSolarMarket?.()),
   quickButton('⚙️ Ausbau',()=>window.worldTimedBusinessUpgrades?.open?.()),
   quickButton('🚦 Verkehr',()=>window.worldLiveTraffic?.open?.()),
-  quickButton('📋 Läuft gerade',()=>window.worldActiveOperationsUI?.open?.())
+  quickButton('📋 Läuft gerade',()=>window.worldActiveOperationsUI?.open?.()),
+  quickButton('🧪 Health',()=>window.openWorldDevelopmentHealth?.())
  );
  const head=panel.firstElementChild;if(head?.nextSibling)panel.insertBefore(bar,head.nextSibling);else panel.append(bar);
 }
