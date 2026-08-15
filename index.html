@@ -1,1 +1,36 @@
-<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>WorldProject</title><link rel="stylesheet" href="css/style.css"></head><body><div id="worldApp"></div><script type="module" src="js/bootstrap.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07101d">
+  <title>ORVUNO</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script>
+    (()=>{
+      let shown=false;
+      function showBootError(message,source=''){
+        if(shown)return;shown=true;
+        const render=()=>{
+          const box=document.createElement('div');box.id='orvuno-boot-error';
+          Object.assign(box.style,{position:'fixed',inset:'0',zIndex:'999999',display:'flex',alignItems:'center',justifyContent:'center',padding:'24px',background:'radial-gradient(circle at 50% 20%,#17263d,#03070c 70%)',fontFamily:'Arial,sans-serif',color:'#fff'});
+          const card=document.createElement('div');Object.assign(card.style,{width:'min(620px,94vw)',padding:'30px',borderRadius:'18px',background:'#101a2b',border:'1px solid #7f3340',boxShadow:'0 24px 80px rgba(0,0,0,.55)'});
+          const title=document.createElement('h1');title.textContent='ORVUNO konnte nicht gestartet werden';title.style.margin='0 0 14px';
+          const text=document.createElement('div');text.textContent='Beim Laden ist ein technischer Fehler aufgetreten. Der Spielstand wurde dadurch nicht verändert.';Object.assign(text.style,{lineHeight:'1.5',color:'#dce3ed',marginBottom:'18px'});
+          const detail=document.createElement('pre');detail.textContent=[message,source].filter(Boolean).join('\n');Object.assign(detail.style,{whiteSpace:'pre-wrap',wordBreak:'break-word',padding:'13px',borderRadius:'9px',background:'#080d16',color:'#ffb4bd',fontSize:'12px'});
+          const retry=document.createElement('button');retry.textContent='Neu laden';Object.assign(retry.style,{marginTop:'18px',padding:'12px 18px',border:0,borderRadius:'9px',background:'#3868ee',color:'#fff',fontWeight:'800',cursor:'pointer'});retry.onclick=()=>location.reload();
+          card.append(title,text,detail,retry);box.append(card);document.body.append(box);
+        };
+        if(document.body)render();else addEventListener('DOMContentLoaded',render,{once:true});
+      }
+      addEventListener('error',e=>showBootError(e.message||'Unbekannter Startfehler',e.filename?`${e.filename}:${e.lineno||''}`:''));
+      addEventListener('unhandledrejection',e=>{const r=e.reason;showBootError(r?.message||String(r||'Unbekannter Startfehler'));});
+      window.orvunoShowBootError=showBootError;
+    })();
+  </script>
+</head>
+<body>
+  <div id="worldApp"></div>
+  <script type="module" src="js/bootstrap.js"></script>
+</body>
+</html>
