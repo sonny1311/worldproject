@@ -29,7 +29,7 @@ function applySectionFocus(dialog,section){
   overlay.querySelectorAll('[data-operational-tab]').forEach(btn=>{
     const active=btn.dataset.operationalTab===section;
     btn.setAttribute('aria-pressed',active?'true':'false');
-    Object.assign(btn.style,{fontWeight:active?'800':'600',outline:active?'2px solid #2463eb':'none',background:active?'#eef4ff':'#fff'});
+    Object.assign(btn.style,{fontWeight:active?'800':'600',outline:active?'2px solid #60a5fa':'none',background:active?'#1e3a5f':'#1e293b',color:'#f8fafc',border:'1px solid #64748b'});
   });
   return true;
 }
@@ -107,12 +107,21 @@ function renderMachineMarket(dialog,panel,company,recipes){
   panel.append(section);
 }
 
+function pinTabBar(panel,bar){
+  const head=panel?.firstElementChild;
+  const headHeight=Math.max(58,Math.ceil(head?.getBoundingClientRect?.().height||0));
+  Object.assign(bar.style,{position:'sticky',top:`${headHeight}px`,zIndex:'300009',background:'#111827',padding:'8px 0',borderBottom:'1px solid #475569',boxShadow:'0 5px 12px rgba(0,0,0,.35)'});
+  return headHeight;
+}
+
 function addTabBar(dialog,panel){
   panel.querySelector('.world-operational-tabbar')?.remove();
-  const head=panel.firstElementChild,bar=dialog.el('div');bar.className='world-operational-tabbar';Object.assign(bar.style,{display:'flex',gap:'6px',flexWrap:'wrap',position:'sticky',top:'58px',zIndex:'19',background:'#fff',padding:'8px 0',borderBottom:'1px solid #ddd'});
+  const head=panel.firstElementChild,bar=dialog.el('div');bar.className='world-operational-tabbar';Object.assign(bar.style,{display:'flex',gap:'6px',flexWrap:'wrap'});
   const tabs=[['buy','📦 Einkauf'],['deliveries','🚚 Lieferungen'],['warehouse','🏬 Lager'],['machines','⚙️ Maschinenkauf'],['production','🏗️ Produktion']];
-  for(const [key,label] of tabs){const btn=dialog.btn(label,()=>{dialog.__worldFocusedSection=key;applySectionFocus(dialog,key);});btn.dataset.operationalTab=key;bar.append(btn);}
+  for(const [key,label] of tabs){const btn=dialog.btn(label,()=>{dialog.__worldFocusedSection=key;applySectionFocus(dialog,key);});btn.dataset.operationalTab=key;Object.assign(btn.style,{background:'#1e293b',color:'#f8fafc',border:'1px solid #64748b'});bar.append(btn);}
   if(head?.nextSibling)panel.insertBefore(bar,head.nextSibling);else panel.append(bar);
+  pinTabBar(panel,bar);
+  requestAnimationFrame(()=>pinTabBar(panel,bar));
 }
 
 const dialogProto=OperationalSupplyChainDialog.prototype;
@@ -138,7 +147,7 @@ if(!dashboardProto.__worldMachinePurchaseTabDashboardIntegrated){
   dashboardProto.focusOperationalDialog=function(section='buy'){
     if(['warehouse','machines'].includes(section)){
       const dialog=window.worldOperationalSupplyChainDialog;if(dialog)dialog.__worldFocusedSection=section;
-      applySectionFocus(dialog,section);return;
+      const result=applySectionFocus(dialog,section);return result;
     }
     const result=originalFocus.call(this,section);applySectionFocus(window.worldOperationalSupplyChainDialog,section);return result;
   };
@@ -152,5 +161,5 @@ if(!dashboardProto.__worldMachinePurchaseTabDashboardIntegrated){
   };
 }
 
-export { applySectionFocus,machineUsage,purchaseSnapshot,restorePurchaseSnapshot };
-if(typeof window!=='undefined')window.worldMachinePurchaseTab={applySectionFocus,machineUsage};
+export { applySectionFocus,machineUsage,purchaseSnapshot,restorePurchaseSnapshot,pinTabBar };
+if(typeof window!=='undefined')window.worldMachinePurchaseTab={applySectionFocus,machineUsage,pinTabBar};
