@@ -7,8 +7,11 @@ const activeId=()=>String((businessPortfolio.activeCompany||window.worldPlayerCo
 function sortCompanies(list=[]){return [...list].sort((a,b)=>Number(a.slot_no||0)-Number(b.slot_no||0));}
 function btn(text,title=''){const b=document.createElement('button');b.type='button';b.textContent=text;b.title=title;Object.assign(b.style,{border:'1px solid #475569',borderRadius:'9px',padding:'8px 10px',background:'#0f172a',color:'#fff',fontWeight:'800',cursor:'pointer',maxWidth:'260px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'});return b;}
 function attentionSignature(company){const a=businessAttention(company);return a.items.map(x=>x.key||x.kind+':'+x.label).sort().join('|');}
-const seen=new Map();
-function acknowledge(company){seen.set(idOf(company),attentionSignature(company));}
+const STORAGE_KEY='worldproject_seen_business_attention_v1';
+function loadSeen(){try{return new Map(Object.entries(JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}')));}catch{return new Map();}}
+const seen=loadSeen();
+function saveSeen(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(Object.fromEntries(seen)));}catch{}}
+function acknowledge(company){seen.set(idOf(company),attentionSignature(company));saveSeen();}
 function unseenAttention(company){const a=businessAttention(company),sig=attentionSignature(company);return{...a,unseen:a.needsAttention&&seen.get(idOf(company))!==sig};}
 export function mountBusinessQuickSwitcher(){
  let host=document.getElementById('world-business-quick-switcher');if(host)return host;
