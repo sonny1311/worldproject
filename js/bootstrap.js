@@ -55,6 +55,7 @@ import "./core/ProductionProgressIntegration.js";
 import "./core/ProductionStockCreditRecoveryIntegration.js";
 import "./core/ProductionDarkContrastIntegration.js";
 import "./core/BottlingSizeSelectionIntegration.js";
+import "./core/OperationalProductionVisualCleanupIntegration.js";
 import "./core/ProductionStatusBannerIntegration.js";
 import "./core/MachineStaffingOverviewIntegration.js";
 import "./core/MachineStaffingHireLinkIntegration.js";
