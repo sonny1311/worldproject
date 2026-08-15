@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "node --watch src/server.js"
+    "dev": "node --watch src/server.js",
+    "traffic": "node --env-file=../.env src/traffic-server.js"
   },
   "dependencies": {
     "argon2": "^0.41.1",
