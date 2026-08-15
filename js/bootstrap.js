@@ -126,10 +126,12 @@ import "./core/CoreRegressionSuite.js";
 import { runAllIndustryPlayabilityAudit } from "./core/AllIndustryPlayabilityAudit.js";
 import { runAllIndustryEconomyHealth } from "./core/AllIndustryEconomyBootstrap.js";
 import { gameAccessGate } from "./core/AccountMultiplayerIntegration.js";
+import { initializeHereMaps } from "./core/HereMapsIntegration.js";
 
 function safeHealth(name,fn){try{return fn();}catch(error){console.error(`❌ HEALTH ${name}`,error);return{success:false,error:error?.message||String(error)};}}
 async function startOrvuno(){
  await gameAccessGate.ensureAccess();console.log("✅ ORVUNO ACCOUNT FREIGEGEBEN – SPIEL WIRD GELADEN");
+ await initializeHereMaps();
  window.worldSolarInvestmentHealth=safeHealth("Solar",runSolarInvestmentTest);window.worldBusinessAttentionHealth=safeHealth("Betriebsaufmerksamkeit",runBusinessAttentionIndicatorTest);window.worldBusinessQuickSwitcherHealth=safeHealth("Betriebswechsler",runBusinessQuickSwitcherLogicTest);window.worldBusinessAttentionRouterHealth=safeHealth("Aufmerksamkeitsrouter",runBusinessAttentionRouterTest);window.worldBusinessPortfolioScaleHealth=safeHealth("Mehrbetriebskalierung",runBusinessPortfolioScaleRegression);window.worldDevelopmentHealthPanelHealth=safeHealth("Health-Panel",runDevelopmentHealthPanelTest);window.worldMarketPriceAdvisorHealth=safeHealth("KI-Preisberater",runMarketPriceAdvisorTest);window.worldVerticalIntegrationHealth=safeHealth("Vertikale Integration",runVerticalIntegrationAdvisorTest);window.worldVerticalIntegrationMarketUIHealth=safeHealth("Vertikale Integration UI",runVerticalIntegrationMarketUITest);window.worldIndustryChainPresentationHealth=safeHealth("Lieferkettenanzeige",runIndustryChainPresentationTest);window.worldRegionalEconomyHealth=safeHealth("Regionalwirtschaft",runRegionalEconomyAdvisorTest);window.worldProjectIndustryHealth=safeHealth("Gewerbe-Spielbarkeit",runAllIndustryPlayabilityAudit);window.worldAllIndustryEconomyHealth=safeHealth("Gesamtwirtschaft",runAllIndustryEconomyHealth);await import("./main.js");
 }
 startOrvuno().catch(error=>{console.error("❌ ORVUNO SPIELSTART FEHLGESCHLAGEN",error);window.orvunoShowBootError?.(error?.message||String(error));});
