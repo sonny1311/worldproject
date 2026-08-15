@@ -69,6 +69,7 @@ import "./core/ProductionReadinessPremiumNavigationV2.js";
 import "./core/ProductionQueueLimitIntegration.js";
 import "./core/CommercialFulfillmentGameplayBridge.js";
 import "./core/PlayerMarketDialog.js";
+import "./core/VerticalIntegrationMarketUIIntegration.js";
 import "./core/PlayerMarketGoodsDelivery.js";
 import "./core/PlayerMarketDirectGoodsPurchase.js";
 import "./core/PlayerMarketLocalPersistence.js";
@@ -112,6 +113,8 @@ import { runBusinessQuickSwitcherLogicTest } from "./core/BusinessQuickSwitcherI
 import { runBusinessAttentionRouterTest } from "./core/BusinessAttentionRouter.js";
 import { runDevelopmentHealthPanelTest } from "./core/DevelopmentHealthPanel.js";
 import { runMarketPriceAdvisorTest } from "./core/MarketPriceAdvisor.js";
+import { runVerticalIntegrationAdvisorTest } from "./core/VerticalIntegrationAdvisor.js";
+import { runVerticalIntegrationMarketUITest } from "./core/VerticalIntegrationMarketUIIntegration.js";
 import { runIndustryChainPresentationTest } from "./core/IndustryChainPresentation.js";
 import "./core/CoreRegressionSuite.js";
 import { runAllIndustryPlayabilityAudit } from "./core/AllIndustryPlayabilityAudit.js";
@@ -126,6 +129,8 @@ async function startWorldProject(){
     window.worldBusinessAttentionRouterHealth=runBusinessAttentionRouterTest();
     window.worldDevelopmentHealthPanelHealth=runDevelopmentHealthPanelTest();
     window.worldMarketPriceAdvisorHealth=runMarketPriceAdvisorTest();
+    window.worldVerticalIntegrationHealth=runVerticalIntegrationAdvisorTest();
+    window.worldVerticalIntegrationMarketUIHealth=runVerticalIntegrationMarketUITest();
     window.worldIndustryChainPresentationHealth=runIndustryChainPresentationTest();
     window.worldProjectIndustryHealth=runAllIndustryPlayabilityAudit();
     window.worldAllIndustryEconomyHealth=runAllIndustryEconomyHealth();
