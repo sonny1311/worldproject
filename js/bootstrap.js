@@ -111,6 +111,7 @@ import { runSolarInvestmentTest } from "./core/SolarInvestmentSystem.js";
 import { runBusinessAttentionIndicatorTest } from "./core/BusinessAttentionIndicator.js";
 import { runBusinessQuickSwitcherLogicTest } from "./core/BusinessQuickSwitcherIntegration.js";
 import { runBusinessAttentionRouterTest } from "./core/BusinessAttentionRouter.js";
+import { runBusinessPortfolioScaleRegression } from "./core/BusinessPortfolioScaleRegression.js";
 import { runDevelopmentHealthPanelTest } from "./core/DevelopmentHealthPanel.js";
 import { runMarketPriceAdvisorTest } from "./core/MarketPriceAdvisor.js";
 import { runVerticalIntegrationAdvisorTest } from "./core/VerticalIntegrationAdvisor.js";
@@ -127,6 +128,7 @@ async function startWorldProject(){
     window.worldBusinessAttentionHealth=runBusinessAttentionIndicatorTest();
     window.worldBusinessQuickSwitcherHealth=runBusinessQuickSwitcherLogicTest();
     window.worldBusinessAttentionRouterHealth=runBusinessAttentionRouterTest();
+    window.worldBusinessPortfolioScaleHealth=runBusinessPortfolioScaleRegression();
     window.worldDevelopmentHealthPanelHealth=runDevelopmentHealthPanelTest();
     window.worldMarketPriceAdvisorHealth=runMarketPriceAdvisorTest();
     window.worldVerticalIntegrationHealth=runVerticalIntegrationAdvisorTest();
