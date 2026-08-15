@@ -81,6 +81,7 @@ import "./core/PlayerMarketNavigationIntegration.js";
 import "./core/PlayerMarketFleetBridgeIntegration.js";
 import "./core/AdaptiveAiSupplyService.js";
 import "./core/AdaptiveAiSupplyRuntimeIntegration.js";
+import "./core/RegionalEconomyAdvisor.js";
 import "./core/DashboardUsabilityIntegration.js";
 import "./core/DashboardQuickActionsIntegration.js";
 import "./core/DashboardPriorityHintsIntegration.js";
@@ -117,35 +118,15 @@ import { runMarketPriceAdvisorTest } from "./core/MarketPriceAdvisor.js";
 import { runVerticalIntegrationAdvisorTest } from "./core/VerticalIntegrationAdvisor.js";
 import { runVerticalIntegrationMarketUITest } from "./core/VerticalIntegrationMarketUIIntegration.js";
 import { runIndustryChainPresentationTest } from "./core/IndustryChainPresentation.js";
+import { runRegionalEconomyAdvisorTest } from "./core/RegionalEconomyAdvisor.js";
 import "./core/CoreRegressionSuite.js";
 import { runAllIndustryPlayabilityAudit } from "./core/AllIndustryPlayabilityAudit.js";
 import { runAllIndustryEconomyHealth } from "./core/AllIndustryEconomyBootstrap.js";
 import { gameAccessGate } from "./core/AccountMultiplayerIntegration.js";
 
-function safeHealth(name,fn){
-    try{return fn();}
-    catch(error){console.error(`❌ HEALTH ${name}`,error);return{success:false,error:error?.message||String(error)};}
-}
-
+function safeHealth(name,fn){try{return fn();}catch(error){console.error(`❌ HEALTH ${name}`,error);return{success:false,error:error?.message||String(error)};}}
 async function startOrvuno(){
-    await gameAccessGate.ensureAccess();
-    console.log("✅ ORVUNO ACCOUNT FREIGEGEBEN – SPIEL WIRD GELADEN");
-    window.worldSolarInvestmentHealth=safeHealth("Solar",runSolarInvestmentTest);
-    window.worldBusinessAttentionHealth=safeHealth("Betriebsaufmerksamkeit",runBusinessAttentionIndicatorTest);
-    window.worldBusinessQuickSwitcherHealth=safeHealth("Betriebswechsler",runBusinessQuickSwitcherLogicTest);
-    window.worldBusinessAttentionRouterHealth=safeHealth("Aufmerksamkeitsrouter",runBusinessAttentionRouterTest);
-    window.worldBusinessPortfolioScaleHealth=safeHealth("Mehrbetriebskalierung",runBusinessPortfolioScaleRegression);
-    window.worldDevelopmentHealthPanelHealth=safeHealth("Health-Panel",runDevelopmentHealthPanelTest);
-    window.worldMarketPriceAdvisorHealth=safeHealth("KI-Preisberater",runMarketPriceAdvisorTest);
-    window.worldVerticalIntegrationHealth=safeHealth("Vertikale Integration",runVerticalIntegrationAdvisorTest);
-    window.worldVerticalIntegrationMarketUIHealth=safeHealth("Vertikale Integration UI",runVerticalIntegrationMarketUITest);
-    window.worldIndustryChainPresentationHealth=safeHealth("Lieferkettenanzeige",runIndustryChainPresentationTest);
-    window.worldProjectIndustryHealth=safeHealth("Gewerbe-Spielbarkeit",runAllIndustryPlayabilityAudit);
-    window.worldAllIndustryEconomyHealth=safeHealth("Gesamtwirtschaft",runAllIndustryEconomyHealth);
-    await import("./main.js");
+ await gameAccessGate.ensureAccess();console.log("✅ ORVUNO ACCOUNT FREIGEGEBEN – SPIEL WIRD GELADEN");
+ window.worldSolarInvestmentHealth=safeHealth("Solar",runSolarInvestmentTest);window.worldBusinessAttentionHealth=safeHealth("Betriebsaufmerksamkeit",runBusinessAttentionIndicatorTest);window.worldBusinessQuickSwitcherHealth=safeHealth("Betriebswechsler",runBusinessQuickSwitcherLogicTest);window.worldBusinessAttentionRouterHealth=safeHealth("Aufmerksamkeitsrouter",runBusinessAttentionRouterTest);window.worldBusinessPortfolioScaleHealth=safeHealth("Mehrbetriebskalierung",runBusinessPortfolioScaleRegression);window.worldDevelopmentHealthPanelHealth=safeHealth("Health-Panel",runDevelopmentHealthPanelTest);window.worldMarketPriceAdvisorHealth=safeHealth("KI-Preisberater",runMarketPriceAdvisorTest);window.worldVerticalIntegrationHealth=safeHealth("Vertikale Integration",runVerticalIntegrationAdvisorTest);window.worldVerticalIntegrationMarketUIHealth=safeHealth("Vertikale Integration UI",runVerticalIntegrationMarketUITest);window.worldIndustryChainPresentationHealth=safeHealth("Lieferkettenanzeige",runIndustryChainPresentationTest);window.worldRegionalEconomyHealth=safeHealth("Regionalwirtschaft",runRegionalEconomyAdvisorTest);window.worldProjectIndustryHealth=safeHealth("Gewerbe-Spielbarkeit",runAllIndustryPlayabilityAudit);window.worldAllIndustryEconomyHealth=safeHealth("Gesamtwirtschaft",runAllIndustryEconomyHealth);await import("./main.js");
 }
-
-startOrvuno().catch(error=>{
-    console.error("❌ ORVUNO SPIELSTART FEHLGESCHLAGEN",error);
-    window.orvunoShowBootError?.(error?.message||String(error));
-});
+startOrvuno().catch(error=>{console.error("❌ ORVUNO SPIELSTART FEHLGESCHLAGEN",error);window.orvunoShowBootError?.(error?.message||String(error));});
