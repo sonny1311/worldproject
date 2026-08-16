@@ -1,5 +1,6 @@
 // WorldProject - stellt gespeicherte Kundenauftraege im aktiven Runtime-Betrieb wieder her.
 // Greift auch beim normalen Erststart auf den Account-Overview-Datensatz des aktiven Betriebs zu.
+import './CustomerOrderVarietyIntegration.js';
 function clone(value){try{return typeof structuredClone==='function'?structuredClone(value):JSON.parse(JSON.stringify(value));}catch{return value;}}
 function findServerCompany(runtime){
  const direct=window.worldActiveServerCompany;
