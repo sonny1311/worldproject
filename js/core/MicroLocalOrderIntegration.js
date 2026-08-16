@@ -6,11 +6,14 @@ const num=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;
 function openOrders(company){return (company.customerOrders||[]).filter(o=>o.status==='open');}
 function chooseProduct(company){const p=getIndustryProfile(company),ids=p.products||[];return ids.find(Boolean)||null;}
 function priceFor(company,productId){const direct=num(company.salesPrices?.[productId]);if(direct>0)return direct;const cost=num(company.costAccounting?.productCosts?.[productId]?.costPerUnit);return Math.max(cost>0?cost*1.35:1,0.05);}
+function setupBlocksOrders(company){return Boolean(company?.setupPhase)&&company.setupPhase!=='operating';}
 
 export function ensureMicroLocalOrders(game,company,{targetOpen=2}={}){
   if(!game||!company)return[];
   const state=ensureMicroBusiness(company);
-  if(state.stage!=='micro'||company.setupPhase!=='operating')return openOrders(company);
+  // Legacy/alte Spielstaende besitzen teilweise kein setupPhase-Feld mehr.
+  // Fehlt das Feld, gilt ein bestehender Mikrobetrieb als in Betrieb; nur eine explizit andere Phase blockiert Auftraege.
+  if(state.stage!=='micro'||setupBlocksOrders(company))return openOrders(company);
   const productId=chooseProduct(company);
   if(!productId)return openOrders(company);
   const scale=starterOrderScale(company),profile=microStarterProfile(company),customers=profile.customers||['Privatkunde'];
@@ -34,7 +37,9 @@ export function runMicroLocalOrderTest(){
  const company={type:'Schreinerei',setupPhase:'operating',customerOrders:[],salesPrices:{table_basic:125},costAccounting:{productCosts:{}},microBusiness:null};
  const fake={createCustomerOrder(c,o){const order={id:`o${c.customerOrders.length+1}`,...o,status:'open'};c.customerOrders.push(order);return{success:true,order};}};
  const rows=ensureMicroLocalOrders(fake,company,{targetOpen:2});
- const success=rows.length===2&&rows.every(o=>o.starterOrder&&o.local&&o.amount*o.unitPrice<=1200.01);
- console[success?'log':'error'](success?'✅ MIKRO-KLEINAUFTRAG-TEST ERFOLGREICH':'❌ MIKRO-KLEINAUFTRAG-TEST FEHLGESCHLAGEN',rows);return{success,rows};
+ const legacy={type:'Schreinerei',customerOrders:[],salesPrices:{table_basic:125},costAccounting:{productCosts:{}},microBusiness:{stage:'micro',completedStarterOrders:0}};
+ const legacyRows=ensureMicroLocalOrders(fake,legacy,{targetOpen:2});
+ const success=rows.length===2&&legacyRows.length===2&&rows.every(o=>o.starterOrder&&o.local&&o.amount*o.unitPrice<=1200.01);
+ console[success?'log':'error'](success?'✅ MIKRO-KLEINAUFTRAG-TEST ERFOLGREICH':'❌ MIKRO-KLEINAUFTRAG-TEST FEHLGESCHLAGEN',{rows,legacyRows});return{success,rows,legacyRows};
 }
 if(typeof window!=='undefined'){window.ensureMicroLocalOrders=ensureMicroLocalOrders;window.runMicroLocalOrderTest=runMicroLocalOrderTest;}
