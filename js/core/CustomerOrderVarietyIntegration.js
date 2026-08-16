@@ -1,18 +1,8 @@
-// ORVUNO – Kundenauftraege mit Produktvielfalt statt Lagerbier-Dauerschleife.
-// Bleibt bewusst auf der bestehenden Kundenauftrags-Engine und aendert weder Dashboard noch Lieferlogik.
-import { ConnectedEconomyGameplay } from './ConnectedEconomyGameplay.js';
+// ORVUNO – gemeinsame Auswahlregeln fuer abwechslungsreiche, produzierbare Kundenauftraege.
+// Keine UI- oder Prototyp-Patches hier: die bestehende Kapazitaets-/Fuhrparklogik nutzt diese Helfer.
 import { BeverageRecipeCatalog } from './BeverageRecipeCatalog.js';
 import { getIndustryProfile } from './IndustryCatalog.js';
 
-const CUSTOMER_PROFILES=[
-  {customer:'REWE Regional',min:700,max:1500,dueMin:60,dueMax:96,distanceMin:15,distanceMax:60,priceFactor:1.03,weight:1.1},
-  {customer:'Getränkemarkt West',min:450,max:1200,dueMin:54,dueMax:90,distanceMin:8,distanceMax:45,priceFactor:1.05,weight:1.2},
-  {customer:'Gasthaus & Gastronomie',min:180,max:650,dueMin:36,dueMax:72,distanceMin:5,distanceMax:35,priceFactor:1.09,weight:.9},
-  {customer:'Verein & Veranstaltung',min:80,max:420,dueMin:24,dueMax:60,distanceMin:4,distanceMax:28,priceFactor:1.12,weight:.8}
-];
-
-const randomInt=(min,max)=>Math.floor(min+Math.random()*(max-min+1));
-const weightedPick=rows=>{const total=rows.reduce((s,x)=>s+(Number(x.weight)||1),0);let r=Math.random()*total;for(const row of rows){r-=Number(row.weight)||1;if(r<=0)return row;}return rows[rows.length-1];};
 const setFrom=value=>Array.isArray(value)?new Set(value.map(String)):null;
 
 export function eligibleCustomerProducts(company){
@@ -32,58 +22,35 @@ export function eligibleCustomerProducts(company){
   }).map(recipe=>({recipeId:recipe.id,productId:recipe.outputId,name:recipe.name}));
 }
 
-function chooseProduct(company,openOrders=[]){
+export function chooseCustomerOrderProduct(company,index=0){
   const eligible=eligibleCustomerProducts(company);
   if(!eligible.length)return null;
-  const recent=[...company.customerOrders].slice(-4).map(x=>String(x.productId||''));
-  const openCounts=new Map();for(const order of openOrders)openCounts.set(String(order.productId),(openCounts.get(String(order.productId))||0)+1);
-  const scored=eligible.map(item=>{const repeats=recent.filter(x=>x===String(item.productId)).length,open=openCounts.get(String(item.productId))||0;return{...item,weight:Math.max(.12,1/(1+repeats*1.5+open*2))};});
-  if(scored.length>1){const last=String(company.customerOrders.at(-1)?.productId||'');const alternatives=scored.filter(x=>String(x.productId)!==last);if(alternatives.length&&Math.random()<.82)return weightedPick(alternatives);}
-  return weightedPick(scored);
+  if(eligible.length===1)return eligible[0];
+  const orders=Array.isArray(company?.customerOrders)?company.customerOrders:[];
+  const open=orders.filter(x=>x?.status==='open');
+  const recent=orders.slice(-4);
+  const score=item=>{
+    const id=String(item.productId);
+    const openCount=open.filter(x=>String(x.productId||x.product||'')===id).length;
+    const recentCount=recent.filter(x=>String(x.productId||x.product||'')===id).length;
+    const wasLast=String(orders.at(-1)?.productId||orders.at(-1)?.product||'')===id?1:0;
+    return openCount*100+recentCount*10+wasLast*25;
+  };
+  const min=Math.min(...eligible.map(score));
+  const best=eligible.filter(x=>score(x)===min);
+  return best[Math.abs(Number(index)||0)%best.length];
 }
-
-function chooseCustomer(openOrders=[]){
-  const openNames=new Set(openOrders.map(x=>x.customer));
-  const candidates=CUSTOMER_PROFILES.filter(x=>!openNames.has(x.customer));
-  return weightedPick(candidates.length?candidates:CUSTOMER_PROFILES);
-}
-
-function createVariedOrder(game,company,openOrders=[]){
-  const product=chooseProduct(company,openOrders);if(!product)return null;
-  const customer=chooseCustomer(openOrders);
-  const amount=randomInt(customer.min,customer.max);
-  const dueHours=randomInt(customer.dueMin,customer.dueMax);
-  const distanceKm=randomInt(customer.distanceMin,customer.distanceMax);
-  const market=game.getDemand(company,product.productId);
-  const base=Number(company.salesPrices?.[product.productId])||Number(market?.competitorAverage)||.95;
-  const unitPrice=Math.round(Math.max(.01,base*customer.priceFactor)*100)/100;
-  const result=game.createCustomerOrder(company,{productId:product.productId,amount,unitPrice,dueHours,customer:customer.customer});
-  if(result?.success&&result.order){result.order.distanceKm=distanceKm;result.order.customerType=customer.customer;result.order.generatedBy='variety-v1';}
-  return result;
-}
-
-const original=ConnectedEconomyGameplay.prototype.ensureCustomerOrders;
-ConnectedEconomyGameplay.prototype.ensureCustomerOrders=function(company){
-  this.ensureCompany(company);
-  if(company.setupPhase&&company.setupPhase!=='operating')return[];
-  if(company.microBusiness?.stage==='micro')return original.call(this,company);
-  const profile=getIndustryProfile(company);
-  if(profile.branchKey!=='brewery')return original.call(this,company);
-  let open=company.customerOrders.filter(x=>x.status==='open');
-  const targetOpen=Math.min(2,Math.max(1,Number(company.customerOrderTarget)||2));
-  let guard=0;
-  while(open.length<targetOpen&&guard++<8){const result=createVariedOrder(this,company,open);if(!result?.success)break;open=company.customerOrders.filter(x=>x.status==='open');}
-  return open;
-};
 
 export function runCustomerOrderVarietyRegression(){
-  const game=new ConnectedEconomyGameplay();
-  const company={type:'Brauerei',setupPhase:'operating',money:10000,customerOrders:[],finishedGoods:{},salesPrices:{lager033_bottle:.95,pils033_bottle:.99},productionMachines:[]};
-  game.ensureCompany(company);game.ensureCustomerOrders(company);
-  const allowed=new Set(eligibleCustomerProducts(company).map(x=>x.productId));
-  const valid=company.customerOrders.length===2&&company.customerOrders.every(x=>allowed.has(x.productId)&&x.amount>0&&x.dueAt&&x.distanceKm>0);
-  if(!valid)throw new Error('Kundenauftrag-Vielfalt Regression fehlgeschlagen');
-  return{success:true,products:company.customerOrders.map(x=>x.productId)};
+  const company={type:'Brauerei',customerOrders:[]};
+  const first=chooseCustomerOrderProduct(company,0);
+  if(!first)throw new Error('Kein produzierbares Kundenprodukt gefunden');
+  company.customerOrders.push({productId:first.productId,status:'open'});
+  const second=chooseCustomerOrderProduct(company,1);
+  if(!second||second.productId===first.productId)throw new Error('Produktwiederholung wurde trotz Alternative nicht vermieden');
+  const locked={type:'Brauerei',customerOrders:[],lockedProducts:[second.productId]};
+  if(eligibleCustomerProducts(locked).some(x=>x.productId===second.productId))throw new Error('Gesperrtes Produkt ist kundenauftragsfaehig');
+  return{success:true,first:first.productId,second:second.productId};
 }
 
-if(typeof window!=='undefined')window.worldCustomerOrderVariety={eligibleCustomerProducts,test:runCustomerOrderVarietyRegression};
+if(typeof window!=='undefined')window.worldCustomerOrderVariety={eligibleCustomerProducts,chooseCustomerOrderProduct,test:runCustomerOrderVarietyRegression};
