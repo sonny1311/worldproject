@@ -24,7 +24,7 @@ const equipmentList=company=>company?.buildingState?.equipment||company?.buildin
 const equipmentId=item=>typeof item==="string"?item:item?.id||item?.equipmentId||item?.type||item?.machineType||null;
 export function equipmentOperational(item){
  if(typeof item==="string")return true;
- if(!item||item.status==="installing"||item.status==="sold"||item.status==="broken"||item.status==="maintenance")return false;
+ if(!item||item.status==="installing"||item.status==="upgrading"||item.status==="sold"||item.status==="broken"||item.status==="maintenance")return false;
  return true;
 }
 
@@ -66,6 +66,8 @@ export function runIndustryMachineCompatibilityTest(){
  const upgraded=machineRequirementDetails(company,"brewhouse");
  if(!upgraded.satisfied)throw new Error("Fertig montierte Maschine wird nicht freigegeben");
  if(Math.abs(upgraded.performance-1.3)>1e-9||Math.abs(upgraded.averagePerformance-1.3)>1e-9)throw new Error("Maschinenstufe wirkt nicht auf die Produktionsleistung");
+ company.buildingState.equipment[0].status="upgrading";
+ if(machineRequirementSatisfied(company,"brewhouse"))throw new Error("Maschine im Upgrade wird fälschlich für Produktion freigegeben");
  return true;
 }
 
