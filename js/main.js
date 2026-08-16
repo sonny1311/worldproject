@@ -8,6 +8,7 @@ import "./core/CanonicalIndustryGoodsIntegration.js";
 import "./core/OperationalInventoryBridge.js";
 import "./core/CurrencyPresentationBridge.js";
 import "./core/SharedBusinessFinanceUIIntegration.js";
+import "./core/CoinStoreVisualPolishIntegration.js";
 import { Company } from "./core/Company.js";
 import { CompanySetup } from "./core/CompanySetup.js";
 
