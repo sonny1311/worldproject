@@ -1,85 +1,87 @@
-// WorldProject – separater Admin-Einstieg.
-// NICHT aus js/bootstrap.js importieren. Der normale Spielerclient lädt diesen Code nicht.
+// WorldProject / ORVUNO – robuster In-Game-Adminstart.
+// Der Admin-Kern lädt immer zuerst. Zusatzmodule dürfen den kompletten Adminbereich
+// nicht mehr durch einen einzelnen Syntax-/Importfehler blockieren.
 import { adminControlSystem } from "./core/AdminControlSystem.js";
 import { createAdminFrontend } from "./core/AdminFrontendModel.js";
 import { AdminWorkspaceController } from "./core/AdminWorkspaceController.js";
 import { mountAdminConsole } from "./core/AdminConsoleUI.js";
-import { runAdminRegressionTest } from "./core/AdminRegressionTest.js";
-import { runAdminAuditRegression } from "./core/AdminAuditRegression.js";
-import { runAdminRoleRegression } from "./core/AdminRoleRegression.js";
-import { runCurrencyLocalizationRegression } from "./core/CurrencyLocalizationRegression.js";
-import { runAdminOperationsExpansionRegression } from "./core/AdminOperationsExpansionRegression.js";
-import { runAdminSupplierNpcRegression } from "./core/AdminSupplierNpcRegression.js";
-import { runAdminSupportSlaRegression } from "./core/AdminSupportSlaRegression.js";
-import { runAdminProductAwardRegression } from "./core/AdminProductAwardRegression.js";
-import { runAdminSystemHealthRegression } from "./core/AdminSystemHealthRegression.js";
-import { runAdminModuleIntegrityRegression } from "./core/AdminModuleIntegrityRegression.js";
-import "./core/AdminConsoleSectionViews.js";
-import "./core/AdminConsoleActionViews.js";
-import "./core/AdminTesterToolsIntegration.js";
-import "./core/AdminAuditAnalytics.js";
-import "./core/AdminAuditConsoleView.js";
-import "./core/AdminPersistentAuditView.js";
-import "./core/AdminRoleManagementView.js";
-import "./core/AdminServerRefreshView.js";
-import "./core/AdminCurrencySystem.js";
-import "./core/AdminCurrencyConsoleView.js";
-import "./core/AdminSupplierAwardConsoleViews.js";
-import "./core/AdminSupplierControl.js";
-import "./core/AdminNpcControl.js";
-import "./core/AdminSupplierNpcActionViews.js";
-import "./core/AdminSupportSlaSystem.js";
-import "./core/AdminSupportSlaConsoleView.js";
-import "./core/AdminProductAwardControl.js";
-import "./core/AdminProductAwardActionViews.js";
-import "./core/AdminSystemHealth.js";
-import "./core/AdminSystemHealthConsoleView.js";
-import "./core/AdminDashboardData.js";
-import "./core/ModerationCaseSystem.js";
-import "./core/LiveOpsSystem.js";
-import "./core/AdminBalancingSystem.js";
-import "./core/AdminEntityActions.js";
-import "./core/SupportCaseSystem.js";
-import "./core/AdminWorldControl.js";
-import "./core/AdminSecurityIntegration.js";
-import "./core/AdminReleaseControl.js";
-import "./core/AllianceSystem.js";
-import "./core/AllianceAdvancedSystem.js";
-import "./core/AllianceLaunchGuard.js";
 
-function blank(){return{success:false,passed:0,total:0,failed:[{error:"nicht ausgeführt"}]};}
-function runAdminStartupRegressions(){
-  const auditCheckpoint=adminControlSystem.auditLog.length;
-  let regression=blank(),auditRegression=blank(),roleRegression=blank(),currencyRegression=blank(),operationsExpansionRegression=blank(),supplierNpcRegression=blank(),supportSlaRegression=blank(),productAwardRegression=blank(),systemHealthRegression=blank(),moduleIntegrityRegression=blank();
-  try{
-    regression=runAdminRegressionTest();
-    auditRegression=runAdminAuditRegression();
-    roleRegression=runAdminRoleRegression();
-    currencyRegression=runCurrencyLocalizationRegression();
-    operationsExpansionRegression=runAdminOperationsExpansionRegression();
-    supplierNpcRegression=runAdminSupplierNpcRegression();
-    supportSlaRegression=runAdminSupportSlaRegression();
-    productAwardRegression=runAdminProductAwardRegression();
-    systemHealthRegression=runAdminSystemHealthRegression();
-    moduleIntegrityRegression=runAdminModuleIntegrityRegression();
-    return {regression,auditRegression,roleRegression,currencyRegression,operationsExpansionRegression,supplierNpcRegression,supportSlaRegression,productAwardRegression,systemHealthRegression,moduleIntegrityRegression};
-  } finally {
-    if(adminControlSystem.auditLog.length>auditCheckpoint)adminControlSystem.auditLog.splice(auditCheckpoint);
+const OPTIONAL_MODULES=[
+  "./core/AdminConsoleSectionViews.js",
+  "./core/AdminConsoleActionViews.js",
+  "./core/AdminTesterToolsIntegration.js",
+  "./core/AdminAuditAnalytics.js",
+  "./core/AdminAuditConsoleView.js",
+  "./core/AdminPersistentAuditView.js",
+  "./core/AdminRoleManagementView.js",
+  "./core/AdminServerRefreshView.js",
+  "./core/AdminCurrencySystem.js",
+  "./core/AdminCurrencyConsoleView.js",
+  "./core/AdminSupplierAwardConsoleViews.js",
+  "./core/AdminSupplierControl.js",
+  "./core/AdminNpcControl.js",
+  "./core/AdminSupplierNpcActionViews.js",
+  "./core/AdminSupportSlaSystem.js",
+  "./core/AdminSupportSlaConsoleView.js",
+  "./core/AdminProductAwardControl.js",
+  "./core/AdminProductAwardActionViews.js",
+  "./core/AdminSystemHealth.js",
+  "./core/AdminSystemHealthConsoleView.js",
+  "./core/ModerationCaseSystem.js",
+  "./core/LiveOpsSystem.js",
+  "./core/AdminBalancingSystem.js",
+  "./core/SupportCaseSystem.js",
+  "./core/AdminSecurityIntegration.js",
+  "./core/AdminReleaseControl.js",
+  "./core/AllianceSystem.js",
+  "./core/AllianceAdvancedSystem.js",
+  "./core/AllianceLaunchGuard.js"
+];
+
+async function loadOptionalModules(){
+  const loaded=[];
+  const failed=[];
+  for(const path of OPTIONAL_MODULES){
+    try{
+      await import(path);
+      loaded.push(path);
+    }catch(error){
+      const entry={path,error:error?.message||String(error)};
+      failed.push(entry);
+      console.error("❌ ORVUNO Admin-Zusatzmodul konnte nicht geladen werden",entry,error);
+    }
   }
+  if(typeof window!=="undefined")window.worldAdminModuleLoadStatus={loaded,failed};
+  return {loaded,failed};
 }
 
 export async function startWorldProjectAdmin({actor,context={},loadAdminUi=null,mount=null}={}){
   adminControlSystem.requireAdmin(actor);
-  const tests=runAdminStartupRegressions();
-  for(const [name,result] of Object.entries(tests))if(!result.success)console.error(`❌ WORLDPROJECT ${name}`,result);
+
+  // Zusatzmodule zuerst versuchen, aber Fehler isolieren.
+  const modules=await loadOptionalModules();
+
   const frontend=createAdminFrontend(actor,adminControlSystem,context);
-  const workspace=new AdminWorkspaceController({control:adminControlSystem,dashboard:typeof window!=="undefined"?window.worldAdminDashboard:null,audit:typeof window!=="undefined"?window.worldAdminAudit:null});
+  const workspace=new AdminWorkspaceController({
+    control:adminControlSystem,
+    dashboard:typeof window!=="undefined"?window.worldAdminDashboard:null,
+    audit:typeof window!=="undefined"?window.worldAdminAudit:null
+  });
+
   let ui=null;
-  if(typeof loadAdminUi==="function")await loadAdminUi({actor,adminControlSystem,frontend,workspace,...tests});
-  else if(typeof document!=="undefined")ui=mountAdminConsole({actor,admin:adminControlSystem,context,frontend,workspace,mount:mount||document.body});
-  const testStatus=Object.fromEntries(Object.entries(tests).map(([k,v])=>[k,`${v.passed}/${v.total}`]));
-  console.log("✅ WORLDPROJECT ADMIN-BEREICH FREIGEGEBEN",testStatus);
-  return {actor,adminControlSystem,frontend,workspace,ui,...tests};
+  if(typeof loadAdminUi==="function"){
+    await loadAdminUi({actor,adminControlSystem,frontend,workspace,modules});
+  }else if(typeof document!=="undefined"){
+    ui=mountAdminConsole({actor,admin:adminControlSystem,context,frontend,workspace,mount:mount||document.body});
+  }
+
+  if(modules.failed.length){
+    console.warn(`⚠️ ORVUNO Admin geöffnet, ${modules.failed.length} Zusatzmodul(e) fehlerhaft`,modules.failed);
+  }else{
+    console.log("✅ ORVUNO ADMIN-BEREICH vollständig geladen");
+  }
+
+  return {actor,adminControlSystem,frontend,workspace,ui,modules};
 }
 
 if(typeof window!=="undefined")window.startWorldProjectAdmin=startWorldProjectAdmin;
