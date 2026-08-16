@@ -31,7 +31,7 @@ function directOrder(company,options={}){
   return{success:true,order,fallback:true};
 }
 
-export function ensureMicroLocalOrders(game,company,{targetOpen=2}={}){
+export function ensureMicroLocalOrders(game,company,{targetOpen=4}={}){
   if(!game||!company)return[];
   const state=ensureMicroBusiness(company);
   if(state.stage!=='micro'||setupBlocksOrders(company))return openOrders(company);
@@ -59,11 +59,11 @@ export function ensureMicroLocalOrders(game,company,{targetOpen=2}={}){
 export function runMicroLocalOrderTest(){
  const company={type:'Schreinerei',setupPhase:'operating',customerOrders:[],salesPrices:{table_basic:125},costAccounting:{productCosts:{}},microBusiness:null};
  const fake={createCustomerOrder(c,o){const order={id:`o${c.customerOrders.length+1}`,...o,status:'open'};c.customerOrders.push(order);return{success:true,order};}};
- const rows=ensureMicroLocalOrders(fake,company,{targetOpen:2});
+ const rows=ensureMicroLocalOrders(fake,company);
  const legacy={type:'Brauerei',customerOrders:[],completedCustomerOrders:[{productId:'beer_lager_033',unitPrice:1.02,status:'completed'}],operationalSupplyState:{warehouseStock:{finished:{beer_lager_033:688}}},salesPrices:{lager033_bottle:.95},costAccounting:{productCosts:{}},microBusiness:{stage:'micro',completedStarterOrders:0}};
  const rejecting={createCustomerOrder(){return{success:false,reason:'test'};}};
- const legacyRows=ensureMicroLocalOrders(rejecting,legacy,{targetOpen:2});
- const success=rows.length===2&&legacyRows.length===2&&legacyRows.every(o=>o.productId==='beer_lager_033'&&o.status==='open')&&rows.every(o=>o.starterOrder&&o.local&&o.amount*o.unitPrice<=1200.01);
+ const legacyRows=ensureMicroLocalOrders(rejecting,legacy);
+ const success=rows.length===4&&legacyRows.length===4&&legacyRows.every(o=>o.productId==='beer_lager_033'&&o.status==='open')&&rows.every(o=>o.starterOrder&&o.local&&o.amount*o.unitPrice<=1200.01);
  console[success?'log':'error'](success?'✅ MIKRO-KLEINAUFTRAG-TEST ERFOLGREICH':'❌ MIKRO-KLEINAUFTRAG-TEST FEHLGESCHLAGEN',{rows,legacyRows});return{success,rows,legacyRows};
 }
 if(typeof window!=='undefined'){window.ensureMicroLocalOrders=ensureMicroLocalOrders;window.runMicroLocalOrderTest=runMicroLocalOrderTest;}
