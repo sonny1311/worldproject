@@ -5,7 +5,7 @@ import { propertyOffer } from "./BusinessLocationSystem.js";
 
 const CORE_RUNTIME_KEYS=new Set(["money","coins","name","industry","type","serverCompanyId","slotNo","setupPhase","buildingState"]);
 export class BusinessPortfolioSystem {
-    constructor({api}={}){this.api=api;this.companies=[];this.activeCompany=null;this.hydratedStateKeys=new Set();}
+    constructor({api}={}){this.api=api;this.companies=[];this.activeCompany=null;this.hydratedStateKeys=new Set();this.lastFinanceEvents=[];}
 
     hydrateCompany(target,serverCompany,wallet={}){
         // Dieselbe Runtime-Instanz wird absichtlich weiterverwendet, damit bestehende UI-Referenzen gueltig bleiben.
@@ -17,7 +17,12 @@ export class BusinessPortfolioSystem {
         const stored=serverCompany.building_state;const hasStoredBuilding=stored&&typeof stored==="object"&&!Array.isArray(stored)&&Object.keys(stored).length>0;target.buildingState=hasStoredBuilding?structuredClone(stored):createStarterBuilding(target);
         for(const[key,value]of Object.entries(state)){if(CORE_RUNTIME_KEYS.has(key))continue;target[key]=typeof structuredClone==="function"?structuredClone(value):value;this.hydratedStateKeys.add(key);}return target;
     }
-    async refresh(){const overview=await this.api.accountOverview();this.companies=overview.companies||[];window.worldServerAccountOverview=overview;return overview;}
+    async refresh(){
+        let finance={events:[]};try{if(this.api?.processBusinessFinances)finance=await this.api.processBusinessFinances();}catch(error){console.warn("Laufende Betriebsfinanzen konnten nicht verarbeitet werden",error);}
+        const overview=await this.api.accountOverview();this.companies=overview.companies||[];this.lastFinanceEvents=Array.isArray(finance?.events)?finance.events:[];window.worldServerAccountOverview=overview;
+        const activeId=this.activeCompany?.serverCompanyId||window.worldPlayerCompany?.serverCompanyId;if(activeId&&!this.companies.some(c=>String(c.id)===String(activeId))&&this.companies.length){const primary=this.companies.find(c=>c.is_primary)||this.companies[0];this.activate(primary,window.worldPlayerCompany||this.activeCompany||{});}
+        if(this.lastFinanceEvents.length&&typeof window!=="undefined")window.dispatchEvent(new CustomEvent("world:business-finance-events",{detail:{events:this.lastFinanceEvents}}));return overview;
+    }
     activate(serverCompany,target=window.worldPlayerCompany||{}){
         const previousId=target?.serverCompanyId??null,wallet=window.worldServerAccountOverview?.wallet||{};this.hydrateCompany(target,serverCompany,wallet);this.activeCompany=target;window.worldPlayerCompany=target;window.worldActiveServerCompany=serverCompany;if(window.worldEngine)window.worldEngine.company=target;
         const detail={company:target,serverCompany,previousCompanyId:previousId,companyId:serverCompany.id,slotNo:Number(serverCompany.slot_no||1)};
