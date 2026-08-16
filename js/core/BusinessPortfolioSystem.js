@@ -1,6 +1,7 @@
 // WorldProject - beliebig viele Betriebe pro Spieler, aber Expansion muss verdient werden
 import { createStarterBuilding } from "./IndustryCatalog.js";
 import { canExpand, expansionRequirements } from "./BusinessExpansionSystem.js";
+import { propertyOffer } from "./BusinessLocationSystem.js";
 
 const CORE_RUNTIME_KEYS=new Set(["money","coins","name","industry","type","serverCompanyId","slotNo","setupPhase","buildingState"]);
 export class BusinessPortfolioSystem {
@@ -28,14 +29,16 @@ export class BusinessPortfolioSystem {
 
     async createBusiness(data={}){
         const hasExisting=this.companies.length>0,sourceCompany=data.sourceCompany||this.activeCompany||window.worldPlayerCompany;
-        if(hasExisting){const status=this.getExpansionStatus(sourceCompany);if(!status.allowed){const e=new Error(`Expansion noch nicht möglich: ${status.reasons.join(", ")}`);e.expansionStatus=status;throw e;}data.expansionCost=status.requirements.creationCost;}
+        const locationClass=data.locationClass||"smallTown",propertyMode=data.propertyMode==="buy"?"buy":"rent",propertySizeLevel=Math.max(1,Number(data.propertySizeLevel||1));
+        const offer=propertyOffer(locationClass,propertyMode,propertySizeLevel);data.propertyUpfront=offer.upfront;data.propertyMonthly=offer.monthly;data.propertySizeLevel=propertySizeLevel;
+        if(hasExisting){const status=this.getExpansionStatus(sourceCompany);if(!status.allowed){const e=new Error(`Expansion noch nicht möglich: ${status.reasons.join(", ")}`);e.expansionStatus=status;throw e;}if(Number(sourceCompany?.money||0)<offer.upfront)throw new Error(`Nicht genug Spielgeld für die ${propertyMode==="buy"?"Immobilie":"Miet-Startkosten"}: benötigt ${Number(offer.upfront).toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2})} €`);}
         const slotNo=data.slotNo||this.nextFreeSlot();
         const result=hasExisting
             ?await this.api.createPaidBusiness({...data,slotNo,sourceCompany,sourceCompanyId:sourceCompany?.serverCompanyId||sourceCompany?.id})
             :await this.api.createBusiness({...data,slotNo});
         const starter=createStarterBuilding({type:data.companyType||data.type,industry:data.industry});await this.api.updateBusinessSetup(result.company.id,"empty_building",starter);const overview=await this.refresh();
-        if(hasExisting&&sourceCompany?.serverCompanyId){const freshSource=overview.companies?.find(c=>String(c.id)===String(sourceCompany.serverCompanyId));if(freshSource)sourceCompany.money=Number(freshSource.game_state?.money??freshSource.money??sourceCompany.money??0);window.dispatchEvent(new CustomEvent("world:server-balances-changed",{detail:{reason:"business-expansion",creationCost:data.expansionCost}}));}
-        const company=this.companies.find(c=>c.id===result.company.id)||{...result.company,building_state:starter,setup_phase:"empty_building"};return {success:true,company,creationCost:hasExisting?data.expansionCost:0};
+        if(hasExisting&&sourceCompany?.serverCompanyId){const freshSource=overview.companies?.find(c=>String(c.id)===String(sourceCompany.serverCompanyId));if(freshSource)sourceCompany.money=Number(freshSource.game_state?.money??freshSource.money??sourceCompany.money??0);window.dispatchEvent(new CustomEvent("world:server-balances-changed",{detail:{reason:"business-property",propertyUpfront:offer.upfront,propertyMonthly:offer.monthly,propertyMode,locationClass}}));}
+        const company=this.companies.find(c=>c.id===result.company.id)||{...result.company,building_state:starter,setup_phase:"empty_building"};return {success:true,company,creationCost:offer.upfront,propertyOffer:offer};
     }
     async transferMoney(fromCompanyId,toCompanyId,amount){const result=await this.api.transferBusinessMoney(fromCompanyId,toCompanyId,amount);await this.refresh();window.dispatchEvent(new CustomEvent("world:server-balances-changed"));return result;}
 
