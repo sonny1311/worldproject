@@ -38,6 +38,7 @@ import "./core/CustomerOrderProfitabilityIntegration.js";
 import "./core/UniversalOperationsDialog.js";
 import "./core/UniversalWarehouseOverviewUIIntegration.js";
 import "./core/LandConstructionExpansionUIIntegration.js";
+import "./core/ExpansionVisualPolishIntegration.js";
 import "./core/WarehouseExpansionUIIntegration.js";
 import "./core/ConstructionRuntimeCompletionIntegration.js";
 import "./core/ExpansionRuntimeRegression.js";
