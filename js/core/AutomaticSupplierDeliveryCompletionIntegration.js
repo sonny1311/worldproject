@@ -1,6 +1,7 @@
 // ORVUNO – Lieferungen nach Erreichen der ETA automatisch ins Lager buchen.
 // Es gibt fuer normale Lieferantenbestellungen keinen manuellen "Einsammeln"-Schritt mehr.
 import { AdvancedEconomySystem } from './AdvancedEconomySystem.js';
+import { OperationalSupplyChainDialog } from './OperationalSupplyChainDialog.js';
 
 const ACTIVE=new Set(['ordered','in_transit','waiting_storage','delayed']);
 const economy=new AdvancedEconomySystem();
@@ -56,6 +57,8 @@ export function completeDueOperationalDeliveries(c=company(),now=Date.now()){
    order.autoReceived=true;
    order.receiptMode='automatic';
    order.autoReceivedAt=now;
+   delete order.storageBlocked;
+   delete order.storageBlockedReason;
    completed.push(order);
   }catch(error){
    // Bei vollem Lager bleibt die Ware angekommen und wird beim naechsten Tick erneut versucht.
@@ -72,6 +75,46 @@ export function completeDueOperationalDeliveries(c=company(),now=Date.now()){
 
 export function completeAllDueSupplierDeliveries(c=company(),now=Date.now()){
  return {legacy:completeDueSupplierDeliveries(c,now),operational:completeDueOperationalDeliveries(c,now)};
+}
+
+// In der Lieferansicht gibt es keinen manuellen Wareneingang mehr. Vor jedem Rendern wird
+// zuerst automatisch fortgeschrieben/eingelagert; ein alter Einlagerungsbutton wird entfernt.
+if(!OperationalSupplyChainDialog.prototype.__automaticReceiptUiIntegrated){
+ const originalRenderDeliveries=OperationalSupplyChainDialog.prototype.renderDeliveries;
+ OperationalSupplyChainDialog.prototype.renderDeliveries=function(panel,c,suppliers){
+  try{
+   this.orders?.advance?.(Date.now());
+   const completed=[];
+   for(const order of this.orders?.orders||[]){
+    if(order?.status!=='arrived')continue;
+    try{
+     this.warehouse.receive(order);
+     order.autoReceived=true;
+     order.receiptMode='automatic';
+     order.autoReceivedAt=Date.now();
+     delete order.storageBlocked;
+     delete order.storageBlockedReason;
+     completed.push(order);
+    }catch(error){
+     order.storageBlocked=true;
+     order.storageBlockedReason=error?.message||String(error);
+    }
+   }
+   if(completed.length)this.saveState?.(c);
+  }catch(error){console.error('Automatischer Wareneingang in Lieferansicht fehlgeschlagen',error);}
+  const result=originalRenderDeliveries.call(this,panel,c,suppliers);
+  for(const b of panel?.querySelectorAll?.('button')||[]){
+   if((b.textContent||'').includes('Wareneingang / Einlagern'))b.remove();
+  }
+  for(const order of this.orders?.orders||[]){
+   if(order?.status==='arrived'&&order.storageBlocked){
+    const note=this.el?.('div',`Automatische Einlagerung wartet: ${order.storageBlockedReason||'Lagerplatz nicht verfügbar'}`);
+    if(note){Object.assign(note.style,{marginTop:'6px',fontWeight:'700',color:'#f59e0b'});panel.append(note);}
+   }
+  }
+  return result;
+ };
+ OperationalSupplyChainDialog.prototype.__automaticReceiptUiIntegrated=true;
 }
 
 // Auch der normale Wirtschafts-Tick nutzt die HERE-ETA, damit Live-Verkehr und Wareneingang
