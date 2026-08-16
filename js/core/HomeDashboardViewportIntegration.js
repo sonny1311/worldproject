@@ -3,7 +3,8 @@ function headingOf(el){return String(el?.querySelector?.('h2')?.textContent||el?
 function isSpacer(el){return el?.tagName==='DIV'&&el.children.length===0&&(el.style.height==='14px'||el.style.height==='9px');}
 function findAnywhere(root,pattern){return [...root.querySelectorAll(':scope > *, :scope > * > *')].find(el=>pattern.test(headingOf(el)))||null;}
 function customerGridOf(customers){return [...customers.children].find(el=>{try{return el.style?.display==='grid'||getComputedStyle(el).display==='grid';}catch{return false;}})||null;}
-function ensureBoard(root,title,customers,timed,warehouse,production){let board=root.querySelector(':scope > [data-orvuno-workboard]');if(!board){board=document.createElement('div');board.dataset.orvunoWorkboard='1';const left=document.createElement('div'),right=document.createElement('div');left.dataset.orvunoWorkLeft='1';right.dataset.orvunoWorkRight='1';board.append(left,right);if(title?.nextSibling)root.insertBefore(board,title.nextSibling);else root.append(board);}const left=board.querySelector('[data-orvuno-work-left]'),right=board.querySelector('[data-orvuno-work-right]');for(const el of [customers,warehouse])if(el&&el.parentElement!==left)left.append(el);for(const el of [timed,production])if(el&&el.parentElement!==right)right.append(el);return{board,left,right};}
+function safeMove(parent,el){if(!parent||!el||parent===el||el.contains(parent))return false;if(el.parentElement!==parent)parent.append(el);return true;}
+function ensureBoard(root,title,customers,timed,warehouse,production){let board=root.querySelector(':scope > [data-orvuno-workboard]');if(!board){board=document.createElement('div');board.dataset.orvunoWorkboard='1';const left=document.createElement('div'),right=document.createElement('div');left.dataset.orvunoWorkLeft='1';right.dataset.orvunoWorkRight='1';board.append(left,right);if(title?.nextSibling)root.insertBefore(board,title.nextSibling);else root.append(board);}const left=board.querySelector('[data-orvuno-work-left]'),right=board.querySelector('[data-orvuno-work-right]');safeMove(left,customers);safeMove(left,warehouse);safeMove(right,timed);safeMove(right,production);return{board,left,right};}
 function applyWorkGrid(root){
  const title=[...root.children].find(el=>el.matches?.('section')&&el.querySelector('h1'))||root.firstElementChild;
  const customers=findAnywhere(root,/^📦?\s*Kundenaufträge|Kundenaufträge/i);
@@ -29,27 +30,32 @@ function injectResponsiveCss(){let st=document.getElementById('orvuno-home-respo
 @media(max-width:940px){#world-home-dashboard [data-orvuno-workboard]{grid-template-columns:1fr!important}}
 @media(max-width:680px){#world-home-dashboard [data-orvuno-customer-grid]{grid-template-columns:1fr!important}}
 `;}
+let applying=false;
 function applyHomeViewport(){
+ if(applying)return false;
  const root=document.getElementById('world-home-dashboard');
  if(!root)return false;
- injectResponsiveCss();
- Object.assign(document.documentElement.style,{overflowY:'auto',overflowX:'hidden',height:'auto',minHeight:'100%'});
- Object.assign(document.body.style,{overflowY:'auto',overflowX:'hidden',height:'auto',minHeight:'100vh',maxHeight:'none'});
- Object.assign(root.style,{maxWidth:'1280px',width:'calc(100% - 28px)',boxSizing:'border-box',padding:'72px 14px 28px',fontSize:'14px',lineHeight:'1.35',minHeight:'100vh',height:'auto',maxHeight:'none',overflow:'visible'});
- for(const section of root.querySelectorAll(':scope > section, [data-orvuno-workboard] > div > section'))Object.assign(section.style,{marginBottom:'0'});
- for(const h1 of root.querySelectorAll('h1'))Object.assign(h1.style,{fontSize:'26px',lineHeight:'1.15'});
- for(const h2 of root.querySelectorAll('h2'))Object.assign(h2.style,{fontSize:'20px',lineHeight:'1.2'});
- for(const button of root.querySelectorAll('button'))Object.assign(button.style,{padding:'7px 10px',minHeight:'34px'});
- applyWorkGrid(root);
- return true;
+ applying=true;
+ try{
+  injectResponsiveCss();
+  Object.assign(document.documentElement.style,{overflowY:'auto',overflowX:'hidden',height:'auto',minHeight:'100%'});
+  Object.assign(document.body.style,{overflowY:'auto',overflowX:'hidden',height:'auto',minHeight:'100vh',maxHeight:'none'});
+  Object.assign(root.style,{maxWidth:'1280px',width:'calc(100% - 28px)',boxSizing:'border-box',padding:'72px 14px 28px',fontSize:'14px',lineHeight:'1.35',minHeight:'100vh',height:'auto',maxHeight:'none',overflow:'visible'});
+  for(const section of root.querySelectorAll(':scope > section, [data-orvuno-workboard] > div > section'))Object.assign(section.style,{marginBottom:'0'});
+  for(const h1 of root.querySelectorAll('h1'))Object.assign(h1.style,{fontSize:'26px',lineHeight:'1.15'});
+  for(const h2 of root.querySelectorAll('h2'))Object.assign(h2.style,{fontSize:'20px',lineHeight:'1.2'});
+  for(const button of root.querySelectorAll('button'))Object.assign(button.style,{padding:'7px 10px',minHeight:'34px'});
+  applyWorkGrid(root);
+  return true;
+ }finally{applying=false;}
 }
 export function installHomeDashboardViewport(){
  if(typeof window==='undefined'||typeof document==='undefined')return false;
  let scheduled=false;
- const run=()=>{if(scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;applyHomeViewport();});};
+ const run=()=>{if(scheduled||applying)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;applyHomeViewport();});};
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);else run();
  for(const ev of ['worldproject:company-loaded','worldproject:company-activated','worldproject:company-switched','world:game-state-dirty','world:customer-order-updated'])window.addEventListener(ev,run);
- const observer=new MutationObserver(run);observer.observe(document.documentElement,{childList:true,subtree:true});
+ const observer=new MutationObserver(mutations=>{if(applying)return;const relevant=mutations.some(m=>[...m.addedNodes,...m.removedNodes].some(n=>n.nodeType===1&&!n.closest?.('[data-orvuno-workboard]')));if(relevant)run();});observer.observe(document.documentElement,{childList:true,subtree:true});
  window.addEventListener('resize',run);
  return true;
 }
