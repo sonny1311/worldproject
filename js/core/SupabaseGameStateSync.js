@@ -55,18 +55,37 @@ export class SupabaseGameStateSync {
         return (window.worldServerAccountOverview?.companies||[]).find(c=>String(c?.id)===String(company?.serverCompanyId))||null;
     }
 
+    // Die relationale Spalte companies.money ist die kanonische Geldquelle.
+    // game_state.money bleibt aus Kompatibilitaetsgruenden gespiegelt, darf aber
+    // einen neueren Server-/Admin-Wert niemals wieder mit einem alten Snapshot ueberschreiben.
+    reconcileServerMoney(server){
+        if(!server)return null;
+        const columnMoney=Number(server.money);
+        const stateMoney=Number(server.game_state?.money);
+        const canonical=Number.isFinite(columnMoney)?columnMoney:(Number.isFinite(stateMoney)?stateMoney:0);
+        if(!server.game_state||typeof server.game_state!=="object")server.game_state={};
+        server.game_state.money=canonical;
+        return canonical;
+    }
+
     restoreRuntimeIfNeeded(){
         const company=window.worldPlayerCompany;if(!company?.serverCompanyId)return false;
         const server=this.activeServerCompany(company);if(!server)return false;
+        const canonicalMoney=this.reconcileServerMoney(server);
         const serverState=server.game_state||{},serverWeight=this.stateWeight(serverState),runtimeWeight=this.stateWeight(company);
         if(serverWeight>0&&runtimeWeight===0){
             const portfolio=window.worldAccounts?.businessPortfolio;
             if(portfolio?.hydrateCompany){
                 portfolio.hydrateCompany(company,server,window.worldServerAccountOverview?.wallet||{});
+                if(Number.isFinite(canonicalMoney))company.money=canonicalMoney;
                 if(window.worldEngine)window.worldEngine.company=company;
                 console.warn("🛟 ORVUNO: LEERE RUNTIME AUS SERVER-SPIELSTAND WIEDERHERGESTELLT",{companyId:server.id,serverWeight});
                 window.worldHomeOperationsDashboard?.render?.();
             }
+        }else if(!company.__orvunoServerHydrated&&Number.isFinite(canonicalMoney)){
+            // Auch bei bereits vorhandener Runtime muss der beim Laden vom Server
+            // gelieferte Kontostand einmal Vorrang haben. Danach arbeitet die Runtime normal weiter.
+            company.money=canonicalMoney;
         }
         company.__orvunoServerHydrated=true;company.__orvunoHydratedCompanyId=String(server.id);return true;
     }
@@ -86,7 +105,7 @@ export class SupabaseGameStateSync {
         try{
             const result=company.serverCompanyId?await this.api.saveBusinessState(company.serverCompanyId,state):await this.api.saveGameState(state);
             if(company.serverCompanyId&&company.setupPhase&&company.buildingState)await this.api.updateBusinessSetup(company.serverCompanyId,company.setupPhase,company.buildingState);
-            if(server&&company.serverCompanyId){server.game_state=this.sanitize(state)||state;}
+            if(server&&company.serverCompanyId){server.game_state=this.sanitize(state)||state;server.money=Number(state.money||0);}
             this.clearRetry();window.dispatchEvent(new CustomEvent("world:game-saved",{detail:result}));return result;
         }catch(error){
             window.dispatchEvent(new CustomEvent("world:game-save-error",{detail:{message:error?.message||String(error),attempt:this.retryAttempt}}));this.scheduleRetry();throw error;
@@ -98,7 +117,7 @@ export class SupabaseGameStateSync {
     async refreshBalances(){
         try{
             const overview=await this.api.accountOverview();window.worldServerAccountOverview=overview;
-            const active=window.worldPlayerCompany;if(active){const server=overview.companies?.find(c=>c.id===active.serverCompanyId)||overview.company;if(server){const stored=server.game_state||{};active.money=Number(stored.money??server.money??0);}active.coins=Number(overview.wallet?.balance||0);}
+            const active=window.worldPlayerCompany;if(active){const server=overview.companies?.find(c=>c.id===active.serverCompanyId)||overview.company;if(server){const canonical=this.reconcileServerMoney(server);active.money=Number(canonical??0);}active.coins=Number(overview.wallet?.balance||0);}
         }catch(error){console.warn("Serverguthaben konnten nicht aktualisiert werden",error);}
     }
 }
