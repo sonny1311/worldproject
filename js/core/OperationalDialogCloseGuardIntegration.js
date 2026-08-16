@@ -1,28 +1,26 @@
 // WorldProject – Sicherheitswache fuer den Einkaufs-/Lager-/Produktionsdialog.
-// Das Schliessen-X bleibt immer vor Dialoginhalt, Sticky-Leisten und Scrollbereichen sichtbar; Escape schliesst ebenfalls.
+// Der Dialog besitzt bereits sein eigenes X im Kopfbereich. Hier wird nur verhindert,
+// dass ein alter zusaetzlicher "X Schliessen"-Button stehen bleibt. Escape schliesst ebenfalls.
 import { OperationalSupplyChainDialog } from './OperationalSupplyChainDialog.js';
 
 const proto=OperationalSupplyChainDialog.prototype;
 function installCloseGuard(dialog){
  const overlay=dialog?.overlay;if(!overlay)return false;
  overlay.style.zIndex='90000';
- let close=overlay.querySelector('[data-world-operational-fixed-close]');
- if(!close){
-  close=document.createElement('button');
-  close.type='button';close.dataset.worldOperationalFixedClose='1';close.textContent='✕ Schließen';close.title='Schließen';close.setAttribute('aria-label','Dialog schließen');
-  close.onclick=e=>{e.preventDefault();e.stopPropagation();dialog.close();};overlay.append(close);
- }
- // Bei jedem Render erneut setzen: spaeter erzeugte Sticky-/Coin-Elemente duerfen das X nicht ueberdecken.
- Object.assign(close.style,{position:'fixed',top:'122px',right:'24px',zIndex:'2147483647',isolation:'isolate',minWidth:'126px',height:'42px',display:'grid',placeItems:'center',padding:'0 14px',border:'2px solid rgba(255,255,255,.9)',borderRadius:'10px',background:'#991b1b',color:'#fff',fontSize:'16px',fontWeight:'900',lineHeight:'1',cursor:'pointer',boxShadow:'0 7px 24px rgba(0,0,0,.8)',pointerEvents:'auto',transform:'translateZ(0)'});
- // Als letztes Overlay-Kind bleibt der Button auch in der DOM-Malreihenfolge ganz vorne.
- if(overlay.lastElementChild!==close)overlay.append(close);
- const panel=[...overlay.children].find(x=>x!==close);if(panel){panel.style.position='relative';panel.style.marginTop='58px';panel.style.maxHeight='calc(94vh - 58px)';}
+ // Fruehere Versionen erzeugten hier einen zweiten festen Schliessen-Button.
+ // Diesen konsequent entfernen; das normale X des Dialogkopfs bleibt die einzige Schliessaktion.
+ overlay.querySelectorAll('[data-world-operational-fixed-close]').forEach(node=>node.remove());
+ const panel=overlay.firstElementChild;
+ if(panel){panel.style.position='relative';panel.style.marginTop='0';panel.style.maxHeight='94vh';}
+ const head=panel?.firstElementChild;
+ const close=head?[...head.querySelectorAll('button')].find(b=>(b.textContent||'').trim()==='✕'):null;
+ if(close)Object.assign(close.style,{position:'relative',zIndex:'2147483647',fontSize:'18px',minWidth:'42px',minHeight:'42px',pointerEvents:'auto'});
  return true;
 }
 if(!proto.__worldOperationalCloseGuard){
  proto.__worldOperationalCloseGuard=true;
  const originalOpen=proto.open;
- proto.open=async function(...args){const result=await originalOpen.apply(this,args);installCloseGuard(this);requestAnimationFrame(()=>installCloseGuard(this));setTimeout(()=>installCloseGuard(this),0);return result;};
+ proto.open=async function(...args){const result=await originalOpen.apply(this,args);installCloseGuard(this);requestAnimationFrame(()=>installCloseGuard(this));return result;};
  const originalRender=proto.render;
  proto.render=function(...args){const result=originalRender.apply(this,args);installCloseGuard(this);requestAnimationFrame(()=>installCloseGuard(this));return result;};
 }
