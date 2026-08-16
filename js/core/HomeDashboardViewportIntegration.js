@@ -12,20 +12,21 @@ function applyWorkGrid(root){
  const production=findAnywhere(root,/^🏭?\s*Produktion|Produktion/i);
  const warehouse=[...root.querySelectorAll('[data-world-home-warehouse], :scope > *, :scope > * > *')].find(el=>el.dataset?.worldHomeWarehouse==='1'||/^🏬?\s*Lager/i.test(headingOf(el)))||null;
  if(!customers||!timed||!production)return false;
- for(const el of [...root.children])if(isSpacer(el))el.style.display='none';
+ for(const el of [...root.children])if(isSpacer(el))el.remove();
  const {board,left,right}=ensureBoard(root,title,customers,timed,warehouse,production);
  root.style.setProperty('display','block','important');
- if(title)title.style.setProperty('margin-bottom','12px','important');
- Object.assign(board.style,{display:'grid',gridTemplateColumns:'minmax(0,1.62fr) minmax(290px,1fr)',gap:'12px',alignItems:'start'});
- Object.assign(left.style,{display:'grid',gridTemplateColumns:'minmax(0,1fr)',gap:'12px',alignContent:'start',minWidth:'0'});
- Object.assign(right.style,{display:'grid',gridTemplateColumns:'minmax(0,1fr)',gap:'12px',alignContent:'start',minWidth:'0'});
- for(const el of [customers,timed,production,warehouse])if(el){el.style.setProperty('margin','0','important');el.style.setProperty('min-width','0','important');el.style.removeProperty('grid-row');el.style.removeProperty('grid-column');}
+ if(title)title.style.setProperty('margin-bottom','8px','important');
+ Object.assign(board.style,{display:'grid',gridTemplateColumns:'minmax(0,1.62fr) minmax(290px,1fr)',gap:'8px',alignItems:'start',alignContent:'start'});
+ Object.assign(left.style,{display:'grid',gridTemplateColumns:'minmax(0,1fr)',gap:'8px',alignContent:'start',minWidth:'0'});
+ Object.assign(right.style,{display:'grid',gridTemplateColumns:'minmax(0,1fr)',gap:'8px',alignContent:'start',minWidth:'0'});
+ for(const el of [customers,timed,production,warehouse])if(el){el.style.setProperty('margin','0','important');el.style.setProperty('min-width','0','important');el.style.setProperty('align-self','start','important');el.style.removeProperty('grid-row');el.style.removeProperty('grid-column');}
  const customerGrid=customerGridOf(customers);
- if(customerGrid){customerGrid.dataset.orvunoCustomerGrid='1';customerGrid.style.setProperty('display','grid','important');customerGrid.style.setProperty('grid-template-columns','repeat(2,minmax(0,1fr))','important');customerGrid.style.setProperty('gap','10px','important');customerGrid.style.setProperty('align-items','stretch','important');for(const card of customerGrid.children){card.style.setProperty('min-width','0','important');card.style.setProperty('width','auto','important');}}
+ if(customerGrid){customerGrid.dataset.orvunoCustomerGrid='1';customerGrid.style.setProperty('display','grid','important');customerGrid.style.setProperty('grid-template-columns','repeat(2,minmax(0,1fr))','important');customerGrid.style.setProperty('gap','8px','important');customerGrid.style.setProperty('align-items','stretch','important');for(const card of customerGrid.children){card.style.setProperty('min-width','0','important');card.style.setProperty('width','auto','important');}}
  return true;
 }
 function injectResponsiveCss(){let st=document.getElementById('orvuno-home-responsive-grid');if(!st){st=document.createElement('style');st.id='orvuno-home-responsive-grid';document.head.append(st);}st.textContent=`
-#world-home-dashboard [data-orvuno-workboard]{width:100%}
+#world-home-dashboard [data-orvuno-workboard]{width:100%;margin:0!important}
+#world-home-dashboard [data-orvuno-work-left],#world-home-dashboard [data-orvuno-work-right]{margin:0!important;padding:0!important}
 #world-home-dashboard [data-orvuno-customer-grid]{grid-template-columns:repeat(2,minmax(0,1fr))!important}
 @media(max-width:940px){#world-home-dashboard [data-orvuno-workboard]{grid-template-columns:1fr!important}}
 @media(max-width:680px){#world-home-dashboard [data-orvuno-customer-grid]{grid-template-columns:1fr!important}}
@@ -40,7 +41,7 @@ function applyHomeViewport(){
   injectResponsiveCss();
   Object.assign(document.documentElement.style,{overflowY:'auto',overflowX:'hidden',height:'auto',minHeight:'100%'});
   Object.assign(document.body.style,{overflowY:'auto',overflowX:'hidden',height:'auto',minHeight:'100vh',maxHeight:'none'});
-  Object.assign(root.style,{maxWidth:'1280px',width:'calc(100% - 28px)',boxSizing:'border-box',padding:'72px 14px 28px',fontSize:'14px',lineHeight:'1.35',minHeight:'100vh',height:'auto',maxHeight:'none',overflow:'visible'});
+  Object.assign(root.style,{maxWidth:'1280px',width:'calc(100% - 28px)',boxSizing:'border-box',padding:'64px 14px 18px',fontSize:'14px',lineHeight:'1.35',minHeight:'0',height:'auto',maxHeight:'none',overflow:'visible'});
   for(const section of root.querySelectorAll(':scope > section, [data-orvuno-workboard] > div > section'))Object.assign(section.style,{marginBottom:'0'});
   for(const h1 of root.querySelectorAll('h1'))Object.assign(h1.style,{fontSize:'26px',lineHeight:'1.15'});
   for(const h2 of root.querySelectorAll('h2'))Object.assign(h2.style,{fontSize:'20px',lineHeight:'1.2'});
