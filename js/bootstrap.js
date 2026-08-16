@@ -48,6 +48,7 @@ import "./core/ReputationDashboardIntegration.js";
 import "./core/UrgentCustomerOrderUIIntegration.js";
 import "./core/LiveTrafficDeliveryIntegration.js";
 import "./core/AutomaticSupplierDeliveryCompletionIntegration.js";
+import "./core/DeliveryOverviewUIIntegration.js";
 import "./core/LiveTrafficClickGuardIntegration.js";
 import "./core/CustomerOrderPricingIntegration.js";
 import "./core/CustomerFreightPricingUIIntegration.js";
