@@ -41,23 +41,56 @@ export function completeDueSupplierDeliveries(c=company(),now=Date.now()){
  return completed;
 }
 
+// Auch die neuere operative Einkaufsoberflaeche hat einen eigenen Bestell-/Lagerzustand.
+// Dort werden faellige Lieferungen ebenfalls ohne Spieler-Klick auf "Wareneingang" eingelagert.
+export function completeDueOperationalDeliveries(c=company(),now=Date.now()){
+ const dialog=window.worldAccounts?.operationalSupplyChainDialog;
+ if(!c||!dialog?.orders||!dialog?.warehouse)return[];
+ try{dialog.loadState?.(c);}catch(error){console.warn('Operativen Lieferzustand konnte nicht geladen werden',error);}
+ dialog.orders.advance?.(now);
+ const completed=[];
+ for(const order of dialog.orders.orders||[]){
+  if(order?.status!=='arrived')continue;
+  try{
+   dialog.warehouse.receive(order);
+   order.autoReceived=true;
+   order.receiptMode='automatic';
+   order.autoReceivedAt=now;
+   completed.push(order);
+  }catch(error){
+   // Bei vollem Lager bleibt die Ware angekommen und wird beim naechsten Tick erneut versucht.
+   order.storageBlocked=true;
+   order.storageBlockedReason=error?.message||String(error);
+  }
+ }
+ if(completed.length){
+  dialog.saveState?.(c);
+  window.dispatchEvent(new CustomEvent('world:operational-deliveries-auto-received',{detail:{count:completed.length,orders:completed}}));
+ }
+ return completed;
+}
+
+export function completeAllDueSupplierDeliveries(c=company(),now=Date.now()){
+ return {legacy:completeDueSupplierDeliveries(c,now),operational:completeDueOperationalDeliveries(c,now)};
+}
+
 // Auch der normale Wirtschafts-Tick nutzt die HERE-ETA, damit Live-Verkehr und Wareneingang
 // nie gegeneinander laufen.
 if(!AdvancedEconomySystem.prototype.__automaticArrivalIntegrated){
  const original=AdvancedEconomySystem.prototype.processSupplierDeliveries;
  AdvancedEconomySystem.prototype.processSupplierDeliveries=function(c,now=new Date()){
   const result=original.call(this,c,now);
-  completeDueSupplierDeliveries(c,new Date(now).getTime());
+  completeAllDueSupplierDeliveries(c,new Date(now).getTime());
   return result;
  };
  AdvancedEconomySystem.prototype.__automaticArrivalIntegrated=true;
 }
 
-function tick(){try{completeDueSupplierDeliveries();}catch(error){console.error('Automatischer Wareneingang fehlgeschlagen',error);}}
+function tick(){try{completeAllDueSupplierDeliveries();}catch(error){console.error('Automatischer Wareneingang fehlgeschlagen',error);}}
 if(typeof window!=='undefined'){
- window.worldAutomaticSupplierDelivery={complete:completeDueSupplierDeliveries};
+ window.worldAutomaticSupplierDelivery={complete:completeAllDueSupplierDeliveries,completeLegacy:completeDueSupplierDeliveries,completeOperational:completeDueOperationalDeliveries};
  setInterval(tick,5000);
- for(const ev of ['world:traffic-updated','world:game-resumed','worldproject:company-switched','world:user-login','world:access-granted'])window.addEventListener(ev,()=>setTimeout(tick,50));
+ for(const ev of ['world:traffic-updated','world:game-resumed','worldproject:company-switched','worldproject:company-activated','world:user-login','world:access-granted'])window.addEventListener(ev,()=>setTimeout(tick,50));
  setTimeout(tick,500);
 }
 
