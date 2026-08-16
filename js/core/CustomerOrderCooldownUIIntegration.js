@@ -1,6 +1,7 @@
 // WorldProject - zeigt den aktuellen Kundenauftrags-Nachschub ohne kuenstliche Wartezeit.
 import { EconomyDashboard } from './EconomyDashboard.js';
 import { customerOrderCapacity } from './CustomerOrderCapacityByFleetIntegration.js';
+import './CustomerOrderInstantRefillRuntimeIntegration.js';
 function openOrders(company){return (company?.customerOrders||[]).filter(o=>String(o?.status||'').toLowerCase()==='open').length;}
 function textFor(company){const cap=customerOrderCapacity(company),open=openOrders(company);if(open<cap.total)return `⚡ Freie Auftragsplätze werden sofort mit neuen passenden Kundenaufträgen aufgefüllt · aktuell ${open}/${cap.total} Plätze belegt.`;return `✅ Alle ${cap.total} Auftragsplätze sind belegt. Sobald ein Auftrag erledigt, abgelehnt oder beendet ist, rückt sofort ein neuer nach.`;}
 function styleBox(box){Object.assign(box.style,{margin:'8px 0 10px',padding:'10px 12px',borderRadius:'8px',background:'rgba(34,197,94,.08)',border:'1px solid rgba(34,197,94,.30)',fontSize:'12px',fontWeight:'700',lineHeight:'1.45'});}
