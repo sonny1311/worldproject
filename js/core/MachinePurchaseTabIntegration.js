@@ -3,7 +3,7 @@
 import './IndustryEquipmentCatalogSupplement.js';
 import { OperationalSupplyChainDialog } from './OperationalSupplyChainDialog.js';
 import { EconomyDashboard } from './EconomyDashboard.js';
-import { visibleEquipmentMarketplace,buyIndustryEquipment,persistIndustryEquipment,repairDuplicateIndustryEquipment } from './IndustryEquipmentMarketplace.js';
+import { visibleEquipmentMarketplace,buyIndustryEquipment,persistIndustryEquipment,repairDuplicateIndustryEquipment,accelerateIndustryEquipmentInstallation } from './IndustryEquipmentMarketplace.js';
 import { recipesForCompany } from './OperationalSupplyChainSystem.js';
 import { compatibleMachineIds } from './IndustryMachineCompatibility.js';
 
@@ -37,10 +37,12 @@ function applySectionFocus(dialog,section){
 function machineUsage(company,item,recipes){
   return recipes.filter(recipe=>compatibleMachineIds(company,recipe.machineType).includes(item.id)).map(recipe=>recipe.label||recipe.id);
 }
+function remainingLabel(ms){const min=Math.max(0,Math.ceil(Number(ms||0)/60000));if(min<60)return`${min} Min.`;const h=Math.floor(min/60),m=min%60;return`${h} Std.${m?` ${m} Min.`:''}`;}
 
 function purchaseSnapshot(company){
   return {
     money:Number(company.money||0),
+    coins:Number(company.coins||0),
     setupPhase:company.setupPhase,
     setup_phase:company.setup_phase,
     buildingState:structuredClone(company.buildingState||company.building_state||{}),
@@ -51,6 +53,7 @@ function purchaseSnapshot(company){
 }
 function restorePurchaseSnapshot(company,snapshot){
   company.money=snapshot.money;
+  company.coins=snapshot.coins;
   company.setupPhase=snapshot.setupPhase;
   company.setup_phase=snapshot.setup_phase;
   company.buildingState=snapshot.buildingState;
@@ -66,22 +69,37 @@ function renderMachineMarket(dialog,panel,company,recipes){
     window.dispatchEvent(new CustomEvent('world:game-state-dirty',{detail:{reason:'equipment-duplicate-repair',removed:repair.removed.length,refund:repair.refund}}));
   }
   const section=dialog.el('section');section.className='world-machine-purchase-section';
-  section.append(dialog.el('h3','Maschinenkauf'),dialog.el('p','Hier findest du zentral alle Maschinen und Betriebsausstattungen, die für deinen aktuellen Betriebslevel freigeschaltet sind. Fehlende Produktionsmaschinen werden direkt mit ihrem Einsatzzweck angezeigt.'));
+  section.append(dialog.el('h3','Maschinenkauf'),dialog.el('p','Hier findest du zentral alle Maschinen und Betriebsausstattungen, die für deinen aktuellen Betriebslevel freigeschaltet sind. Neue Maschinen müssen nach dem Kauf zuerst montiert und abgenommen werden.'));
   if(repair.repaired){const note=dialog.el('div',`✅ ${repair.removed.length} doppelte Maschineninstanz${repair.removed.length===1?'':'en'} bereinigt${repair.refund>0?` · ${dialog.money(repair.refund)} zurückerstattet`:''}.`);Object.assign(note.style,{padding:'9px 11px',margin:'8px 0',borderRadius:'8px',background:'#eef8ee',fontWeight:'700'});section.append(note);}
   const market=visibleEquipmentMarketplace(company).sort((a,b)=>Number(b.required&&!b.owned)-Number(a.required&&!a.owned)||Number(a.owned)-Number(b.owned)||Number(a.price||0)-Number(b.price||0));
   if(!market.length){section.append(dialog.el('p','Für dieses Gewerbe sind auf deinem aktuellen Betriebslevel noch keine kaufbaren Maschinen verfügbar.'));panel.append(section);return;}
   for(const item of market){
-    const row=dialog.el('div');Object.assign(row.style,{border:'1px solid #d7d7d7',borderRadius:'10px',padding:'11px',margin:'8px 0',background:item.owned?'#f3fbf3':'#fafafa'});
+    const row=dialog.el('div');Object.assign(row.style,{border:'1px solid #d7d7d7',borderRadius:'10px',padding:'11px',margin:'8px 0',background:item.installing?'#eff6ff':item.owned?'#f3fbf3':'#fafafa'});
     const top=dialog.el('div');Object.assign(top.style,{display:'flex',justifyContent:'space-between',gap:'12px',alignItems:'center',flexWrap:'wrap'});
-    const name=dialog.el('strong',item.name||item.label||item.id);const status=dialog.el('strong',item.owned?'✅ Vorhanden':item.required?'🔴 Für Betrieb benötigt':'⚙️ Verfügbar');top.append(name,status);row.append(top);
+    const name=dialog.el('strong',item.name||item.label||item.id);const status=dialog.el('strong',item.installing?'🔧 Montage läuft':item.owned?'✅ Betriebsbereit':item.required?'🔴 Für Betrieb benötigt':'⚙️ Verfügbar');top.append(name,status);row.append(top);
     const usage=machineUsage(company,item,recipes);const details=[];
     if(item.description)details.push(item.description);
     if(item.capacity)details.push(`Kapazität: ${dialog.number(item.capacity)} ${item.capacityUnit||'Einheiten/h'}`);
     if(item.room)details.push(`Bereich: ${item.room==='production'?'Produktion':item.room==='storage'?'Lager':item.room}`);
     if(item.requiredLevel>1)details.push(`Freigeschaltet ab Betriebslevel ${item.requiredLevel}`);
     if(usage.length)details.push(`Benötigt für: ${usage.join(', ')}`);
+    if(item.installing)details.push(`Montage-Restzeit: ${remainingLabel(item.installation?.remainingMs)}`);
     if(details.length){const info=dialog.el('div',details.join(' · '));Object.assign(info.style,{margin:'6px 0',fontSize:'13px',lineHeight:'1.45'});row.append(info);}
-    const price=dialog.el('strong',item.owned?'Bereits gekauft':dialog.money(item.price));Object.assign(price.style,{marginRight:'8px'});row.append(price);
+    const price=dialog.el('strong',item.installing?'Gekauft · noch nicht einsatzbereit':item.owned?'Bereits gekauft':dialog.money(item.price));Object.assign(price.style,{marginRight:'8px'});row.append(price);
+    if(item.installing&&item.ownedInstance){
+      const accelerate=dialog.btn('⚡ Montage beschleunigen · bis 10 Std. / max. 50 Coins',async()=>{
+        const snapshot=purchaseSnapshot(company);accelerate.disabled=true;
+        try{
+          const result=accelerateIndustryEquipmentInstallation(company,item.ownedInstance.instanceId,{hours:10,coins:50,now:Date.now()});
+          const persisted=await persistIndustryEquipment(company);
+          if(persisted?.persisted===false&&company.serverCompanyId)throw new Error(persisted.reason||'Montagebeschleunigung konnte nicht gespeichert werden');
+          dialog.ensureMachines(company);dialog.__worldFocusedSection='machines';dialog.render(panel);
+          window.dispatchEvent(new CustomEvent('world:game-state-dirty',{detail:{reason:'equipment-installation-acceleration',equipmentId:item.id,coinCost:result.quote.coinCost,acceleratedMs:result.quote.appliedMs}}));
+        }catch(error){restorePurchaseSnapshot(company,snapshot);accelerate.disabled=false;alert(`Beschleunigung nicht durchgeführt: ${error.message}`);}
+      });
+      accelerate.title='Maximal 10 Stunden und 50 Coins pro Kauf. Die letzten 25 % der Montagezeit laufen immer real.';row.append(accelerate);
+      const rule=dialog.el('div','Coin-Regel: Pro Kauf höchstens 10 Std. und 50 Coins; mindestens 25 % der ursprünglichen Montagezeit müssen normal ablaufen.');Object.assign(rule.style,{marginTop:'5px',fontSize:'12px',color:'#475569'});row.append(rule);
+    }
     if(!item.owned){
       const button=dialog.btn(item.affordable?'Kaufen':'Nicht genug Geld',async()=>{
         const snapshot=purchaseSnapshot(company);
@@ -161,5 +179,5 @@ if(!dashboardProto.__worldMachinePurchaseTabDashboardIntegrated){
   };
 }
 
-export { applySectionFocus,machineUsage,purchaseSnapshot,restorePurchaseSnapshot,pinTabBar };
-if(typeof window!=='undefined')window.worldMachinePurchaseTab={applySectionFocus,machineUsage,pinTabBar};
+export { applySectionFocus,machineUsage,purchaseSnapshot,restorePurchaseSnapshot,pinTabBar,remainingLabel };
+if(typeof window!=='undefined')window.worldMachinePurchaseTab={applySectionFocus,machineUsage,pinTabBar,remainingLabel};
