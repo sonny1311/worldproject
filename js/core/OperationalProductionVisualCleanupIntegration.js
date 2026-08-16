@@ -1,5 +1,6 @@
 // ORVUNO – bereinigt Produktions-/Abfuelloberflaeche im dunklen UI.
 import { OperationalSupplyChainDialog } from './OperationalSupplyChainDialog.js';
+import './ProductionActionLabelIntegration.js';
 
 const proto=OperationalSupplyChainDialog.prototype;
 
