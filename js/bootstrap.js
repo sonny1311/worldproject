@@ -36,6 +36,7 @@ import "./core/CustomerFreightDeliveryIntegration.js";
 import "./core/CustomerOrderFreightPreviewIntegration.js";
 import "./core/CustomerOrderProfitabilityIntegration.js";
 import "./core/UniversalOperationsDialog.js";
+import "./core/UniversalWarehouseOverviewUIIntegration.js";
 import "./core/LandConstructionExpansionUIIntegration.js";
 import "./core/WarehouseExpansionUIIntegration.js";
 import "./core/ConstructionRuntimeCompletionIntegration.js";
