@@ -13,17 +13,38 @@ export class GameAccessGate {
     async grant(user){
         if(!user) return false;
         if(user.status!=="active") return false;
-        this.user=user; window.worldCurrentUser=user;
-        try{ window.worldServerAccountOverview=await this.api.accountOverview();const profile=window.worldServerAccountOverview?.user||user;applyPlayerMoneyContext(profile);window.dispatchEvent(new CustomEvent("worldproject:profile-loaded",{detail:{profile}})); }catch(error){ console.warn("Serverübersicht konnte noch nicht geladen werden",error);applyPlayerMoneyContext(user); }
-        window.dispatchEvent(new CustomEvent("world:access-granted",{detail:{user}}));
-        if(this._resolver){ const resolve=this._resolver; this._resolver=null; resolve(user); }
+
+        // Erst den vom Login gelieferten Benutzer setzen, damit der Spielstart nicht blockiert.
+        // Danach wird das vollständige, durch RLS geschützte Serverprofil geladen und als
+        // alleinige Laufzeitquelle verwendet. Darin steckt u. a. die echte admin_role.
+        this.user=user;
+        window.worldCurrentUser=user;
+
+        let profile=user;
+        try{
+            window.worldServerAccountOverview=await this.api.accountOverview();
+            profile={...user,...(window.worldServerAccountOverview?.user||{})};
+            this.user=profile;
+            window.worldCurrentUser=profile;
+            if(window.worldServerAccountOverview)window.worldServerAccountOverview.user=profile;
+            applyPlayerMoneyContext(profile);
+            window.dispatchEvent(new CustomEvent("worldproject:profile-loaded",{detail:{profile}}));
+        }catch(error){
+            console.warn("Serverübersicht konnte noch nicht geladen werden",error);
+            applyPlayerMoneyContext(user);
+        }
+
+        // Wichtig: access-granted bekommt ebenfalls das vollständige Profil, damit
+        // InGameAdminAccessIntegration die serverseitige owner/admin-Rolle sofort sieht.
+        window.dispatchEvent(new CustomEvent("world:access-granted",{detail:{user:profile}}));
+        if(this._resolver){ const resolve=this._resolver; this._resolver=null; resolve(profile); }
         return true;
     }
 
     async restoreSession(){
         await this.detectBackend();
         if(!this.backendOnline) return null;
-        try{ const user=await this.api.me(); if(user?.status==="active"){ await this.grant(user); return user; } }
+        try{ const user=await this.api.me(); if(user?.status==="active"){ await this.grant(user); return this.user||user; } }
         catch{}
         return null;
     }
