@@ -14,6 +14,7 @@ function injectCss(){let st=document.getElementById('orvuno-home-stable-grid');i
 #world-home-dashboard>[data-orvuno-home-spacer]{display:none!important}
 #world-home-dashboard [data-orvuno-customer-grid]{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;align-items:stretch!important}
 #world-home-dashboard [data-orvuno-customer-grid]>*{min-width:0!important;width:auto!important}
+#world-home-dashboard [data-orvuno-customer-grid]>*:nth-child(n+5){display:none!important}
 @media(max-width:940px){
  #world-home-dashboard{grid-template-columns:1fr!important}
  #world-home-dashboard>[data-orvuno-home-title],#world-home-dashboard>[data-orvuno-home-customers],#world-home-dashboard>[data-world-home-warehouse],#world-home-dashboard>[data-orvuno-home-timed],#world-home-dashboard>[data-orvuno-home-production]{grid-column:1!important;grid-row:auto!important}
