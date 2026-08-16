@@ -13,7 +13,8 @@ export class BusinessPortfolioSystem {
         for(const key of this.hydratedStateKeys)if(!CORE_RUNTIME_KEYS.has(key))delete target[key];
         this.hydratedStateKeys.clear();
         const state=serverCompany.game_state||{};
-        target.serverCompanyId=serverCompany.id;target.slotNo=Number(serverCompany.slot_no||1);target.name=serverCompany.name||"";target.industry=serverCompany.industry||"";target.type=serverCompany.company_type||"";target.money=Number(state.money??serverCompany.money??0);target.coins=Number(wallet?.balance||0);target.setupPhase=serverCompany.setup_phase||"empty_building";
+        // companies.money ist die kanonische Geldquelle. game_state.money ist nur noch ein Kompatibilitaetsspiegel.
+        target.serverCompanyId=serverCompany.id;target.slotNo=Number(serverCompany.slot_no||1);target.name=serverCompany.name||"";target.industry=serverCompany.industry||"";target.type=serverCompany.company_type||"";target.money=Number(serverCompany.money??state.money??0);target.coins=Number(wallet?.balance||0);target.setupPhase=serverCompany.setup_phase||"empty_building";
         const stored=serverCompany.building_state;const hasStoredBuilding=stored&&typeof stored==="object"&&!Array.isArray(stored)&&Object.keys(stored).length>0;target.buildingState=hasStoredBuilding?structuredClone(stored):createStarterBuilding(target);
         for(const[key,value]of Object.entries(state)){if(CORE_RUNTIME_KEYS.has(key))continue;target[key]=typeof structuredClone==="function"?structuredClone(value):value;this.hydratedStateKeys.add(key);}return target;
     }
@@ -42,7 +43,7 @@ export class BusinessPortfolioSystem {
             ?await this.api.createPaidBusiness({...data,slotNo,sourceCompany,sourceCompanyId:sourceCompany?.serverCompanyId||sourceCompany?.id})
             :await this.api.createBusiness({...data,slotNo});
         const starter=createStarterBuilding({type:data.companyType||data.type,industry:data.industry});await this.api.updateBusinessSetup(result.company.id,"empty_building",starter);const overview=await this.refresh();
-        if(hasExisting&&sourceCompany?.serverCompanyId){const freshSource=overview.companies?.find(c=>String(c.id)===String(sourceCompany.serverCompanyId));if(freshSource)sourceCompany.money=Number(freshSource.game_state?.money??freshSource.money??sourceCompany.money??0);window.dispatchEvent(new CustomEvent("world:server-balances-changed",{detail:{reason:"business-property",propertyUpfront:offer.upfront,propertyMonthly:offer.monthly,propertyMode,locationClass}}));}
+        if(hasExisting&&sourceCompany?.serverCompanyId){const freshSource=overview.companies?.find(c=>String(c.id)===String(sourceCompany.serverCompanyId));if(freshSource)sourceCompany.money=Number(freshSource.money??freshSource.game_state?.money??sourceCompany.money??0);window.dispatchEvent(new CustomEvent("world:server-balances-changed",{detail:{reason:"business-property",propertyUpfront:offer.upfront,propertyMonthly:offer.monthly,propertyMode,locationClass}}));}
         const company=this.companies.find(c=>c.id===result.company.id)||{...result.company,building_state:starter,setup_phase:"empty_building"};return {success:true,company,creationCost:offer.upfront,propertyOffer:offer};
     }
     async transferMoney(fromCompanyId,toCompanyId,amount){const result=await this.api.transferBusinessMoney(fromCompanyId,toCompanyId,amount);await this.refresh();window.dispatchEvent(new CustomEvent("world:server-balances-changed"));return result;}
