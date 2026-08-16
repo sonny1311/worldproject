@@ -1,7 +1,7 @@
 // WorldProject – universeller Betriebszyklus für alle Gewerbe.
 import { getIndustryProfile } from "./IndustryCatalog.js";
 import { worldContentRegistry } from "./ContentRegistry.js";
-import { machineRequirementSatisfied, machineRequirementDetails, compatibleMachineIds, ownedEquipmentIds } from "./IndustryMachineCompatibility.js";
+import { machineRequirementSatisfied, machineRequirementDetails, compatibleMachineIds, readyEquipmentIds } from "./IndustryMachineCompatibility.js";
 import { microEquipmentFor } from "./MicroEquipmentCatalog.js";
 import { operationalStockAmount,consumeOperationalStock,addOperationalStock,syncOperationalWarehouse } from "./OperationalInventoryBridge.js";
 const n=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;
@@ -13,7 +13,7 @@ function exactMaterialHave(c,id){const op=operationalStockAmount(c,id);return op
 function materialHave(c,id){return materialAlternatives(id).reduce((sum,key)=>sum+exactMaterialHave(c,key),0);}
 function consumeExactMaterial(c,id,q){let left=Math.max(0,n(q));const op=operationalStockAmount(c,id);if(op!==null){const take=Math.min(left,op);if(take>0&&!consumeOperationalStock(c,id,take)?.success)return left;left-=take;}else{const take=Math.min(left,n(c.inventory[id]));c.inventory[id]=n(c.inventory[id])-take;left-=take;}if(left>1e-9){const take=Math.min(left,n(c.finishedGoods[id]));c.finishedGoods[id]=n(c.finishedGoods[id])-take;left-=take;}return left;}
 function consumeMaterial(c,id,q){let left=Math.max(0,n(q));for(const key of materialAlternatives(id)){left=consumeExactMaterial(c,key,left);if(left<=1e-9)return true;}return false;}
-function microMachineSatisfied(c,machineType){if(c?.microBusiness?.stage!=="micro"||!machineType)return false;const normalChoices=new Set(compatibleMachineIds(c,machineType)),owned=new Set(ownedEquipmentIds(c));return microEquipmentFor(c).some(item=>owned.has(item.id)&&((item.replaces||[]).some(id=>normalChoices.has(id))||item.id===machineType));}
+function microMachineSatisfied(c,machineType){if(c?.microBusiness?.stage!=="micro"||!machineType)return false;const normalChoices=new Set(compatibleMachineIds(c,machineType)),owned=new Set(readyEquipmentIds(c));return microEquipmentFor(c).some(item=>owned.has(item.id)&&((item.replaces||[]).some(id=>normalChoices.has(id))||item.id===machineType));}
 function machineState(c,machineType){const base=machineRequirementDetails(c,machineType),microSatisfied=microMachineSatisfied(c,machineType);return{...base,satisfied:base.satisfied||microSatisfied,microSatisfied};}
 export function industryRecipes(c){return list("recipes",branch(c)).filter(r=>!r.deprecated);}
 export function industryProducts(c){return list("products",branch(c));}
