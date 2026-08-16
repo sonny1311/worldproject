@@ -16,6 +16,7 @@ import { runAdminSystemHealthRegression } from "./core/AdminSystemHealthRegressi
 import { runAdminModuleIntegrityRegression } from "./core/AdminModuleIntegrityRegression.js";
 import "./core/AdminConsoleSectionViews.js";
 import "./core/AdminConsoleActionViews.js";
+import "./core/AdminTesterToolsIntegration.js";
 import "./core/AdminAuditAnalytics.js";
 import "./core/AdminAuditConsoleView.js";
 import "./core/AdminPersistentAuditView.js";
