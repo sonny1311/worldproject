@@ -19,12 +19,24 @@ const ALIASES={
  online_retail:{packing_stations:["packing_stations"]}
 };
 
+const n=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;
 const equipmentList=company=>company?.buildingState?.equipment||company?.building_state?.equipment||[];
 const equipmentId=item=>typeof item==="string"?item:item?.id||item?.equipmentId||item?.type||item?.machineType||null;
 export function equipmentOperational(item){
  if(typeof item==="string")return true;
  if(!item||item.status==="installing"||item.status==="sold"||item.status==="broken"||item.status==="maintenance")return false;
  return true;
+}
+
+// Reale Maschinen aus buildingState sind die einzige Quelle für Produktionsleistung.
+// Bestehende Spielstände ohne Stufenangabe bleiben exakt auf Faktor 1. Neue/alte
+// Upgrade-Daten werden über level/upgradeLevel oder einen expliziten Multiplikator erkannt.
+export function equipmentPerformanceMultiplier(item){
+ if(typeof item==="string"||!item)return 1;
+ const explicit=n(item.capacityMultiplier??item.performanceMultiplier,0);
+ if(explicit>0)return Math.max(.1,Math.min(3,explicit));
+ const level=Math.max(1,Math.floor(n(item.level??item.upgradeLevel,1)));
+ return Math.min(3,1+(level-1)*.15);
 }
 
 export function compatibleMachineIds(company,machineType){
@@ -36,22 +48,24 @@ export function readyEquipment(company){return equipmentList(company).filter(equ
 export function readyEquipmentIds(company){return readyEquipment(company).map(equipmentId).filter(Boolean);}
 export function machineRequirementSatisfied(company,machineType){if(!machineType)return true;const ready=new Set(readyEquipmentIds(company)),choices=compatibleMachineIds(company,machineType);return choices.some(id=>ready.has(id));}
 export function machineRequirementDetails(company,machineType){
- const compatible=compatibleMachineIds(company,machineType),all=equipmentList(company),owned=ownedEquipmentIds(company),matches=all.filter(item=>compatible.includes(equipmentId(item))),ownedMatches=matches.filter(equipmentOperational),ready=readyEquipmentIds(company);
- return{machineType,compatible,owned,ready,matches,ownedMatches,satisfied:!machineType||ownedMatches.length>0};
+ const compatible=compatibleMachineIds(company,machineType),all=equipmentList(company),owned=ownedEquipmentIds(company),matches=all.filter(item=>compatible.includes(equipmentId(item))),ownedMatches=matches.filter(equipmentOperational),ready=readyEquipmentIds(company),performance=ownedMatches.reduce((sum,item)=>sum+equipmentPerformanceMultiplier(item),0),averagePerformance=ownedMatches.length?performance/ownedMatches.length:0;
+ return{machineType,compatible,owned,ready,matches,ownedMatches,performance,averagePerformance,satisfied:!machineType||ownedMatches.length>0};
 }
 
 export function runIndustryMachineCompatibilityTest(){
  const company={branchKey:"brewery",buildingState:{equipment:[
-  {id:"brew_kettle",instanceId:"installing",status:"installing"},
+  {id:"brew_kettle",instanceId:"installing",status:"installing",level:3},
   {id:"bottle_washer",instanceId:"ready",status:"available"},
   {id:"panel_saw",instanceId:"sold",status:"sold"}
  ]}};
  if(machineRequirementSatisfied(company,"brewhouse"))throw new Error("Montierende Maschine wird fälschlich als betriebsbereit erkannt");
  const brew=machineRequirementDetails(company,"brewhouse");
- if(brew.matches.length!==1||brew.ownedMatches.length!==0)throw new Error("Montagestatus wird in Maschinendetails nicht berücksichtigt");
+ if(brew.matches.length!==1||brew.ownedMatches.length!==0||brew.performance!==0)throw new Error("Montagestatus wird in Maschinendetails nicht berücksichtigt");
  if(!machineRequirementSatisfied(company,"bottle_washer"))throw new Error("Betriebsbereite Maschine wird nicht erkannt");
  company.buildingState.equipment[0].status="available";
- if(!machineRequirementSatisfied(company,"brewhouse"))throw new Error("Fertig montierte Maschine wird nicht freigegeben");
+ const upgraded=machineRequirementDetails(company,"brewhouse");
+ if(!upgraded.satisfied)throw new Error("Fertig montierte Maschine wird nicht freigegeben");
+ if(Math.abs(upgraded.performance-1.3)>1e-9||Math.abs(upgraded.averagePerformance-1.3)>1e-9)throw new Error("Maschinenstufe wirkt nicht auf die Produktionsleistung");
  return true;
 }
 
