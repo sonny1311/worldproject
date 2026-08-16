@@ -8,6 +8,7 @@ import { worldContentRegistry } from './ContentRegistry.js';
 
 const num=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;
 const openOrders=company=>(company.customerOrders||[]).filter(order=>order.status==='open');
+const setupBlocksOrders=company=>Boolean(company?.setupPhase)&&company.setupPhase!=='operating';
 
 export function registeredStarterProduct(company){
   const profile=getIndustryProfile(company),branchKey=company.branchKey||profile.branchKey;
@@ -26,7 +27,7 @@ export function ensureAllIndustryMicroLocalOrders(game,company,{targetOpen=2}={}
   if(existing.length>=targetOpen)return existing;
   if(!game||!company)return existing;
   const state=ensureMicroBusiness(company);
-  if(state.stage!=='micro'||company.setupPhase!=='operating')return existing;
+  if(state.stage!=='micro'||setupBlocksOrders(company))return existing;
   const legacyProducts=getIndustryProfile(company).products||[];
   if(legacyProducts.some(Boolean))return existing;
   const product=registeredStarterProduct(company);
