@@ -7,6 +7,7 @@ import "./content/ContentBootstrap.js";
 import "./core/CanonicalIndustryGoodsIntegration.js";
 import "./core/OperationalInventoryBridge.js";
 import "./core/CurrencyPresentationBridge.js";
+import "./core/SharedBusinessFinanceUIIntegration.js";
 import { Company } from "./core/Company.js";
 import { CompanySetup } from "./core/CompanySetup.js";
 
