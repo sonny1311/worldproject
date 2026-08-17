@@ -25,7 +25,9 @@ const normalizeEmail=v=>String(v||"").trim().toLowerCase();
 const normalizeUsername=v=>String(v||"").trim();
 const sha=value=>crypto.createHash("sha256").update(String(value||"")).digest("hex");
 const randomToken=()=>crypto.randomBytes(32).toString("hex");
-const clientIp=req=>String(req.headers["x-forwarded-for"]||req.socket.remoteAddress||"").split(",")[0].trim();
+// Express does not trust proxy headers by default. Use req.ip so arbitrary
+// X-Forwarded-For values cannot rotate the rate-limit identity.
+const clientIp=req=>String(req.ip||req.socket.remoteAddress||"").trim();
 const publicUser=row=>({id:row.public_id,username:row.username,email:row.email,status:row.status,countryCode:row.country_code,languageCode:row.language_code,emailVerified:!!row.email_verified_at,displayName:row.display_name||row.username,createdAt:row.created_at,lastLoginAt:row.last_login_at});
 
 const attempts=new Map();
