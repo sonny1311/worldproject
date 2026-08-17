@@ -1,2 +1,11 @@
 # Local ORVUNO configuration / secrets
 js/config.local.js
+
+# Environment files may contain database/API credentials.
+.env
+.env.*
+!.env.example
+!server/.env.example
+server/.env
+server/.env.*
+!server/.env.example
