@@ -6,7 +6,7 @@ const PORT=Number(process.env.TRAFFIC_PORT||3002);
 const FRONTEND_ORIGIN=process.env.FRONTEND_ORIGIN||"http://127.0.0.1:5500";
 const HERE_API_KEY=String(process.env.HERE_API_KEY||"").trim();
 
-app.use(cors({origin:true,credentials:true}));
+app.use(cors({origin:FRONTEND_ORIGIN,credentials:true}));
 app.use(express.json({limit:"100kb"}));
 
 const num=v=>Number.isFinite(Number(v))?Number(v):0;
