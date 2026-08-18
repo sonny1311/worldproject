@@ -1,7 +1,76 @@
-// WorldProject - sichtbare normale Premiumtarife. Kaufabwicklung wird spaeter an Payment angebunden.
-import { PremiumPlans,PremiumEntitlementSystem } from './PremiumEntitlementSystem.js';
-const premium=new PremiumEntitlementSystem(),account=()=>window.worldCurrentUser||window.worldAccount||{};
-const money=n=>Number(n).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2});
-export function renderPremiumPlans(mount,{accountData=account()}={}){if(!mount)return false;const state=premium.state(accountData);mount.querySelector('[data-premium-plans]')?.remove();const section=document.createElement('section');section.dataset.premiumPlans='1';section.innerHTML=`<h2>⭐ Premium</h2><p>Mehr Komfort und zusätzliche Verwaltungsfunktionen. Beide Tarife schalten dieselben Premium-Funktionen frei.</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px">${Object.values(PremiumPlans).map(p=>`<article style="padding:13px;border:1px solid ${state.active&&state.planId===p.id?'#d4a017':'#374151'};border-radius:10px;background:rgba(255,255,255,.035)"><h3 style="margin:0 0 7px">${p.label}</h3><div style="font-size:22px;font-weight:900">${money(p.priceEuro)} € <small style="font-size:12px">/ 30 Tage</small></div><p>${p.dailyCoins?`🪙 <b>10 Coins täglich</b> · bis zu 300 Coins in 30 Tagen`:'Premium-Funktionen ohne tägliche Coin-Gutschrift.'}</p><small>✓ 5 Bauplätze · ✓ Premium-Produktionsplanung · ✓ Automatisierung · ✓ erweiterte Lager-/Verwaltungsfunktionen · ✓ keine Kundenauftrag-Wartezeit</small>${state.active&&state.planId===p.id?`<div style="margin-top:9px;font-weight:800">✅ Aktiv bis ${new Date(state.until).toLocaleDateString('de-DE')}</div>`:`<button data-premium-plan="${p.id}" style="margin-top:10px;padding:8px 11px;border-radius:7px;cursor:pointer">${money(p.priceEuro)} € · 30 Tage wählen</button>`}</article>`).join('')}</div><p style="margin-top:9px"><small>Premium Plus gibt Coins einmal je aktivem Kalendertag gut. Neuladen oder mehrfaches Einloggen erzeugt keine zusätzliche Tagesgutschrift.</small></p>`;section.querySelectorAll('[data-premium-plan]').forEach(b=>b.onclick=()=>window.dispatchEvent(new CustomEvent('world:premium-plan-selected',{detail:{planId:b.dataset.premiumPlan,plan:PremiumPlans[b.dataset.premiumPlan]}})));mount.prepend(section);return true;}
-export function installPremiumPlanUI(){if(typeof window==='undefined')return false;window.addEventListener('world:open-premium',e=>renderPremiumPlans(e.detail?.mount||document.querySelector('[data-premium-mount]')));window.addEventListener('world:open-premium-extra-packages',e=>{const mount=e.detail?.mount||document.querySelector('[data-premium-extra-mount]');if(mount)renderPremiumPlans(mount);});return true;}
-if(typeof window!=='undefined'){window.worldPremiumPlanUI={render:renderPremiumPlans,install:installPremiumPlanUI};installPremiumPlanUI();}
+// ORVUNO – zentrale Premium-, Coin- und Bonusansicht.
+import { PremiumEntitlementSystem } from './PremiumEntitlementSystem.js';
+
+const premium=new PremiumEntitlementSystem();
+const account=()=>window.worldCurrentUser||window.worldAccount||{};
+const euro=n=>Number(n||0).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2});
+const num=n=>Number(n||0).toLocaleString('de-DE');
+
+export const PremiumOffers=Object.freeze([
+ {id:'premium_4w',label:'4 Wochen Premium',sub:'Ideal zum Ausprobieren',priceEuro:3.99,durationDays:28,icon:'⭐',badge:'TESTEN'},
+ {id:'premium_3m',label:'3 Monate Premium',sub:'Spare gegenüber 4 Wochen',priceEuro:9.99,durationDays:90,icon:'🏆',badge:'BELIEBT'},
+ {id:'premium_6m',label:'6 Monate Premium',sub:'Für aktive Unternehmer',priceEuro:17.99,durationDays:180,icon:'👑',badge:'TOP'},
+ {id:'premium_12m',label:'12 Monate Premium',sub:'Ein ganzes Jahr Komfort',priceEuro:29.99,durationDays:365,icon:'💎',badge:'BESTER WERT'}
+]);
+export const CoinOffers=Object.freeze([
+ {id:'coins_100',coins:100,base:100,bonus:0,priceEuro:.99,icon:'🪙',badge:'STARTER'},
+ {id:'coins_550',coins:550,base:500,bonus:50,priceEuro:4.99,icon:'💰',badge:'KLEIN'},
+ {id:'coins_1200',coins:1200,base:1000,bonus:200,priceEuro:9.99,icon:'📦',badge:'BELIEBT'},
+ {id:'coins_2600',coins:2600,base:2000,bonus:600,priceEuro:19.99,icon:'💼',badge:'VIEL'},
+ {id:'coins_6000',coins:6000,base:4000,bonus:2000,priceEuro:39.99,icon:'🗄️',badge:'TOP ANGEBOT'},
+ {id:'coins_13000',coins:13000,base:8000,bonus:5000,priceEuro:79.99,icon:'🧳',badge:'BESTER DEAL'},
+ {id:'coins_26000',coins:26000,base:15000,bonus:11000,priceEuro:149.99,icon:'🏗️',badge:'EXTRA VIEL'},
+ {id:'coins_50000',coins:50000,base:25000,bonus:25000,priceEuro:249.99,icon:'🏦',badge:'MAXIMUM'}
+]);
+export const MoneyOffers=Object.freeze([
+ {id:'money_65000',money:65000,coins:200,icon:'🪙',badge:'KLEIN'},
+ {id:'money_200000',money:200000,coins:525,icon:'💰',badge:'START'},
+ {id:'money_450000',money:450000,coins:1150,icon:'💼',badge:'BELIEBT'},
+ {id:'money_1000000',money:1000000,coins:2400,icon:'💵',badge:'GROSS'},
+ {id:'money_2800000',money:2800000,coins:6500,icon:'🏦',badge:'PROFI'},
+ {id:'money_7500000',money:7500000,coins:15000,icon:'🏭',badge:'MAXIMUM'}
+]);
+
+function feedback(text,type='info',title='Premium & Coins'){
+ const api=window.worldActionFeedback;if(api?.show)return api.show(text,{type,title});
+ if(api?.feedback)return api.feedback(text,{type,title});
+ console[type==='error'?'error':'log'](text);
+}
+async function rpc(name,args={}){
+ const a=window.worldAccounts?.authApi;if(!a)throw new Error('Serververbindung ist noch nicht bereit');
+ const token=await a.ensureAccessToken();if(!token)throw new Error('Bitte zuerst anmelden');
+ const r=await fetch(`${a.baseUrl}/rest/v1/rpc/${name}`,{method:'POST',headers:{apikey:a.publishableKey,Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify(args)});
+ const body=await r.json().catch(()=>null);if(!r.ok)throw new Error(body?.message||body?.error||`Serverfehler (${r.status})`);return body;
+}
+async function refreshBalances(){try{await window.worldAccounts?.gameStateSync?.refreshBalances?.();await window.worldAccounts?.premiumLifecycle?.refreshAccount?.(window.worldAccounts?.authApi);}catch(e){console.warn('Monetarisierungsstatus konnte nicht sofort aktualisiert werden',e);}}
+
+const card=(body,accent='#38bdf8')=>`<article style="position:relative;min-width:0;padding:16px;border:1px solid #40516a;border-radius:15px;background:linear-gradient(155deg,#152744,#0c1728);box-shadow:0 10px 28px rgba(0,0,0,.24);overflow:hidden"><span style="position:absolute;inset:0 auto auto 0;width:100%;height:3px;background:${accent}"></span>${body}</article>`;
+const badge=t=>`<span style="position:absolute;right:10px;top:10px;padding:3px 7px;border-radius:999px;background:#8b2cf5;color:#fff;font-size:9px;font-weight:900">${t}</span>`;
+const button=(attrs,label)=>`<button ${attrs} style="width:100%;min-height:40px;margin-top:11px;border:0;border-radius:9px;background:linear-gradient(90deg,#d7ff2f,#f4e92a);color:#18210a;font-weight:900;cursor:pointer">${label}</button>`;
+const grid=(html,min=210)=>`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(${min}px,1fr));gap:13px">${html}</div>`;
+
+function premiumCards(state){return PremiumOffers.map((p,i)=>card(`${badge(p.badge)}<div style="font-size:38px;margin:10px 0;text-align:center">${p.icon}</div><h3 style="margin:0;text-align:center">${p.label}</h3><p style="margin:5px 0 12px;text-align:center;opacity:.72;font-size:12px">${p.sub}</p><div style="font-size:24px;font-weight:950;text-align:center">${euro(p.priceEuro)} €</div>${button(`data-premium-offer="${p.id}"`,state.active?'Premium verlängern':'Premium wählen')}`,i===3?'#a78bfa':'#b8f33d')).join('');}
+function coinCards(){return CoinOffers.map((p,i)=>card(`${badge(p.badge)}<h3 style="margin:0">${num(p.coins)} Coins</h3><div style="font-size:38px;text-align:center;margin:18px 0 8px">${p.icon}</div><div style="text-align:center;font-weight:900;color:#facc15">${p.bonus?`+${num(p.bonus)} Bonus`:'Ohne Bonus'}</div>${button(`data-coin-offer="${p.id}"`,`${euro(p.priceEuro)} €`)}<small style="display:block;text-align:center;margin-top:8px;opacity:.75">${p.bonus?`${num(p.base)} + ${num(p.bonus)} Bonus`:`${num(p.coins)} Coins gesamt`}</small>`,i>5?'#c084fc':'#38bdf8')).join('');}
+function moneyCards(){return MoneyOffers.map((p,i)=>card(`${badge(p.badge)}<div style="font-size:38px;text-align:center;margin:12px">${p.icon}</div><h3 style="margin:0;text-align:center;font-size:22px">${num(p.money)} €</h3><div style="text-align:center;opacity:.75;font-size:12px">Firmengeld</div>${button(`data-money-offer="${p.id}"`,`🪙 ${num(p.coins)} Coins`)}`,i>3?'#34d399':'#60a5fa')).join('');}
+
+function wire(section){
+ section.querySelectorAll('[data-premium-offer]').forEach(b=>b.onclick=()=>{const p=PremiumOffers.find(x=>x.id===b.dataset.premiumOffer);if(p)window.worldPaymentCheckout?.beginPremiumPurchase?.(p).catch(e=>feedback(e.message,'error'));});
+ section.querySelectorAll('[data-coin-offer]').forEach(b=>b.onclick=()=>{const p=CoinOffers.find(x=>x.id===b.dataset.coinOffer);if(p)window.worldPaymentCheckout?.beginCoinPurchase?.({packageId:p.id,coins:p.coins,priceEuro:p.priceEuro}).catch(e=>feedback(e.message,'error'));});
+ section.querySelectorAll('[data-money-offer]').forEach(b=>b.onclick=async()=>{const p=MoneyOffers.find(x=>x.id===b.dataset.moneyOffer);if(!p)return;if(!confirm(`${num(p.coins)} Coins gegen ${num(p.money)} € Firmengeld tauschen?`))return;b.disabled=true;try{const r=await rpc('exchange_coins_for_company_money',{p_tier:p.id});feedback(`✅ ${num(r.moneyCredited)} € Firmengeld gutgeschrieben. Neuer Coinstand: ${num(r.coins)}.`,'success');await refreshBalances();await updateState(section);}catch(e){feedback(e.message,'error');}finally{b.disabled=false;}});
+ const ad=section.querySelector('[data-surprise-ad]');if(ad)ad.onclick=async()=>{try{if(!window.worldAdProvider?.showRewardedAd&&!window.worldRewardedAdProvider?.showRewardedAd)throw new Error('Der Reward-Werbeanbieter ist noch nicht verbunden. Deshalb werden noch keine Zufallsbelohnungen ausgezahlt.');await window.worldRewardedAdUI?.watchGeneral?.();feedback('Werbung vollständig angesehen. Der bestehende Werbebonus wurde verbucht.','success','Freiwillige Werbung');}catch(e){feedback(e.message,'warning','Freiwillige Werbung');}};
+}
+async function updateState(section){try{const s=await rpc('get_orvuno_monetization_state');const c=section.querySelector('[data-coin-balance]'),m=section.querySelector('[data-money-balance]');if(c)c.textContent=num(s.coins);if(m)m.textContent=`${num(s.money)} €`;return s;}catch(e){console.warn('Monetarisierungsstatus nicht geladen',e);return null;}}
+
+export function renderPremiumPlans(mount,{accountData=account()}={}){
+ if(!mount)return false;mount.querySelector('[data-premium-plans]')?.remove();const state=premium.state(accountData),section=document.createElement('section');section.dataset.premiumPlans='1';
+ section.style.cssText='color:#f8fafc;padding:2px 0 20px';
+ section.innerHTML=`
+ <div style="padding:18px;border:1px solid #31533c;border-radius:15px;background:linear-gradient(100deg,#173425,#112c38);margin-bottom:14px"><small style="font-weight:900;color:#b8f33d">ORVUNO FÜR DEIN UNTERNEHMEN</small><h2 style="margin:5px 0">Mehr Komfort. Mehr Möglichkeiten. Keine gekauften Siege.</h2><p style="margin:0;opacity:.82">Premium erweitert Planung, Organisation und Statistiken. Die Wirtschaft bleibt für alle Spieler nach denselben Regeln berechnet.</p><div style="margin-top:10px;font-weight:850">🪙 Coins: <span data-coin-balance>…</span> &nbsp;·&nbsp; 💶 Firmengeld: <span data-money-balance>…</span>${state.active?` &nbsp;·&nbsp; ⭐ Premium aktiv bis ${new Date(state.until).toLocaleDateString('de-DE')}`:''}</div></div>
+ <section><h2>⭐ Premium</h2>${grid(premiumCards(state),225)}<p style="font-size:12px;opacity:.68">Alle Laufzeiten enthalten dieselben Premium-Funktionen. Premium bringt Komfort und zusätzliche Verwaltungsmöglichkeiten, aber keine automatisch geschenkten Coins.</p></section>
+ <section style="margin-top:24px"><h2>🪙 Coins kaufen</h2><p style="opacity:.76">Größere Pakete enthalten mehr Bonus-Coins. Gutschrift erfolgt erst nach bestätigter Zahlung.</p>${grid(coinCards(),205)}</section>
+ <section style="margin-top:24px"><h2>💶 Firmengeld mit Coins</h2><p style="opacity:.76">Coins können gegen zusätzliches Firmenbudget getauscht werden. Der Tausch wird serverseitig durchgeführt und sofort in allen offenen Betrieben synchronisiert.</p>${grid(moneyCards(),245)}</section>
+ <section style="margin-top:24px;padding:16px;border:1px solid #394c65;border-radius:15px;background:linear-gradient(120deg,#17243a,#172b31)"><small style="font-weight:900;color:#d7ff2f">FREIWILLIGE WERBUNG</small><h2 style="margin:4px 0">🎁 Überraschungsbonus</h2><p style="opacity:.78">Die spätere Zufallsbelohnung ist bereits als ORVUNO-Bereich vorgesehen. Mögliche Bonusarten: Zeitbonus, Coin, kleines Firmengeld oder als Jackpot ein Premium-Tag. Auszahlung wird erst aktiviert, wenn der Werbeanbieter serverseitig sicher verifiziert werden kann.</p><div style="display:flex;flex-wrap:wrap;gap:7px;margin:11px 0"><span>⏱️ 5 Minuten</span><span>⏱️ 10 Minuten</span><span>⏱️ 15 Minuten</span><span>🪙 1 Coin</span><span>💶 500 €</span><span>⭐ Jackpot: 1 Tag Premium</span></div>${button('data-surprise-ad="1"','Werbung ansehen')}</section>`;
+ mount.prepend(section);wire(section);updateState(section);return true;
+}
+export function installPremiumPlanUI(){if(typeof window==='undefined')return false;window.addEventListener('world:open-premium',e=>renderPremiumPlans(e.detail?.mount||document.querySelector('[data-premium-mount]')));return true;}
+if(typeof window!=='undefined'){window.worldPremiumPlanUI={render:renderPremiumPlans,install:installPremiumPlanUI,PremiumOffers,CoinOffers,MoneyOffers};installPremiumPlanUI();}
