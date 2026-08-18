@@ -1,8 +1,7 @@
-// WorldProject - Premiumplaene und zentrale Entitlements.
-// Basic: alle Premium-Komfortfunktionen. Plus: dieselben Funktionen + 10 Coins pro aktivem Kalendertag.
+// WorldProject - Premiumplan und zentrale Entitlements.
+// Aktuell gibt es bewusst nur eine Premium-Stufe.
 export const PremiumPlans=Object.freeze({
- premium_basic:{id:'premium_basic',label:'Premium',priceEuro:4.99,durationDays:30,dailyCoins:0},
- premium_plus:{id:'premium_plus',label:'Premium Plus',priceEuro:9.99,durationDays:30,dailyCoins:10}
+ premium_basic:{id:'premium_basic',label:'Premium',priceEuro:4.99,durationDays:30,dailyCoins:0}
 });
 export const PremiumConfig={
  planId:'premium_basic',label:'Premium',benefits:{
@@ -23,7 +22,7 @@ export const PremiumConfig={
 const planOf=account=>PremiumPlans[account?.premiumPlan||account?.premium_plan]||PremiumPlans.premium_basic;
 export class PremiumEntitlementSystem{
  constructor(config=PremiumConfig){this.config=config;}
- state(account={},now=Date.now()){const until=Number(account.premiumUntil||account.premium_until||0),active=until>Number(now),plan=planOf(account);return{active,status:active?'active':(until?'expired':'none'),until,planId:plan.id,plan,dailyCoins:active?plan.dailyCoins:0};}
+ state(account={},now=Date.now()){const until=Number(account.premiumUntil||account.premium_until||0),active=until>Number(now),plan=planOf(account);return{active,status:active?'active':(until?'expired':'none'),until,planId:plan.id,plan,dailyCoins:0};}
  benefit(account,key,now=Date.now()){const cfg=this.config.benefits[key];if(!cfg)throw new Error(`Unbekannter Premiumvorteil: ${key}`);return this.state(account,now).active?cfg.premium:cfg.standard;}
  activate(account,{until,planId='premium_basic'}={}){const value=Number(until||0),plan=PremiumPlans[planId];if(!plan)throw new Error('Unbekannter Premiumplan');if(value<=Date.now())throw new Error('Premium-Enddatum muss in der Zukunft liegen');account.premiumUntil=value;account.premiumPlan=plan.id;return this.state(account);}
  deactivate(account){account.premiumUntil=0;return this.state(account);}
@@ -39,4 +38,4 @@ export class PremiumEntitlementSystem{
  overCapacityState(account,{baseStorage=0,currentStored=0,runningConstruction=0,queuedProduction=0,now=Date.now()}={}){const storage=this.storageCapacity(account,baseStorage,now),constructionLimit=this.constructionLimit(account,now),queueLimit=this.productionQueueLimit(account,now);return{storageCapacity:storage,storageOverfilled:Number(currentStored)>storage,constructionLimit,constructionOverLimit:Number(runningConstruction)>constructionLimit,productionQueueLimit:queueLimit,productionQueueOverLimit:Number(queuedProduction)>queueLimit};}
  listBenefits(account,now=Date.now()){const active=this.state(account,now).active;return Object.entries(this.config.benefits).map(([id,cfg])=>({id,label:cfg.label,value:active?cfg.premium:cfg.standard,premiumValue:cfg.premium,standardValue:cfg.standard,active}));}
 }
-export function runPremiumEntitlementTest(){const now=1000000,p=new PremiumEntitlementSystem(),a={premiumUntil:now+86400000,premiumPlan:'premium_plus'};if(p.constructionLimit(a,now)!==5||p.productionQueueLimit(a,now)!==3||p.storageCapacity(a,10000,now)!==12000||p.limit(a,'automationSlots',now)!==3||p.state(a,now).dailyCoins!==10)throw new Error('Premiumvorteile fehlerhaft');a.premiumUntil=now-1;const expired=p.overCapacityState(a,{baseStorage:10000,currentStored:11500,runningConstruction:5,queuedProduction:3,now});if(!expired.storageOverfilled||!expired.constructionOverLimit||!expired.productionQueueOverLimit||p.storageCapacity(a,10000,now)!==10000)throw new Error('Premium-Ablauflogik fehlerhaft');return true;}
+export function runPremiumEntitlementTest(){const now=1000000,p=new PremiumEntitlementSystem(),a={premiumUntil:now+86400000,premiumPlan:'premium_basic'};if(p.constructionLimit(a,now)!==5||p.productionQueueLimit(a,now)!==3||p.storageCapacity(a,10000,now)!==12000||p.limit(a,'automationSlots',now)!==3||p.state(a,now).dailyCoins!==0)throw new Error('Premiumvorteile fehlerhaft');a.premiumUntil=now-1;const expired=p.overCapacityState(a,{baseStorage:10000,currentStored:11500,runningConstruction:5,queuedProduction:3,now});if(!expired.storageOverfilled||!expired.constructionOverLimit||!expired.productionQueueOverLimit||p.storageCapacity(a,10000,now)!==10000)throw new Error('Premium-Ablauflogik fehlerhaft');return true;}
