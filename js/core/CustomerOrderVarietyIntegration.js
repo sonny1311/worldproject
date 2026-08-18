@@ -1,5 +1,4 @@
 // ORVUNO – gemeinsame Auswahlregeln fuer abwechslungsreiche, produzierbare Kundenauftraege.
-// Keine UI- oder Prototyp-Patches hier: die bestehende Kapazitaets-/Fuhrparklogik nutzt diese Helfer.
 import { BeverageRecipeCatalog } from './BeverageRecipeCatalog.js';
 import { getIndustryProfile } from './IndustryCatalog.js';
 
@@ -15,7 +14,10 @@ export function eligibleCustomerProducts(company){
   const productUnlocks=company?.productUnlocks||company?.product_unlocks||{};
   return recipes.filter(recipe=>{
     if(allowedProducts.size&&!allowedProducts.has(String(recipe.outputId)))return false;
-    if(explicitUnlocked&&!explicitUnlocked.has(String(recipe.id)))return false;
+    // Brauerei-Grundrezepte aus dem Branchenkatalog sind reguläre Kundenprodukte.
+    // Alte Spielstände enthalten häufig nur lager033 in unlockedRecipes; dadurch wurde Pils
+    // fälschlich aus sämtlichen Kundenaufträgen ausgeschlossen. Explizite Sperren gelten weiter.
+    if(profile.branchKey!=='brewery'&&explicitUnlocked&&!explicitUnlocked.has(String(recipe.id)))return false;
     if(lockedRecipes.has(String(recipe.id))||lockedProducts.has(String(recipe.outputId)))return false;
     if(Object.prototype.hasOwnProperty.call(productUnlocks,recipe.outputId)&&productUnlocks[recipe.outputId]===false)return false;
     return true;
@@ -42,9 +44,10 @@ export function chooseCustomerOrderProduct(company,index=0){
 }
 
 export function runCustomerOrderVarietyRegression(){
-  const company={type:'Brauerei',customerOrders:[]};
+  const company={type:'Brauerei',customerOrders:[],unlockedRecipes:['lager033']};
+  const eligible=eligibleCustomerProducts(company);
+  if(!eligible.some(x=>x.productId==='lager033_bottle')||!eligible.some(x=>x.productId==='pils033_bottle'))throw new Error('Brauerei-Grundsortiment enthält Lager und Pils nicht gemeinsam');
   const first=chooseCustomerOrderProduct(company,0);
-  if(!first)throw new Error('Kein produzierbares Kundenprodukt gefunden');
   company.customerOrders.push({productId:first.productId,status:'open'});
   const second=chooseCustomerOrderProduct(company,1);
   if(!second||second.productId===first.productId)throw new Error('Produktwiederholung wurde trotz Alternative nicht vermieden');
