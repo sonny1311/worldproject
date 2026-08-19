@@ -1,69 +1,48 @@
-// WorldProject - lokale Kleinauftraege fuer Mikrobetriebe.
+// WorldProject – verbindet Mikro-Unternehmensstart und lokale Kundenaufträge mit dem aktiven Betrieb.
 import { microStarterProfile, starterOrderScale, ensureMicroBusiness } from './MicroBusinessStarterSystem.js';
 import { getIndustryProfile } from './IndustryCatalog.js';
-
+import { chooseCustomerOrderProduct } from './CustomerOrderVarietyIntegration.js';
 const num=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;
-function openOrders(company){return (company.customerOrders||[]).filter(o=>o.status==='open');}
-function setupBlocksOrders(company){return Boolean(company?.setupPhase)&&company.setupPhase!=='operating';}
+const now=()=>window.worldTime?.now?.()||Date.now();
 function productCandidates(company){
-  const ids=[];
-  const push=id=>{if(id&&id!=='undefined'&&!ids.includes(id))ids.push(id);};
-  for(const o of [...(company.completedCustomerOrders||[]),...(company.customerOrders||[])].reverse())push(o?.productId||o?.product);
-  for(const [id,value] of Object.entries(company.operationalSupplyState?.warehouseStock?.finished||{}))if(num(value)>0)push(id);
-  for(const [id,value] of Object.entries(company.finishedGoods||{}))if(num(value)>0)push(id);
-  for(const id of Object.keys(company.salesPrices||{}))push(id);
-  for(const id of getIndustryProfile(company).products||[])push(id);
-  return ids;
+ const ids=[];const push=id=>{if(id&&id!=='undefined'&&!ids.includes(id))ids.push(id);};
+ for(const o of [...(company.completedCustomerOrders||[]),...(company.customerOrders||[])].reverse())push(o?.productId||o?.product);
+ for(const [id,value] of Object.entries(company.operationalSupplyState?.warehouseStock?.finished||{}))if(num(value)>0)push(id);
+ for(const [id,value] of Object.entries(company.finishedGoods||{}))if(num(value)>0)push(id);
+ for(const id of Object.keys(company.salesPrices||{}))push(id);
+ for(const id of getIndustryProfile(company).products||[])push(id);
+ return ids;
 }
-function chooseProduct(company){return productCandidates(company)[0]||null;}
-function priceFor(company,productId){
-  const direct=num(company.salesPrices?.[productId]);if(direct>0)return direct;
-  const previous=[...(company.completedCustomerOrders||[]),...(company.customerOrders||[])].reverse().find(o=>(o?.productId||o?.product)===productId&&num(o?.unitPrice)>0);
-  if(previous)return num(previous.unitPrice);
-  const cost=num(company.costAccounting?.productCosts?.[productId]?.costPerUnit);return Math.max(cost>0?cost*1.35:1,0.05);
+function chooseProduct(company,index=0){return chooseCustomerOrderProduct(company,index)?.productId||productCandidates(company)[0]||null;}
+function priceFor(company,productId){return Math.max(.01,num(company.salesPrices?.[productId],num(company.productPrices?.[productId],1));}
+function createLegacyOrder(company,opts){
+ if(typeof company.createCustomerOrder==='function')return company.createCustomerOrder(opts);
+ const order={id:`micro-order-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,status:'open',createdAt:now(),customer:opts.customer,customerName:opts.customer?.name||'Lokaler Kunde',productId:opts.productId,product:opts.productId,amount:opts.amount,quantity:opts.amount,unitPrice:opts.unitPrice,total:opts.amount*opts.unitPrice,dueAt:now()+opts.dueHours*3600000,source:'micro_local'};
+ company.customerOrders=Array.isArray(company.customerOrders)?company.customerOrders:[];company.customerOrders.push(order);return order;
 }
-function directOrder(company,options={}){
-  company.customerOrders??=[];
-  const now=Date.now(),hours=Math.max(1,num(options.dueHours,72));
-  const order={id:`micro-${now}-${Math.random().toString(36).slice(2,8)}`,customer:options.customer||'Lokaler Kunde',productId:options.productId,product:options.productId,amount:Math.max(1,Math.round(num(options.amount,1))),quantity:Math.max(1,Math.round(num(options.amount,1))),delivered:0,reserved:0,unitPrice:Math.max(.01,num(options.unitPrice,1)),status:'open',createdAt:now,dueAt:now+hours*3600000,qualityMin:0,penaltyPerMissing:0};
-  company.customerOrders.push(order);
-  try{window.dispatchEvent(new CustomEvent('world:game-state-dirty',{detail:{reason:'micro-customer-order-refill'}}));}catch(_){ }
-  return{success:true,order,fallback:true};
-}
-
 export function ensureMicroLocalOrders(game,company,{targetOpen=4}={}){
-  if(!game||!company)return[];
-  const state=ensureMicroBusiness(company);
-  if(state.stage!=='micro'||setupBlocksOrders(company))return openOrders(company);
-  const productId=chooseProduct(company);
-  if(!productId){console.warn('⚠️ Mikro-Kundenauftrag: kein verkaufbares Produkt gefunden',company?.name);return openOrders(company);}
-  const scale=starterOrderScale(company),profile=microStarterProfile(company),customers=profile.customers||['Privatkunde'];
-  let open=openOrders(company),guard=0;
-  while(open.length<targetOpen&&guard++<targetOpen+3){
-    const customer=customers[(state.completedStarterOrders+open.length+guard-1)%customers.length];
-    const unitPrice=priceFor(company,productId);
-    const maxByValue=Math.max(1,Math.floor(scale.maxValue/unitPrice));
-    const maxQty=Math.max(1,Math.min(scale.maxQuantity,maxByValue));
-    const minQty=Math.max(1,Math.min(maxQty,Math.ceil(Math.min(scale.minValue,scale.maxValue)/unitPrice)));
-    const span=Math.max(maxQty-minQty,0),amount=Math.max(1,Math.round(minQty+span*(0.25+Math.random()*0.45)));
-    const options={customer,productId,amount,unitPrice,dueHours:48+scale.tier*24};
-    let result;
-    try{result=game.createCustomerOrder(company,options);}catch(error){console.warn('⚠️ Reguläre Kundenauftragserzeugung fehlgeschlagen, nutze Legacy-Fallback',error);}
-    if(!result?.success){console.warn('⚠️ Kundenauftrag wurde vom Wirtschaftssystem abgelehnt, nutze Legacy-Fallback',result?.reason||'unbekannt');result=directOrder(company,options);}
-    Object.assign(result.order,{starterOrder:true,local:true,customerClass:scale.customerClass,microTier:scale.tier});
-    open=openOrders(company);
-  }
-  return open;
+ if(!company)return[];
+ ensureMicroBusiness(company,now());
+ const profile=microStarterProfile(company),state=company.microBusinessState||{};
+ const open=(company.customerOrders=Array.isArray(company.customerOrders)?company.customerOrders:[]).filter(o=>o?.status==='open');
+ let guard=0;
+ while(open.length<targetOpen&&guard<Math.max(8,targetOpen*3)){
+  const sequence=num(state.completedStarterOrders,0)+open.length+guard;
+  const productId=chooseProduct(company,sequence);if(!productId)break;
+  const scale=starterOrderScale(company),amount=Math.max(1,Math.round(scale.quantity*(.82+Math.random()*.36)));
+  const unitPrice=priceFor(company,productId),customer={id:`local-${profile.industry}-${sequence}`,name:`${profile.customerLabel} ${sequence+1}`,type:'local_micro',starter:true};
+  const options={customer,productId,amount,unitPrice,dueHours:Math.max(2,Math.round(scale.durationHours*(.8+Math.random()*.4)))};
+  let order=null;
+  try{order=game?.customerOrderLifecycle?.createCustomerOrder?.(company,options)||createLegacyOrder(company,options);}catch(error){console.warn('Lokaler Mikroauftrag konnte nicht über Lifecycle erzeugt werden',error);order=createLegacyOrder(company,options);}
+  if(order){order.source=order.source||'micro_local';order.microStarter=true;open.push(order);}
+  guard++;
+ }
+ return open;
 }
-
-export function runMicroLocalOrderTest(){
- const company={type:'Schreinerei',setupPhase:'operating',customerOrders:[],salesPrices:{table_basic:125},costAccounting:{productCosts:{}},microBusiness:null};
- const fake={createCustomerOrder(c,o){const order={id:`o${c.customerOrders.length+1}`,...o,status:'open'};c.customerOrders.push(order);return{success:true,order};}};
- const rows=ensureMicroLocalOrders(fake,company);
- const legacy={type:'Brauerei',customerOrders:[],completedCustomerOrders:[{productId:'beer_lager_033',unitPrice:1.02,status:'completed'}],operationalSupplyState:{warehouseStock:{finished:{beer_lager_033:688}}},salesPrices:{lager033_bottle:.95},costAccounting:{productCosts:{}},microBusiness:{stage:'micro',completedStarterOrders:0}};
- const rejecting={createCustomerOrder(){return{success:false,reason:'test'};}};
- const legacyRows=ensureMicroLocalOrders(rejecting,legacy);
- const success=rows.length===4&&legacyRows.length===4&&legacyRows.every(o=>o.productId==='beer_lager_033'&&o.status==='open')&&rows.every(o=>o.starterOrder&&o.local&&o.amount*o.unitPrice<=1200.01);
- console[success?'log':'error'](success?'✅ MIKRO-KLEINAUFTRAG-TEST ERFOLGREICH':'❌ MIKRO-KLEINAUFTRAG-TEST FEHLGESCHLAGEN',{rows,legacyRows});return{success,rows,legacyRows};
+export function installMicroLocalOrders({targetOpen=4}={}){
+ if(typeof window==='undefined')return false;
+ const run=()=>{const company=window.worldPlayerCompany,game=window.worldEngine;if(!company)return;try{ensureMicroLocalOrders(game,company,{targetOpen});}catch(error){console.warn('Mikro-Kundenaufträge konnten nicht vorbereitet werden',error);}};
+ for(const event of ['worldproject:company-founded','worldproject:company-loaded','worldproject:company-switched','world:customer-order-completed'])window.addEventListener(event,()=>setTimeout(run,40));
+ setTimeout(run,120);return true;
 }
-if(typeof window!=='undefined'){window.ensureMicroLocalOrders=ensureMicroLocalOrders;window.runMicroLocalOrderTest=runMicroLocalOrderTest;}
+if(typeof window!=='undefined'){window.worldMicroLocalOrders={ensure:ensureMicroLocalOrders,install:installMicroLocalOrders};installMicroLocalOrders();}
