@@ -63,31 +63,36 @@ export function ensureMicroLocalOrders(game, company, { targetOpen = 4 } = {}) {
 
   ensureMicroBusiness(company, now());
   const profile = microStarterProfile(company);
-  const state = company.microBusinessState || {};
   const open = (company.customerOrders = Array.isArray(company.customerOrders) ? company.customerOrders : [])
     .filter(o => o?.status === 'open');
 
   let guard = 0;
   while (open.length < targetOpen && guard < Math.max(8, targetOpen * 3)) {
-    const sequence = num(state.completedStarterOrders, 0) + open.length + guard;
+    const completedStarterOrders = num(company.microBusiness?.completedStarterOrders, 0);
+    const sequence = completedStarterOrders + open.length + guard;
     const productId = chooseProduct(company, sequence);
     if (!productId) break;
 
     const scale = starterOrderScale(company);
-    const amount = Math.max(1, Math.round(scale.quantity * (.82 + Math.random() * .36)));
+    const maxQuantity = Math.max(1, num(scale.maxQuantity, 100));
+    const amount = Math.max(1, Math.round(maxQuantity * (.35 + Math.random() * .45)));
     const unitPrice = priceFor(company, productId);
+    const customerTypes = Array.isArray(profile.customers) && profile.customers.length ? profile.customers : ['Lokaler Kunde'];
+    const customerType = customerTypes[sequence % customerTypes.length];
+    const industryKey = String(profile.type || company.type || company.company_type || 'business').toLowerCase().replace(/\s+/g, '-');
     const customer = {
-      id: `local-${profile.industry}-${sequence}`,
-      name: `${profile.customerLabel} ${sequence + 1}`,
+      id: `local-${industryKey}-${sequence}`,
+      name: `${customerType} ${sequence + 1}`,
       type: 'local_micro',
       starter: true
     };
+    const baseDueHours = scale.tier === 1 ? 24 : scale.tier === 2 ? 48 : 72;
     const options = {
       customer,
       productId,
       amount,
       unitPrice,
-      dueHours: Math.max(2, Math.round(scale.durationHours * (.8 + Math.random() * .4)))
+      dueHours: Math.max(2, Math.round(baseDueHours * (.8 + Math.random() * .4)))
     };
 
     let order = null;
@@ -106,6 +111,32 @@ export function ensureMicroLocalOrders(game, company, { targetOpen = 4 } = {}) {
     guard++;
   }
   return open;
+}
+
+export function runMicroLocalOrderTest() {
+  const company = {
+    type: 'Brauerei',
+    customerOrders: [],
+    completedCustomerOrders: [],
+    salesPrices: {
+      lager033_bottle: 0.95,
+      pils033_bottle: 0.99
+    },
+    unlockedRecipes: ['lager033']
+  };
+
+  const orders = ensureMicroLocalOrders(null, company, { targetOpen: 2 });
+  const products = orders.map(order => order.productId || order.product).filter(Boolean);
+  const success = orders.length === 2 && new Set(products).size === 2 && orders.every(order =>
+    Number.isFinite(Number(order.amount)) && Number(order.amount) > 0 &&
+    Number.isFinite(Number(order.dueAt)) && Number(order.dueAt) > Number(order.createdAt)
+  );
+
+  console[success ? 'log' : 'error'](
+    success ? '✅ MIKRO-KUNDENAUFTRAGS-TEST ERFOLGREICH' : '❌ MIKRO-KUNDENAUFTRAGS-TEST FEHLGESCHLAGEN',
+    { orders, products }
+  );
+  return { success, orders, products };
 }
 
 export function installMicroLocalOrders({ targetOpen = 4 } = {}) {
@@ -138,7 +169,8 @@ export function installMicroLocalOrders({ targetOpen = 4 } = {}) {
 if (typeof window !== 'undefined') {
   window.worldMicroLocalOrders = {
     ensure: ensureMicroLocalOrders,
-    install: installMicroLocalOrders
+    install: installMicroLocalOrders,
+    test: runMicroLocalOrderTest
   };
   installMicroLocalOrders();
 }
