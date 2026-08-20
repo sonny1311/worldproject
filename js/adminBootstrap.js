@@ -9,6 +9,7 @@ import { mountAdminConsole } from "./core/AdminConsoleUI.js";
 const OPTIONAL_MODULES=[
   "./core/AdminConsoleSectionViews.js",
   "./core/AdminConsoleActionViews.js",
+  "./core/AdminCompensationConsoleView.js",
   "./core/AdminTesterToolsIntegration.js",
   "./core/AdminAuditAnalytics.js",
   "./core/AdminAuditConsoleView.js",
