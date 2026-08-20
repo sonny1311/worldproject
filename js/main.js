@@ -18,9 +18,35 @@ window.orvunoBootComplete=true;
 window.dispatchEvent(new CustomEvent("orvuno:boot-complete"));
 
 // Die frühere Canvas-/Karten-Engine wird nicht mehr gestartet.
-// Für ältere Integrationen bleibt nur die gemeinsame Company-Referenz erhalten.
+// Die bereits vom Account-Gate geladene Supabase-Firma wird sofort in dieselbe
+// Runtime-Instanz hydratisiert. So kann kein spaeter erzeugter Leerzustand den
+// echten Server-Kontostand kurzfristig oder dauerhaft mit 0 EUR ueberschreiben.
 const runtimeCompany = new Company();
-runtimeCompany.money = 0;
+const initialOverview = window.worldServerAccountOverview || null;
+const initialServerCompany = initialOverview?.companies?.find(c => c.is_primary)
+    || initialOverview?.companies?.find(c => Number(c.slot_no) === 1)
+    || initialOverview?.companies?.[0]
+    || null;
+const portfolio = window.worldAccounts?.businessPortfolio;
+
+if (initialServerCompany) {
+    if (portfolio?.hydrateCompany) {
+        portfolio.hydrateCompany(runtimeCompany, initialServerCompany, initialOverview?.wallet || {});
+        portfolio.companies = initialOverview?.companies || [];
+        portfolio.activeCompany = runtimeCompany;
+    } else {
+        runtimeCompany.serverCompanyId = initialServerCompany.id;
+        runtimeCompany.slotNo = Number(initialServerCompany.slot_no || 1);
+        runtimeCompany.name = initialServerCompany.name || "";
+        runtimeCompany.industry = initialServerCompany.industry || "";
+        runtimeCompany.type = initialServerCompany.company_type || "";
+        runtimeCompany.money = Number(initialServerCompany.money ?? initialServerCompany.game_state?.money ?? runtimeCompany.money);
+        runtimeCompany.coins = Number(initialOverview?.wallet?.balance || 0);
+    }
+    window.worldPlayerCompany = runtimeCompany;
+    window.worldActiveServerCompany = initialServerCompany;
+}
+
 window.worldEngine = { company: runtimeCompany, legacyRendererDisabled: true };
 
 const companySetup = new CompanySetup(
