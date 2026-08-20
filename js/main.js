@@ -73,12 +73,37 @@ function hydrateCanonical(serverCompany) {
     return runtimeCompany;
 }
 
+// worldPlayerCompany ist ab jetzt KEINE frei austauschbare globale Referenz mehr.
+// Jeder Leser bekommt immer dieselbe runtimeCompany. Ein Altmodul darf zwar versuchen,
+// eine andere Firma zu setzen; dann wird lediglich deren echte Server-ID in DIESE Instanz
+// hydriert. Dadurch koennen Demo-/Fallback-Objekte nie wieder Dashboard oder Kaufpruefungen
+// uebernehmen.
+Object.defineProperty(window, "worldPlayerCompany", {
+    configurable: false,
+    enumerable: true,
+    get() {
+        return runtimeCompany;
+    },
+    set(next) {
+        if (!next || next === runtimeCompany) return;
+        const id = next?.serverCompanyId ?? next?.id ?? null;
+        if (id == null) {
+            console.warn("🛡️ ORVUNO: FALLBACK-COMPANY VERWORFEN", { money: Number(next?.money) });
+            return;
+        }
+        const server = companies().find(c => String(c.id) === String(id));
+        if (!server) {
+            console.warn("🛡️ ORVUNO: UNBEKANNTE COMPANY VERWORFEN", { companyId: id, money: Number(next?.money) });
+            return;
+        }
+        hydrateCanonical(server);
+    }
+});
+
 function bindCanonical(serverCompany = null) {
     const server = serverCompany || serverCompanyFor(runtimeCompany);
     if (server) hydrateCanonical(server);
 
-    // Ab hier existiert fuer das Live-Spiel genau EINE Company-Instanz.
-    window.worldPlayerCompany = runtimeCompany;
     if (!window.worldEngine) window.worldEngine = { legacyRendererDisabled: true };
     window.worldEngine.company = runtimeCompany;
     if (window.worldEconomyGameplay) window.worldEconomyGameplay.company = runtimeCompany;
@@ -90,10 +115,9 @@ window.worldGetCanonicalCompany = () => {
     const server = serverCompanyFor(runtimeCompany);
     if (server) {
         const serverMoney = Number(server.money ?? server.game_state?.money);
-        const currentId = runtimeCompany.serverCompanyId;
-        if (String(currentId ?? "") !== String(server.id ?? "")) {
+        if (String(runtimeCompany.serverCompanyId ?? "") !== String(server.id ?? "")) {
             hydrateCanonical(server);
-        } else if (Number.isFinite(serverMoney) && Number(runtimeCompany.money) === 0 && serverMoney > 0) {
+        } else if (Number(runtimeCompany.money) === 0 && Number.isFinite(serverMoney) && serverMoney > 0) {
             runtimeCompany.money = serverMoney;
             runtimeCompany.moneyRevision = Number(server.money_revision ?? server.game_state?.moneyRevision ?? runtimeCompany.moneyRevision ?? 0);
         }
@@ -104,9 +128,6 @@ window.worldGetCanonicalCompany = () => {
 if (initialServerCompany) bindCanonical(initialServerCompany);
 else bindCanonical();
 
-// Egal welches Altmodul ein Company-Objekt in ein Ereignis steckt: Im Live-Spiel wird
-// niemals dieses fremde Objekt uebernommen. Nur seine Server-ID bestimmt, welcher Betrieb
-// in DIE eine kanonische runtimeCompany hydriert wird.
 for (const eventName of [
     "worldproject:company-loaded",
     "worldproject:company-activated",
@@ -132,8 +153,6 @@ const companySetup = new CompanySetup(runtimeCompany, company => {
 
 companySetup.show();
 
-// Einige Altintegrationen rendern spaeter erneut. Vor diesen typischen Start-/Refresh-
-// Zeitpunkten werden alle Live-Referenzen nochmals auf dieselbe kanonische Instanz gesetzt.
 for (const delay of [0, 100, 300, 750, 1500, 3000, 5000, 8000, 12000, 15000, 20000, 30000]) {
     setTimeout(() => {
         const server = serverCompanyFor(runtimeCompany);
@@ -144,7 +163,6 @@ for (const delay of [0, 100, 300, 750, 1500, 3000, 5000, 8000, 12000, 15000, 200
                 runtimeCompany.moneyRevision = Number(server.money_revision ?? server.game_state?.moneyRevision ?? runtimeCompany.moneyRevision ?? 0);
             }
         }
-        window.worldPlayerCompany = runtimeCompany;
         if (window.worldEngine) window.worldEngine.company = runtimeCompany;
         if (window.worldEconomyGameplay) window.worldEconomyGameplay.company = runtimeCompany;
         if (portfolio) portfolio.activeCompany = runtimeCompany;
