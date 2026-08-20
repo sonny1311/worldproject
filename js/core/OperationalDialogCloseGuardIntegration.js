@@ -1,6 +1,7 @@
 // WorldProject – Sicherheitswache fuer den Einkaufs-/Lager-/Produktionsdialog.
 // Der Dialog besitzt bereits sein eigenes X im Kopfbereich. Hier wird nur verhindert,
 // dass ein alter zusaetzlicher "X Schliessen"-Button stehen bleibt. Escape schliesst ebenfalls.
+import './GlobalDialogCloseSafetyIntegration.js';
 import { OperationalSupplyChainDialog } from './OperationalSupplyChainDialog.js';
 
 const proto=OperationalSupplyChainDialog.prototype;
