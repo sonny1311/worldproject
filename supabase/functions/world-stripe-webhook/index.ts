@@ -50,13 +50,17 @@ Deno.serve(async(req:Request)=>{
   if(!signature||!(await verifySignature(raw,signature,webhookSecret))) return json({error:"Invalid Stripe signature"},400);
 
   const event=JSON.parse(raw);
+  const eventId=String(event?.id||"");
+  if(!eventId.startsWith("evt_")||event?.livemode!==false) return json({error:"Invalid or live Stripe event"},400);
   const type=String(event?.type||"");
   if(!["checkout.session.completed","checkout.session.async_payment_succeeded"].includes(type)) return json({received:true,ignored:true});
 
-  const sessionId=String(event?.data?.object?.id||"");
+  const eventSession=event?.data?.object;
+  const sessionId=String(eventSession?.id||"");
+  if(eventSession?.object!=="checkout.session"||!sessionId.startsWith("cs_test_")) return json({error:"Invalid Stripe checkout event"},400);
   const stripeKey=stripeTestKey();
   const session=await retrieveSession(sessionId,stripeKey);
-  if(session.livemode!==false) return json({error:"Live Stripe events are disabled"},400);
+  if(session.livemode!==false||session.object!=="checkout.session") return json({error:"Live or invalid Stripe session"},400);
   if(String(session.payment_status||"")!=="paid") return json({received:true,pending:true});
 
   const userId=Number(session?.metadata?.user_id||session?.client_reference_id||0);
@@ -83,7 +87,7 @@ Deno.serve(async(req:Request)=>{
    p_currency:currency,
    p_status:"paid"
   });
-  if(fulfillError){console.error("stripe fulfillment failed",{eventId:event?.id,transactionId,code:fulfillError.code});return json({error:"Fulfillment failed"},500);}
+  if(fulfillError){console.error("stripe fulfillment failed",{eventId,transactionId,code:fulfillError.code});return json({error:"Fulfillment failed"},500);}
   return json({received:true,fulfilled:true,transactionId,result:fulfilled});
  }catch(error){console.error("stripe webhook error",error instanceof Error?error.message:"unknown");return json({error:"Webhook processing failed"},500);}
 });
