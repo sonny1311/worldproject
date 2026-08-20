@@ -35,8 +35,8 @@ function visible(node){
 function nativeClose(root){
  if(!root?.querySelector)return null;
  const explicit=root.querySelector(CLOSE_SELECTOR);
- if(explicit)return explicit;
- return [...root.querySelectorAll('button')].find(b=>/^(?:✕|×|x)$/i.test(String(b.textContent||'').trim()))||null;
+ if(explicit&&!explicit.hasAttribute(RESCUE_ATTR))return explicit;
+ return [...root.querySelectorAll(`button:not([${RESCUE_ATTR}])`)].find(b=>/^(?:✕|×|x)$/i.test(String(b.textContent||'').trim()))||null;
 }
 function accessible(button){
  if(!visible(button))return false;
@@ -45,14 +45,14 @@ function accessible(button){
  return stack.some(el=>el===button||button.contains(el));
 }
 function dialogRoots(){
- const roots=[...document.querySelectorAll(ROOT_SELECTOR)].filter(visible);
+ const roots=[...document.querySelectorAll(ROOT_SELECTOR)].filter(node=>visible(node)&&!node.hasAttribute(RESCUE_ATTR));
  // Einige ORVUNO-Fenster haben keine semantische Dialogklasse, aber ein eindeutiges natives X.
- for(const btn of document.querySelectorAll('button')){
+ for(const btn of document.querySelectorAll(`button:not([${RESCUE_ATTR}])`)){
   const text=String(btn.textContent||'').trim();
   const marked=btn.matches(CLOSE_SELECTOR)||/^(?:✕|×)$/i.test(text);
   if(!marked)continue;
   const root=btn.closest(ROOT_SELECTOR)||btn.closest('[style*="position: fixed"], [style*="position:fixed"]');
-  if(root&&visible(root)&&!roots.includes(root))roots.push(root);
+  if(root&&root!==btn&&visible(root)&&!root.hasAttribute(RESCUE_ATTR)&&!roots.includes(root))roots.push(root);
  }
  return roots;
 }
@@ -71,13 +71,15 @@ function rescueFor(root,button){
   rescue.title='Fenster schließen';
   rescue.textContent='✕';
   rescue.__worldDialogRoot=root;
+  Object.assign(rescue.style,{position:'fixed',zIndex:'2147483647',width:'44px',height:'44px',minWidth:'44px',minHeight:'44px',padding:'0',display:'grid',placeItems:'center',border:'1px solid #94a3b8',borderRadius:'10px',background:'#111827',color:'#f8fafc',fontSize:'22px',fontWeight:'900',lineHeight:'1',cursor:'pointer',boxShadow:'0 5px 18px rgba(0,0,0,.55)',pointerEvents:'auto'});
   rescue.onclick=e=>{e.preventDefault();e.stopPropagation();const current=nativeClose(root);if(current?.isConnected)current.click();else rescue.remove();};
   document.body.append(rescue);
  }
  const r=root.getBoundingClientRect();
- const top=Math.max(10,Math.min(innerHeight-54,r.top+10));
- const right=Math.max(10,Math.min(innerWidth-54,innerWidth-r.right+10));
- Object.assign(rescue.style,{position:'fixed',top:`${top}px`,right:`${right}px`,zIndex:'2147483647',width:'44px',height:'44px',minWidth:'44px',minHeight:'44px',padding:'0',display:'grid',placeItems:'center',border:'1px solid #94a3b8',borderRadius:'10px',background:'#111827',color:'#f8fafc',fontSize:'22px',fontWeight:'900',lineHeight:'1',cursor:'pointer',boxShadow:'0 5px 18px rgba(0,0,0,.55)',pointerEvents:'auto'});
+ const top=`${Math.max(10,Math.min(innerHeight-54,r.top+10))}px`;
+ const right=`${Math.max(10,Math.min(innerWidth-54,innerWidth-r.right+10))}px`;
+ if(rescue.style.top!==top)rescue.style.top=top;
+ if(rescue.style.right!==right)rescue.style.right=right;
  return rescue;
 }
 function normalize(){
