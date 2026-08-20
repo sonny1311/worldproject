@@ -1,0 +1,8 @@
+# Edge-function auth policy. Player-facing payment actions keep Supabase JWT verification.
+[functions.world-payments]
+verify_jwt = true
+
+# Stripe cannot send a Supabase JWT. This endpoint authenticates requests exclusively
+# with the Stripe-Signature HMAC checked against STRIPE_WEBHOOK_SECRET.
+[functions.world-stripe-webhook]
+verify_jwt = false
