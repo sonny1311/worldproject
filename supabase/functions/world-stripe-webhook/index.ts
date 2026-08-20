@@ -1,0 +1,89 @@
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "npm:@supabase/supabase-js@2.111.0";
+
+const env=(name:string)=>Deno.env.get(name)?.trim()||"";
+const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{"Content-Type":"application/json"}});
+const encoder=new TextEncoder();
+
+function stripeTestKey(){
+ const key=env("STRIPE_SECRET_KEY");
+ if(!key) throw new Error("STRIPE_SECRET_KEY fehlt");
+ if(!key.startsWith("sk_test_")) throw new Error("Nur Stripe-Testmodus ist erlaubt");
+ return key;
+}
+
+function hex(bytes:ArrayBuffer){return [...new Uint8Array(bytes)].map(x=>x.toString(16).padStart(2,"0")).join("");}
+function equalHex(a:string,b:string){
+ if(a.length!==b.length) return false;
+ let diff=0;
+ for(let i=0;i<a.length;i++) diff|=a.charCodeAt(i)^b.charCodeAt(i);
+ return diff===0;
+}
+
+async function verifySignature(raw:string,header:string,secret:string){
+ const parts=header.split(",").map(x=>x.trim());
+ const timestamp=parts.find(x=>x.startsWith("t="))?.slice(2)||"";
+ const signatures=parts.filter(x=>x.startsWith("v1=")).map(x=>x.slice(3));
+ if(!/^\d+$/.test(timestamp)||signatures.length===0) return false;
+ const age=Math.abs(Math.floor(Date.now()/1000)-Number(timestamp));
+ if(age>300) return false;
+ const key=await crypto.subtle.importKey("raw",encoder.encode(secret),{name:"HMAC",hash:"SHA-256"},false,["sign"]);
+ const digest=hex(await crypto.subtle.sign("HMAC",key,encoder.encode(`${timestamp}.${raw}`)));
+ return signatures.some(sig=>equalHex(digest,sig));
+}
+
+async function retrieveSession(id:string,key:string){
+ if(!id.startsWith("cs_test_")) throw new Error("Keine Stripe-Testsession");
+ const response=await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(id)}`,{headers:{Authorization:`Bearer ${key}`}});
+ const payload=await response.json().catch(()=>({}));
+ if(!response.ok||!payload?.id) throw new Error(payload?.error?.message||"Stripe-Session konnte nicht verifiziert werden");
+ return payload;
+}
+
+Deno.serve(async(req:Request)=>{
+ if(req.method!=="POST") return json({error:"Method not allowed"},405);
+ try{
+  const webhookSecret=env("STRIPE_WEBHOOK_SECRET");
+  if(!webhookSecret) return json({error:"Stripe webhook is not configured"},503);
+  const raw=await req.text();
+  const signature=req.headers.get("Stripe-Signature")||"";
+  if(!signature||!(await verifySignature(raw,signature,webhookSecret))) return json({error:"Invalid Stripe signature"},400);
+
+  const event=JSON.parse(raw);
+  const type=String(event?.type||"");
+  if(!["checkout.session.completed","checkout.session.async_payment_succeeded"].includes(type)) return json({received:true,ignored:true});
+
+  const sessionId=String(event?.data?.object?.id||"");
+  const stripeKey=stripeTestKey();
+  const session=await retrieveSession(sessionId,stripeKey);
+  if(session.livemode!==false) return json({error:"Live Stripe events are disabled"},400);
+  if(String(session.payment_status||"")!=="paid") return json({received:true,pending:true});
+
+  const userId=Number(session?.metadata?.user_id||session?.client_reference_id||0);
+  const sku=String(session?.metadata?.sku||"");
+  const amountCents=Number(session?.amount_total);
+  const currency=String(session?.currency||"").toUpperCase();
+  const transactionId=typeof session?.payment_intent==="string"&&session.payment_intent?session.payment_intent:sessionId;
+  if(!Number.isSafeInteger(userId)||userId<=0||!sku||!Number.isInteger(amountCents)||amountCents<=0) return json({error:"Stripe session metadata is incomplete"},400);
+  if(currency!=="EUR") return json({error:"Unexpected currency"},400);
+
+  const url=env("SUPABASE_URL"),serviceKey=env("SUPABASE_SERVICE_ROLE_KEY");
+  if(!url||!serviceKey) throw new Error("Supabase service configuration missing");
+  const sb=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}});
+  const {data:product,error:productError}=await sb.from("store_products").select("sku,price_eur,active").eq("sku",sku).eq("active",true).maybeSingle();
+  if(productError||!product) return json({error:"Product is no longer available"},400);
+  const expectedCents=Math.round(Number(product.price_eur)*100);
+  if(amountCents!==expectedCents) return json({error:"Stripe amount does not match server catalog"},400);
+
+  const {data:fulfilled,error:fulfillError}=await sb.rpc("fulfill_stripe_purchase",{
+   p_user_id:userId,
+   p_provider_transaction_id:transactionId,
+   p_sku:sku,
+   p_amount_eur:amountCents/100,
+   p_currency:currency,
+   p_status:"paid"
+  });
+  if(fulfillError){console.error("stripe fulfillment failed",{eventId:event?.id,transactionId,code:fulfillError.code});return json({error:"Fulfillment failed"},500);}
+  return json({received:true,fulfilled:true,transactionId,result:fulfilled});
+ }catch(error){console.error("stripe webhook error",error instanceof Error?error.message:"unknown");return json({error:"Webhook processing failed"},500);}
+});
