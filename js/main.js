@@ -1,6 +1,6 @@
 // ============================================
 // main.js
-// ORVUNO – Betriebsruntime ohne alte Weltkarte
+// ORVUNO – eine einzige kanonische Betriebsruntime
 // ============================================
 
 import "./content/ContentBootstrap.js";
@@ -12,156 +12,101 @@ import "./core/CoinStoreVisualPolishIntegration.js";
 import { Company } from "./core/Company.js";
 import { CompanySetup } from "./core/CompanySetup.js";
 
-window.orvunoBootComplete=true;
+window.orvunoBootComplete = true;
 window.dispatchEvent(new CustomEvent("orvuno:boot-complete"));
 
 const runtimeCompany = new Company();
+const portfolio = window.worldAccounts?.businessPortfolio;
 const initialOverview = window.worldServerAccountOverview || null;
 const initialServerCompany = initialOverview?.companies?.find(c => c.is_primary)
     || initialOverview?.companies?.find(c => Number(c.slot_no) === 1)
     || initialOverview?.companies?.[0]
     || null;
-const portfolio = window.worldAccounts?.businessPortfolio;
-const initialServerMoney = Number(initialServerCompany?.money ?? initialServerCompany?.game_state?.money);
-const moneyTraceInstalled = new WeakSet();
-let canonicalPlayerCompany = window.worldPlayerCompany || null;
 
-function serverCompanies() {
+window.worldCanonicalRuntimeCompany = runtimeCompany;
+
+function companies() {
     return Array.isArray(window.worldServerAccountOverview?.companies)
         ? window.worldServerAccountOverview.companies
         : (Array.isArray(initialOverview?.companies) ? initialOverview.companies : []);
 }
 
-function serverCompanyFor(company) {
-    const id = company?.serverCompanyId ?? company?.id;
+function serverCompanyFor(value = null) {
+    const id = value?.serverCompanyId ?? value?.id ?? window.worldActiveServerCompany?.id ?? null;
     if (id != null) {
-        const found = serverCompanies().find(c => String(c.id) === String(id));
+        const found = companies().find(c => String(c.id) === String(id));
         if (found) return found;
     }
-    return window.worldActiveServerCompany || initialServerCompany || null;
+    return window.worldActiveServerCompany || initialServerCompany || companies()[0] || null;
 }
 
-function matchingServerCompany(company) {
-    return serverCompanyFor(company);
-}
+function hydrateCanonical(serverCompany) {
+    if (!serverCompany) return runtimeCompany;
+    const wallet = window.worldServerAccountOverview?.wallet || initialOverview?.wallet || {};
 
-function installMoneyResetTrace(company) {
-    if (!company || moneyTraceInstalled.has(company)) return company;
-    const descriptor = Object.getOwnPropertyDescriptor(company, "money");
-    if (descriptor && descriptor.configurable === false) return company;
-
-    let value = Number(company.money);
-    if (!Number.isFinite(value)) value = 0;
-
-    Object.defineProperty(company, "money", {
-        configurable: true,
-        enumerable: true,
-        get() { return value; },
-        set(nextValue) {
-            const next = Number(nextValue);
-            const normalized = Number.isFinite(next) ? next : 0;
-            const previous = value;
-            const server = matchingServerCompany(company);
-            const serverMoney = Number(server?.money ?? server?.game_state?.money);
-            const sameCompany = !server?.id || !company?.serverCompanyId || String(server.id) === String(company.serverCompanyId);
-
-            if (normalized === 0 && previous > 0 && sameCompany && Number.isFinite(serverMoney) && serverMoney > 0) {
-                console.error("🚨 ORVUNO: UNGÜLTIGER 0-EUR-RESET BLOCKIERT", {
-                    companyId: company.serverCompanyId,
-                    previous,
-                    attempted: normalized,
-                    serverMoney,
-                    stack: new Error("ORVUNO invalid money reset trace").stack
-                });
-                return;
-            }
-            value = normalized;
-        }
-    });
-
-    moneyTraceInstalled.add(company);
-    return company;
-}
-
-// Harte Laufzeitgrenze: Nach erfolgreichem Server-Load darf keine alte Demo-/Fallback-
-// Company die echte Spielerfirma mehr als worldPlayerCompany ersetzen. Echte Firmenwechsel
-// bleiben erlaubt, sofern die Ziel-ID in der aktuellen Supabase-Uebersicht existiert.
-function installCanonicalPlayerCompanyLock() {
-    const descriptor = Object.getOwnPropertyDescriptor(window, "worldPlayerCompany");
-    if (descriptor?.get?.__orvunoCanonicalLock) return;
-
-    const getter = function() { return canonicalPlayerCompany; };
-    getter.__orvunoCanonicalLock = true;
-
-    Object.defineProperty(window, "worldPlayerCompany", {
-        configurable: true,
-        enumerable: true,
-        get: getter,
-        set(next) {
-            if (!next) return;
-            const current = canonicalPlayerCompany;
-            const known = serverCompanyFor(next);
-            const nextId = next?.serverCompanyId ?? next?.id ?? null;
-            const isKnownServerCompany = nextId != null && serverCompanies().some(c => String(c.id) === String(nextId));
-            const hasCanonicalServerCompany = Boolean(current?.serverCompanyId && serverCompanies().some(c => String(c.id) === String(current.serverCompanyId)));
-
-            if (hasCanonicalServerCompany && !isKnownServerCompany && next !== current) {
-                console.error("🚨 ORVUNO: ALTE/FALSCHE RUNTIME-COMPANY BLOCKIERT", {
-                    activeCompanyId: current?.serverCompanyId,
-                    rejectedCompanyId: nextId,
-                    rejectedMoney: Number(next?.money),
-                    stack: new Error("ORVUNO invalid company replacement").stack
-                });
-                return;
-            }
-
-            if (known && isKnownServerCompany) {
-                const serverMoney = Number(known.money ?? known.game_state?.money);
-                if ((!Number.isFinite(Number(next.money)) || Number(next.money) === 0) && Number.isFinite(serverMoney) && serverMoney > 0) {
-                    next.money = serverMoney;
-                    next.moneyRevision = Number(known.money_revision ?? known.game_state?.moneyRevision ?? next.moneyRevision ?? 0);
-                }
-            }
-
-            installMoneyResetTrace(next);
-            canonicalPlayerCompany = next;
-        }
-    });
-}
-
-installCanonicalPlayerCompanyLock();
-
-function bindCanonicalCompany(company, serverCompany = null) {
-    if (!company) return null;
-    installMoneyResetTrace(company);
-    window.worldPlayerCompany = company;
-    const active = window.worldPlayerCompany || company;
-    if (window.worldEngine) window.worldEngine.company = active;
-    if (window.worldEconomyGameplay) window.worldEconomyGameplay.company = active;
-    if (portfolio) portfolio.activeCompany = active;
-    if (serverCompany) window.worldActiveServerCompany = serverCompany;
-    return active;
-}
-
-if (initialServerCompany) {
     if (portfolio?.hydrateCompany) {
-        portfolio.hydrateCompany(runtimeCompany, initialServerCompany, initialOverview?.wallet || {});
-        portfolio.companies = initialOverview?.companies || [];
+        portfolio.hydrateCompany(runtimeCompany, serverCompany, wallet);
     } else {
-        runtimeCompany.serverCompanyId = initialServerCompany.id;
-        runtimeCompany.slotNo = Number(initialServerCompany.slot_no || 1);
-        runtimeCompany.name = initialServerCompany.name || "";
-        runtimeCompany.industry = initialServerCompany.industry || "";
-        runtimeCompany.type = initialServerCompany.company_type || "";
-        runtimeCompany.money = Number.isFinite(initialServerMoney) ? initialServerMoney : runtimeCompany.money;
-        runtimeCompany.coins = Number(initialOverview?.wallet?.balance || 0);
+        const state = serverCompany.game_state || {};
+        runtimeCompany.serverCompanyId = serverCompany.id;
+        runtimeCompany.slotNo = Number(serverCompany.slot_no || 1);
+        runtimeCompany.name = serverCompany.name || "";
+        runtimeCompany.industry = serverCompany.industry || "";
+        runtimeCompany.type = serverCompany.company_type || "";
+        runtimeCompany.money = Number(serverCompany.money ?? state.money ?? 0);
+        runtimeCompany.moneyRevision = Number(serverCompany.money_revision ?? state.moneyRevision ?? 0);
+        runtimeCompany.coins = Number(wallet?.balance || 0);
+        runtimeCompany.setupPhase = serverCompany.setup_phase || runtimeCompany.setupPhase;
+        runtimeCompany.buildingState = serverCompany.building_state || runtimeCompany.buildingState;
     }
-    bindCanonicalCompany(runtimeCompany, initialServerCompany);
+
+    const serverMoney = Number(serverCompany.money ?? serverCompany.game_state?.money);
+    if (Number.isFinite(serverMoney)) runtimeCompany.money = serverMoney;
+    runtimeCompany.moneyRevision = Number(
+        serverCompany.money_revision
+        ?? serverCompany.game_state?.moneyRevision
+        ?? runtimeCompany.moneyRevision
+        ?? 0
+    );
+
+    window.worldActiveServerCompany = serverCompany;
+    return runtimeCompany;
 }
 
-window.worldEngine = { company: window.worldPlayerCompany || runtimeCompany, legacyRendererDisabled: true };
-bindCanonicalCompany(window.worldPlayerCompany || runtimeCompany, initialServerCompany);
+function bindCanonical(serverCompany = null) {
+    const server = serverCompany || serverCompanyFor(runtimeCompany);
+    if (server) hydrateCanonical(server);
 
+    // Ab hier existiert fuer das Live-Spiel genau EINE Company-Instanz.
+    window.worldPlayerCompany = runtimeCompany;
+    if (!window.worldEngine) window.worldEngine = { legacyRendererDisabled: true };
+    window.worldEngine.company = runtimeCompany;
+    if (window.worldEconomyGameplay) window.worldEconomyGameplay.company = runtimeCompany;
+    if (portfolio) portfolio.activeCompany = runtimeCompany;
+    return runtimeCompany;
+}
+
+window.worldGetCanonicalCompany = () => {
+    const server = serverCompanyFor(runtimeCompany);
+    if (server) {
+        const serverMoney = Number(server.money ?? server.game_state?.money);
+        const currentId = runtimeCompany.serverCompanyId;
+        if (String(currentId ?? "") !== String(server.id ?? "")) {
+            hydrateCanonical(server);
+        } else if (Number.isFinite(serverMoney) && Number(runtimeCompany.money) === 0 && serverMoney > 0) {
+            runtimeCompany.money = serverMoney;
+            runtimeCompany.moneyRevision = Number(server.money_revision ?? server.game_state?.moneyRevision ?? runtimeCompany.moneyRevision ?? 0);
+        }
+    }
+    return runtimeCompany;
+};
+
+if (initialServerCompany) bindCanonical(initialServerCompany);
+else bindCanonical();
+
+// Egal welches Altmodul ein Company-Objekt in ein Ereignis steckt: Im Live-Spiel wird
+// niemals dieses fremde Objekt uebernommen. Nur seine Server-ID bestimmt, welcher Betrieb
+// in DIE eine kanonische runtimeCompany hydriert wird.
 for (const eventName of [
     "worldproject:company-loaded",
     "worldproject:company-activated",
@@ -169,51 +114,40 @@ for (const eventName of [
     "world:active-business-changed"
 ]) {
     window.addEventListener(eventName, event => {
-        const requested = event?.detail?.company || window.worldPlayerCompany || runtimeCompany;
-        const serverCompany = event?.detail?.serverCompany || serverCompanyFor(requested);
-        bindCanonicalCompany(requested, serverCompany);
+        const requested = event?.detail?.serverCompany || serverCompanyFor(event?.detail?.company);
+        bindCanonical(requested);
+        window.worldHomeOperationsDashboard?.render?.();
     });
 }
 
-function guardInitialServerBalance() {
-    const company = window.worldPlayerCompany || window.worldEngine?.company || runtimeCompany;
-    const server = matchingServerCompany(company);
-    const serverMoney = Number(server?.money ?? server?.game_state?.money ?? initialServerMoney);
-    if (!company || !server || !Number.isFinite(serverMoney)) return false;
-
-    const current = Number(company.money);
-    if ((!Number.isFinite(current) || current === 0) && serverMoney > 0) {
-        company.money = serverMoney;
-        company.moneyRevision = Number(server?.money_revision ?? server?.game_state?.moneyRevision ?? company.moneyRevision ?? 0);
-        bindCanonicalCompany(company, server);
-        window.worldHomeOperationsDashboard?.render?.();
-        console.warn("🛡️ ORVUNO: FEHLERHAFTEN 0-EUR-RUNTIMEWERT AUS SUPABASE KORRIGIERT", {
-            companyId: server.id,
-            money: serverMoney
-        });
-        return true;
-    }
-    return false;
-}
-
-const companySetup = new CompanySetup(
-    runtimeCompany,
-    company => {
-        const serverCompany = matchingServerCompany(company);
-        const active = bindCanonicalCompany(company, serverCompany);
-        guardInitialServerBalance();
-        console.log("ORVUNO Betrieb geladen:", active);
-        window.dispatchEvent(new CustomEvent("worldproject:company-activated",{detail:{company:active,serverCompany}}));
-        window.worldHomeOperationsDashboard?.render?.();
-    }
-);
+const companySetup = new CompanySetup(runtimeCompany, company => {
+    const server = serverCompanyFor(company);
+    bindCanonical(server);
+    console.log("ORVUNO Betrieb geladen:", runtimeCompany);
+    window.dispatchEvent(new CustomEvent("worldproject:company-activated", {
+        detail: { company: runtimeCompany, serverCompany: server }
+    }));
+    window.worldHomeOperationsDashboard?.render?.();
+});
 
 companySetup.show();
 
-for (const delay of [0, 100, 300, 750, 1500, 3000, 5000, 8000, 12000, 15000, 20000]) {
+// Einige Altintegrationen rendern spaeter erneut. Vor diesen typischen Start-/Refresh-
+// Zeitpunkten werden alle Live-Referenzen nochmals auf dieselbe kanonische Instanz gesetzt.
+for (const delay of [0, 100, 300, 750, 1500, 3000, 5000, 8000, 12000, 15000, 20000, 30000]) {
     setTimeout(() => {
-        guardInitialServerBalance();
-        const active = window.worldPlayerCompany || runtimeCompany;
-        bindCanonicalCompany(active, serverCompanyFor(active));
+        const server = serverCompanyFor(runtimeCompany);
+        if (server) {
+            const serverMoney = Number(server.money ?? server.game_state?.money);
+            if (Number(runtimeCompany.money) === 0 && Number.isFinite(serverMoney) && serverMoney > 0) {
+                runtimeCompany.money = serverMoney;
+                runtimeCompany.moneyRevision = Number(server.money_revision ?? server.game_state?.moneyRevision ?? runtimeCompany.moneyRevision ?? 0);
+            }
+        }
+        window.worldPlayerCompany = runtimeCompany;
+        if (window.worldEngine) window.worldEngine.company = runtimeCompany;
+        if (window.worldEconomyGameplay) window.worldEconomyGameplay.company = runtimeCompany;
+        if (portfolio) portfolio.activeCompany = runtimeCompany;
+        window.worldHomeOperationsDashboard?.render?.();
     }, delay);
 }
