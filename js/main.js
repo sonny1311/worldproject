@@ -40,6 +40,40 @@ function serverCompanyFor(value = null) {
     return window.worldActiveServerCompany || initialServerCompany || companies()[0] || null;
 }
 
+// Das Live-Firmenkonto besitzt genau einen Runtime-Wert. Historische Module duerfen
+// weiterhin normale Einnahmen/Ausgaben buchen, aber ein veralteter 0-EUR-Fallback darf
+// einen positiven, serverseitig bestaetigten Kontostand niemals mehr vernichten.
+let runtimeMoney = Number(runtimeCompany.money);
+if (!Number.isFinite(runtimeMoney)) runtimeMoney = 0;
+Object.defineProperty(runtimeCompany, "money", {
+    configurable: false,
+    enumerable: true,
+    get() {
+        return runtimeMoney;
+    },
+    set(nextValue) {
+        const parsed = Number(nextValue);
+        const next = Number.isFinite(parsed) ? parsed : 0;
+        const server = serverCompanyFor(runtimeCompany);
+        const serverMoney = Number(server?.money ?? server?.game_state?.money);
+        const sameCompany = !server?.id
+            || !runtimeCompany.serverCompanyId
+            || String(server.id) === String(runtimeCompany.serverCompanyId);
+
+        if (next === 0 && runtimeMoney > 0 && sameCompany && Number.isFinite(serverMoney) && serverMoney > 0) {
+            console.error("🚨 ORVUNO: VERALTETER 0-EUR-KONTORESET BLOCKIERT", {
+                companyId: runtimeCompany.serverCompanyId,
+                previous: runtimeMoney,
+                serverMoney,
+                stack: new Error("ORVUNO stale zero money reset").stack
+            });
+            return;
+        }
+
+        runtimeMoney = next;
+    }
+});
+
 function hydrateCanonical(serverCompany) {
     if (!serverCompany) return runtimeCompany;
     const wallet = window.worldServerAccountOverview?.wallet || initialOverview?.wallet || {};
