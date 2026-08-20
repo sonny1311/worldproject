@@ -26,12 +26,67 @@ const initialServerCompany = initialOverview?.companies?.find(c => c.is_primary)
 const portfolio = window.worldAccounts?.businessPortfolio;
 const initialServerMoney = Number(initialServerCompany?.money ?? initialServerCompany?.game_state?.money);
 
+const moneyTraceInstalled = new WeakSet();
+
+function matchingServerCompany(company) {
+    return window.worldActiveServerCompany
+        || window.worldServerAccountOverview?.companies?.find(c => String(c.id) === String(company?.serverCompanyId))
+        || initialServerCompany
+        || null;
+}
+
+// Temporärer Diagnose-/Sicherheitsanker: Ein historischer Clientpfad setzt den bereits
+// korrekt aus Supabase geladenen Kontostand spaeter auf exakt 0. Dieser Setter protokolliert
+// den Aufrufer und verhindert nur diesen nachweislich falschen Reset. Normale Geldbewegungen
+// (z. B. 7.503.164 -> 7.485.164) bleiben vollständig erlaubt.
+function installMoneyResetTrace(company) {
+    if (!company || moneyTraceInstalled.has(company)) return company;
+    const descriptor = Object.getOwnPropertyDescriptor(company, "money");
+    if (descriptor && descriptor.configurable === false) return company;
+
+    let value = Number(company.money);
+    if (!Number.isFinite(value)) value = 0;
+
+    Object.defineProperty(company, "money", {
+        configurable: true,
+        enumerable: true,
+        get() {
+            return value;
+        },
+        set(nextValue) {
+            const next = Number(nextValue);
+            const normalized = Number.isFinite(next) ? next : 0;
+            const previous = value;
+            const server = matchingServerCompany(company);
+            const serverMoney = Number(server?.money ?? server?.game_state?.money);
+            const sameCompany = !server?.id || !company?.serverCompanyId || String(server.id) === String(company.serverCompanyId);
+
+            if (normalized === 0 && previous > 0 && sameCompany && Number.isFinite(serverMoney) && serverMoney > 0) {
+                const trace = new Error("ORVUNO invalid money reset trace");
+                console.error("🚨 ORVUNO: UNGÜLTIGER 0-EUR-RESET BLOCKIERT", {
+                    companyId: company.serverCompanyId,
+                    previous,
+                    attempted: normalized,
+                    serverMoney,
+                    stack: trace.stack
+                });
+                return;
+            }
+            value = normalized;
+        }
+    });
+
+    moneyTraceInstalled.add(company);
+    return company;
+}
+
 // ORVUNO darf im Live-Spiel nur eine aktive Company-Instanz haben.
 // Historische Integrationen benutzen unterschiedliche Globals. Diese Funktion bindet
 // sie alle auf dieselbe Instanz, damit Anzeige, Ausbau, Einkauf und Autosave denselben
 // Kontostand und denselben Betriebszustand verwenden.
 function bindCanonicalCompany(company, serverCompany = null) {
     if (!company) return null;
+    installMoneyResetTrace(company);
     window.worldPlayerCompany = company;
     if (window.worldEngine) window.worldEngine.company = company;
     if (window.worldEconomyGameplay) window.worldEconomyGameplay.company = company;
@@ -82,9 +137,7 @@ for (const eventName of [
 // Initialisierung nicht durch einen historischen 0-EUR-Fallback ersetzt werden.
 function guardInitialServerBalance() {
     const company = window.worldPlayerCompany || window.worldEngine?.company || runtimeCompany;
-    const server = window.worldActiveServerCompany
-        || window.worldServerAccountOverview?.companies?.find(c => String(c.id) === String(company?.serverCompanyId))
-        || initialServerCompany;
+    const server = matchingServerCompany(company);
     const serverMoney = Number(server?.money ?? server?.game_state?.money ?? initialServerMoney);
     if (!company || !server || !Number.isFinite(serverMoney)) return false;
 
@@ -108,9 +161,7 @@ function guardInitialServerBalance() {
 const companySetup = new CompanySetup(
     runtimeCompany,
     company => {
-        const serverCompany = window.worldActiveServerCompany
-            || window.worldServerAccountOverview?.companies?.find(c => String(c.id) === String(company?.serverCompanyId))
-            || null;
+        const serverCompany = matchingServerCompany(company);
         bindCanonicalCompany(company, serverCompany);
         guardInitialServerBalance();
         console.log("ORVUNO Betrieb geladen:", company);
