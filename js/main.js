@@ -17,10 +17,6 @@ import { CompanySetup } from "./core/CompanySetup.js";
 window.orvunoBootComplete=true;
 window.dispatchEvent(new CustomEvent("orvuno:boot-complete"));
 
-// Die frühere Canvas-/Karten-Engine wird nicht mehr gestartet.
-// Die bereits vom Account-Gate geladene Supabase-Firma wird sofort in dieselbe
-// Runtime-Instanz hydratisiert. So kann kein spaeter erzeugter Leerzustand den
-// echten Server-Kontostand kurzfristig oder dauerhaft mit 0 EUR ueberschreiben.
 const runtimeCompany = new Company();
 const initialOverview = window.worldServerAccountOverview || null;
 const initialServerCompany = initialOverview?.companies?.find(c => c.is_primary)
@@ -30,11 +26,24 @@ const initialServerCompany = initialOverview?.companies?.find(c => c.is_primary)
 const portfolio = window.worldAccounts?.businessPortfolio;
 const initialServerMoney = Number(initialServerCompany?.money ?? initialServerCompany?.game_state?.money);
 
+// ORVUNO darf im Live-Spiel nur eine aktive Company-Instanz haben.
+// Historische Integrationen benutzen unterschiedliche Globals. Diese Funktion bindet
+// sie alle auf dieselbe Instanz, damit Anzeige, Ausbau, Einkauf und Autosave denselben
+// Kontostand und denselben Betriebszustand verwenden.
+function bindCanonicalCompany(company, serverCompany = null) {
+    if (!company) return null;
+    window.worldPlayerCompany = company;
+    if (window.worldEngine) window.worldEngine.company = company;
+    if (window.worldEconomyGameplay) window.worldEconomyGameplay.company = company;
+    if (portfolio) portfolio.activeCompany = company;
+    if (serverCompany) window.worldActiveServerCompany = serverCompany;
+    return company;
+}
+
 if (initialServerCompany) {
     if (portfolio?.hydrateCompany) {
         portfolio.hydrateCompany(runtimeCompany, initialServerCompany, initialOverview?.wallet || {});
         portfolio.companies = initialOverview?.companies || [];
-        portfolio.activeCompany = runtimeCompany;
     } else {
         runtimeCompany.serverCompanyId = initialServerCompany.id;
         runtimeCompany.slotNo = Number(initialServerCompany.slot_no || 1);
@@ -44,29 +53,52 @@ if (initialServerCompany) {
         runtimeCompany.money = Number.isFinite(initialServerMoney) ? initialServerMoney : runtimeCompany.money;
         runtimeCompany.coins = Number(initialOverview?.wallet?.balance || 0);
     }
-    window.worldPlayerCompany = runtimeCompany;
-    window.worldActiveServerCompany = initialServerCompany;
+    bindCanonicalCompany(runtimeCompany, initialServerCompany);
 }
 
 window.worldEngine = { company: runtimeCompany, legacyRendererDisabled: true };
+bindCanonicalCompany(runtimeCompany, initialServerCompany);
 
-// Einige alte Integrationen laufen noch kurz nach main.js an. Falls eine davon in dieser
-// Startphase die bereits korrekt geladene Firma wieder auf 0 EUR setzt, stellen wir nur
-// diesen eindeutig falschen Startwert aus dem bereits geladenen Supabase-Snapshot wieder her.
-// Der Guard endet nach wenigen Sekunden und greift danach nicht in normale Spieltransaktionen ein.
+// Einige Altintegrationen werden vor main.js geladen und besitzen zu diesem Zeitpunkt noch
+// ihre frühere Demo-Company. Sobald ein echter Betrieb geladen/aktiviert/gewechselt wird,
+// werden alle Referenzen sofort wieder auf die echte aktive Instanz vereinheitlicht.
+for (const eventName of [
+    "worldproject:company-loaded",
+    "worldproject:company-activated",
+    "worldproject:company-switched",
+    "world:active-business-changed"
+]) {
+    window.addEventListener(eventName, event => {
+        const company = event?.detail?.company || window.worldPlayerCompany || runtimeCompany;
+        const serverCompany = event?.detail?.serverCompany
+            || window.worldServerAccountOverview?.companies?.find(c => String(c.id) === String(company?.serverCompanyId))
+            || window.worldActiveServerCompany
+            || null;
+        bindCanonicalCompany(company, serverCompany);
+    });
+}
+
+// Startschutz: Ein bereits korrekt aus Supabase geladener Kontostand darf während der
+// Initialisierung nicht durch einen historischen 0-EUR-Fallback ersetzt werden.
 function guardInitialServerBalance() {
-    if (!initialServerCompany || !Number.isFinite(initialServerMoney) || initialServerMoney <= 0) return false;
     const company = window.worldPlayerCompany || window.worldEngine?.company || runtimeCompany;
-    if (!company) return false;
+    const server = window.worldActiveServerCompany
+        || window.worldServerAccountOverview?.companies?.find(c => String(c.id) === String(company?.serverCompanyId))
+        || initialServerCompany;
+    const serverMoney = Number(server?.money ?? server?.game_state?.money ?? initialServerMoney);
+    if (!company || !server || !Number.isFinite(serverMoney)) return false;
+
+    // Während des Starts ist 0 bei gleichzeitig positivem Serverkonto eindeutig ein
+    // falscher Fallback. Normale spätere Spieltransaktionen werden dadurch nicht berührt.
     const current = Number(company.money);
-    if (!Number.isFinite(current) || current === 0) {
-        company.money = initialServerMoney;
-        if (window.worldEngine) window.worldEngine.company = company;
-        if (portfolio) portfolio.activeCompany = company;
+    if ((!Number.isFinite(current) || current === 0) && serverMoney > 0) {
+        company.money = serverMoney;
+        company.moneyRevision = Number(server?.money_revision ?? server?.game_state?.moneyRevision ?? company.moneyRevision ?? 0);
+        bindCanonicalCompany(company, server);
         window.worldHomeOperationsDashboard?.render?.();
-        console.warn("🛡️ ORVUNO: FEHLERHAFTEN 0-EUR-STARTWERT AUS SUPABASE KORRIGIERT", {
-            companyId: initialServerCompany.id,
-            money: initialServerMoney
+        console.warn("🛡️ ORVUNO: FEHLERHAFTEN 0-EUR-RUNTIMEWERT AUS SUPABASE KORRIGIERT", {
+            companyId: server.id,
+            money: serverMoney
         });
         return true;
     }
@@ -76,17 +108,22 @@ function guardInitialServerBalance() {
 const companySetup = new CompanySetup(
     runtimeCompany,
     company => {
-        console.log("ORVUNO Betrieb geladen:", company);
-        window.worldEngine.company = company;
-        window.worldPlayerCompany = company;
+        const serverCompany = window.worldActiveServerCompany
+            || window.worldServerAccountOverview?.companies?.find(c => String(c.id) === String(company?.serverCompanyId))
+            || null;
+        bindCanonicalCompany(company, serverCompany);
         guardInitialServerBalance();
-        window.dispatchEvent(new CustomEvent("worldproject:company-activated",{detail:{company}}));
+        console.log("ORVUNO Betrieb geladen:", company);
+        window.dispatchEvent(new CustomEvent("worldproject:company-activated",{detail:{company,serverCompany}}));
         window.worldHomeOperationsDashboard?.render?.();
     }
 );
 
 companySetup.show();
 
-for (const delay of [0, 100, 300, 750, 1500, 3000, 5000]) {
-    setTimeout(guardInitialServerBalance, delay);
+for (const delay of [0, 100, 300, 750, 1500, 3000, 5000, 8000, 12000]) {
+    setTimeout(() => {
+        guardInitialServerBalance();
+        bindCanonicalCompany(window.worldPlayerCompany || runtimeCompany, window.worldActiveServerCompany || initialServerCompany);
+    }, delay);
 }
