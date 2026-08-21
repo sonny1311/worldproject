@@ -73,8 +73,8 @@ Deno.serve(async(req:Request)=>{
   if(!Number.isSafeInteger(metadataUserId)||metadataUserId<=0||!Number.isSafeInteger(referenceUserId)||referenceUserId<=0||metadataUserId!==referenceUserId) return json({error:"Stripe session user identity is inconsistent"},400);
   if(!sku||!Number.isInteger(amountCents)||amountCents<=0) return json({error:"Stripe session metadata is incomplete"},400);
   if(currency!=="EUR") return json({error:"Unexpected currency"},400);
-  if(paymentIntent&&!paymentIntent.startsWith("pi_")) return json({error:"Invalid Stripe payment intent"},400);
-  const transactionId=paymentIntent||sessionId;
+  if(!paymentIntent.startsWith("pi_")) return json({error:"Missing or invalid Stripe payment intent"},400);
+  const transactionId=paymentIntent;
 
   const url=env("SUPABASE_URL"),serviceKey=env("SUPABASE_SERVICE_ROLE_KEY");
   if(!url||!serviceKey) throw new Error("Supabase service configuration missing");
