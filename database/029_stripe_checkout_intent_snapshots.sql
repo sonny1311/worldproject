@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS public.payment_checkout_intents (
 ALTER TABLE public.payment_checkout_intents ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public.payment_checkout_intents FROM PUBLIC, anon, authenticated;
 GRANT SELECT, INSERT, UPDATE ON TABLE public.payment_checkout_intents TO service_role;
+GRANT USAGE, SELECT ON SEQUENCE public.payment_checkout_intents_id_seq TO service_role;
 
 CREATE OR REPLACE FUNCTION public.fulfill_stripe_checkout_intent(
   p_user_id bigint,
