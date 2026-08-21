@@ -55,6 +55,25 @@ export class SupabaseGameStateSync {
         return (window.worldServerAccountOverview?.companies||[]).find(c=>String(c?.id)===String(company?.serverCompanyId))||null;
     }
 
+    // AuthApiClient gibt bei Save-RPCs {success:true, company:<row>} zurueck.
+    // Aeltere Aufrufer koennen weiterhin direkt eine Zeile/Array liefern.
+    authoritativeCompany(result){
+        if(!result)return null;
+        if(result.company){const row=Array.isArray(result.company)?result.company[0]:result.company;return row&&typeof row==="object"?row:null;}
+        const row=Array.isArray(result)?result[0]:result;
+        return row&&typeof row==="object"?row:null;
+    }
+
+    // Gruendungsdaten nur dann separat speichern, wenn die Runtime wirklich einen
+    // gueltigen Gruendungszustand traegt. Bereits fertige Betriebe duerfen durch
+    // alte/inkompatible Clientwerte keinen 400-Fehler im Autosave erzeugen.
+    hasPersistableBusinessSetup(company){
+        if(!company?.serverCompanyId||!company.buildingState||typeof company.buildingState!=="object")return false;
+        const phase=String(company.setupPhase||"").trim().toLowerCase();
+        if(!phase)return false;
+        return !["complete","completed","ready","active","finished","done"].includes(phase);
+    }
+
     // companies.money + money_revision sind gemeinsam die kanonische Geldquelle.
     // Ein alter Snapshot darf niemals einen neueren Server-/Admin-/Coin-Wert zurueckdrehen.
     reconcileServerMoney(server){
@@ -109,9 +128,12 @@ export class SupabaseGameStateSync {
         window.dispatchEvent(new CustomEvent("world:game-saving",{detail:{retry,attempt:this.retryAttempt}}));
         try{
             const result=company.serverCompanyId?await this.api.saveBusinessState(company.serverCompanyId,state):await this.api.saveGameState(state);
-            if(company.serverCompanyId&&company.setupPhase&&company.buildingState)await this.api.updateBusinessSetup(company.serverCompanyId,company.setupPhase,company.buildingState);
-            const authoritative=Array.isArray(result)?result[0]:result;
-            if(authoritative&&typeof authoritative==="object"){
+            if(this.hasPersistableBusinessSetup(company)){
+                try{await this.api.updateBusinessSetup(company.serverCompanyId,company.setupPhase,company.buildingState);}
+                catch(error){console.warn("Gruendungsstatus wurde beim Autosave uebersprungen",error?.message||error);}
+            }
+            const authoritative=this.authoritativeCompany(result);
+            if(authoritative){
                 const balance=this.reconcileServerMoney(authoritative);
                 if(balance){company.money=balance.money;company.moneyRevision=balance.revision;}
                 const cached=server||this.activeServerCompany(company);
