@@ -69,6 +69,8 @@ Deno.serve(async(req:Request)=>{
   if(userError||!user) return json({error:"Sitzung ist ungültig"},401);
   const {data:profile,error:profileError}=await sb.from("users").select("id,status").eq("auth_user_id",user.id).maybeSingle();
   if(profileError||!profile||profile.status!=="active") return json({error:"Spielerkonto ist nicht aktiv"},403);
+  const profileId=Number(profile.id);
+  if(!Number.isSafeInteger(profileId)||profileId<=0) return json({error:"Ungültiges Spielerprofil"},403);
   const body=await req.json().catch(()=>({}));const action=String(body?.action||"");
 
   if(action==="stripe_checkout"){
@@ -76,19 +78,32 @@ Deno.serve(async(req:Request)=>{
    if(!sku) return json({error:"Produkt fehlt"},400);
    const {data:product,error:productError}=await sb.from("store_products").select("sku,label,price_eur,active").eq("sku",sku).eq("active",true).maybeSingle();
    if(productError||!product) return json({error:"Produkt ist nicht verfügbar"},400);
-   const session=await createStripeCheckoutSession(product,Number(profile.id));
+   const session=await createStripeCheckoutSession(product,profileId);
    return json({success:true,provider:"stripe",environment:"test",...session});
   }
 
   if(action==="stripe_status"){
    const sessionId=String(body?.sessionId||"").trim();
    const session=await retrieveStripeCheckoutSession(sessionId);
-   const expectedUser=String(profile.id),metadataUser=String(session?.metadata?.user_id||""),referenceUser=String(session?.client_reference_id||"");
+   const expectedUser=String(profileId),metadataUser=String(session?.metadata?.user_id||""),referenceUser=String(session?.client_reference_id||"");
    if(!metadataUser||!referenceUser||metadataUser!==expectedUser||referenceUser!==expectedUser) return json({error:"Stripe-Session gehört nicht zu diesem Spielerkonto"},403);
    const sku=String(session?.metadata?.sku||"");
-   if(!sku) return json({error:"Stripe-Session enthält kein Kaufprodukt"},409);
+   const amountCents=Number(session?.amount_total),currency=String(session?.currency||"").toUpperCase();
+   const paymentIntent=typeof session?.payment_intent==="string"?session.payment_intent:"";
+   if(!sku||!Number.isInteger(amountCents)||amountCents<=0||currency!=="EUR") return json({error:"Stripe-Session enthält kein gültiges Kaufprodukt"},409);
+   const {data:product,error:productError}=await sb.from("store_products").select("sku,price_eur,active").eq("sku",sku).eq("active",true).maybeSingle();
+   if(productError||!product) return json({error:"Produkt ist nicht mehr verfügbar"},409);
+   const expectedCents=Math.round(Number(product.price_eur)*100);
+   if(!Number.isInteger(expectedCents)||expectedCents<=0||amountCents!==expectedCents) return json({error:"Stripe-Betrag stimmt nicht mit dem Serverkatalog überein"},409);
    const checkoutStatus=String(session?.status||""),paymentStatus=String(session?.payment_status||"");
-   return json({success:true,provider:"stripe",environment:"test",sessionId:String(session.id),checkoutStatus,paymentStatus,sku,paid:checkoutStatus==="complete"&&paymentStatus==="paid"});
+   const paid=checkoutStatus==="complete"&&paymentStatus==="paid";
+   let fulfilled=false;
+   if(paid&&paymentIntent.startsWith("pi_")){
+    const {data:purchase,error:purchaseError}=await sb.from("payment_purchases").select("id").eq("user_id",profileId).eq("provider","stripe").eq("provider_transaction_id",paymentIntent).maybeSingle();
+    if(purchaseError) console.warn("Stripe fulfillment status lookup failed",purchaseError.code);
+    fulfilled=!!purchase;
+   }
+   return json({success:true,provider:"stripe",environment:"test",sessionId:String(session.id),checkoutStatus,paymentStatus,sku,paid,fulfilled});
   }
 
   const gw=gateway();
@@ -102,7 +117,7 @@ Deno.serve(async(req:Request)=>{
   const {data:product,error:productError}=await sb.from("store_products").select("sku,label,price_eur,active").eq("sku",sku).eq("active",true).maybeSingle();
   if(productError||!product) return json({error:"Produkt ist nicht verfügbar"},400);
   const amount=Number(product.price_eur).toFixed(2);
-  const sale=await new Promise<any>((resolve,reject)=>gw.transaction.sale({amount,paymentMethodNonce:nonce,deviceData,options:{submitForSettlement:true},orderId:`ORVUNO-${profile.id}-${sku}-${Date.now()}`},(err:any,result:any)=>err?reject(err):resolve(result)));
+  const sale=await new Promise<any>((resolve,reject)=>gw.transaction.sale({amount,paymentMethodNonce:nonce,deviceData,options:{submitForSettlement:true},orderId:`ORVUNO-${profileId}-${sku}-${Date.now()}`},(err:any,result:any)=>err?reject(err):resolve(result)));
   if(!sale?.success||!sale?.transaction?.id){
    const message=sale?.message||sale?.errors?.deepErrors?.()?.map((x:any)=>x.message).join("; ")||"Zahlung wurde abgelehnt";
    return json({success:false,error:message},402);
@@ -110,7 +125,7 @@ Deno.serve(async(req:Request)=>{
   const tx=sale.transaction,status=String(tx.status||""),currency=String(tx.currencyIsoCode||"EUR").toUpperCase();
   if(currency!=="EUR") return json({success:false,error:"Zahlung wurde in einer unerwarteten Währung verarbeitet",transactionId:tx.id},500);
   if(!["submitted_for_settlement","settling","settled"].includes(status)) return json({success:false,error:"Zahlung ist noch nicht zur Gutschrift freigegeben",transactionId:tx.id,status},409);
-  const {data:fulfilled,error:fulfillError}=await sb.rpc("fulfill_braintree_purchase",{p_user_id:profile.id,p_provider_transaction_id:String(tx.id),p_sku:sku,p_amount_eur:Number(tx.amount||amount),p_currency:currency,p_status:status});
+  const {data:fulfilled,error:fulfillError}=await sb.rpc("fulfill_braintree_purchase",{p_user_id:profileId,p_provider_transaction_id:String(tx.id),p_sku:sku,p_amount_eur:Number(tx.amount||amount),p_currency:currency,p_status:status});
   if(fulfillError){console.error("fulfillment failed",fulfillError);return json({success:false,error:"Zahlung bestätigt, Gutschrift konnte nicht abgeschlossen werden. Bitte Support kontaktieren.",transactionId:tx.id},500);}
   return json({success:true,transactionId:tx.id,status,fulfillment:fulfilled});
  }catch(error){console.error(error);return json({error:error instanceof Error?error.message:"Zahlungsfehler"},500);}
