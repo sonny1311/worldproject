@@ -55,8 +55,6 @@ export class SupabaseGameStateSync {
         return (window.worldServerAccountOverview?.companies||[]).find(c=>String(c?.id)===String(company?.serverCompanyId))||null;
     }
 
-    // AuthApiClient gibt bei Save-RPCs {success:true, company:<row>} zurueck.
-    // Aeltere Aufrufer koennen weiterhin direkt eine Zeile/Array liefern.
     authoritativeCompany(result){
         if(!result)return null;
         if(result.company){const row=Array.isArray(result.company)?result.company[0]:result.company;return row&&typeof row==="object"?row:null;}
@@ -64,18 +62,11 @@ export class SupabaseGameStateSync {
         return row&&typeof row==="object"?row:null;
     }
 
-    // Gruendungsdaten nur dann separat speichern, wenn die Runtime wirklich einen
-    // gueltigen Gruendungszustand traegt. Bereits fertige Betriebe duerfen durch
-    // alte/inkompatible Clientwerte keinen 400-Fehler im Autosave erzeugen.
-    hasPersistableBusinessSetup(company){
-        if(!company?.serverCompanyId||!company.buildingState||typeof company.buildingState!=="object")return false;
-        const phase=String(company.setupPhase||"").trim().toLowerCase();
-        if(!phase)return false;
-        return !["complete","completed","ready","active","finished","done"].includes(phase);
-    }
+    // Gruendungsstatus ist ein eigener Workflow und wird NICHT mehr bei jedem Spielstands-Autosave
+    // zurueckgeschrieben. Genau dieser alte Nebenpfad erzeugte nach einem Betriebswechsel die 400er
+    // "Ungueltige Gruendungsphase" und hielt den Client in einer Fehlerschleife.
+    // Gruendungs-/Gebaeudeaenderungen werden an ihren expliziten Workflow-Stellen gespeichert.
 
-    // companies.money + money_revision sind gemeinsam die kanonische Geldquelle.
-    // Ein alter Snapshot darf niemals einen neueren Server-/Admin-/Coin-Wert zurueckdrehen.
     reconcileServerMoney(server){
         if(!server)return null;
         const columnMoney=Number(server.money),stateMoney=Number(server.game_state?.money);
@@ -128,10 +119,6 @@ export class SupabaseGameStateSync {
         window.dispatchEvent(new CustomEvent("world:game-saving",{detail:{retry,attempt:this.retryAttempt}}));
         try{
             const result=company.serverCompanyId?await this.api.saveBusinessState(company.serverCompanyId,state):await this.api.saveGameState(state);
-            if(this.hasPersistableBusinessSetup(company)){
-                try{await this.api.updateBusinessSetup(company.serverCompanyId,company.setupPhase,company.buildingState);}
-                catch(error){console.warn("Gruendungsstatus wurde beim Autosave uebersprungen",error?.message||error);}
-            }
             const authoritative=this.authoritativeCompany(result);
             if(authoritative){
                 const balance=this.reconcileServerMoney(authoritative);
@@ -151,7 +138,8 @@ export class SupabaseGameStateSync {
     async refreshBalances(){
         try{
             const overview=await this.api.accountOverview();window.worldServerAccountOverview=overview;
-            const active=window.worldPlayerCompany;if(active){const server=overview.companies?.find(c=>String(c.id)===String(active.serverCompanyId))||overview.company;if(server){const balance=this.reconcileServerMoney(server);active.money=Number(balance?.money??0);active.moneyRevision=Number(balance?.revision??0);}active.coins=Number(overview.wallet?.balance||0);}
+            const active=window.worldPlayerCompany;if(active){const server=overview.companies?.find(c=>String(c.id)===String(active.serverCompanyId))||overview.company;if(server){window.worldActiveServerCompany=server;const balance=this.reconcileServerMoney(server);active.money=Number(balance?.money??0);active.moneyRevision=Number(balance?.revision??0);}active.coins=Number(overview.wallet?.balance||0);}
+            window.worldHomeOperationsDashboard?.render?.();
         }catch(error){console.warn("Serverguthaben konnten nicht aktualisiert werden",error);}
     }
 }
