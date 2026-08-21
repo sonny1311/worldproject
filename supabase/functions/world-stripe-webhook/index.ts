@@ -37,6 +37,7 @@ async function retrieveSession(id:string,key:string){
  const response=await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(id)}`,{headers:{Authorization:`Bearer ${key}`}});
  const payload=await response.json().catch(()=>({}));
  if(!response.ok||!payload?.id) throw new Error(payload?.error?.message||"Stripe-Session konnte nicht verifiziert werden");
+ if(String(payload.id)!==id) throw new Error("Stripe-Session-ID stimmt nicht überein");
  return payload;
 }
 
@@ -63,13 +64,17 @@ Deno.serve(async(req:Request)=>{
   if(session.livemode!==false||session.object!=="checkout.session") return json({error:"Live or invalid Stripe session"},400);
   if(String(session.payment_status||"")!=="paid") return json({received:true,pending:true});
 
-  const userId=Number(session?.metadata?.user_id||session?.client_reference_id||0);
+  const metadataUserId=Number(session?.metadata?.user_id||0);
+  const referenceUserId=Number(session?.client_reference_id||0);
   const sku=String(session?.metadata?.sku||"");
   const amountCents=Number(session?.amount_total);
   const currency=String(session?.currency||"").toUpperCase();
-  const transactionId=typeof session?.payment_intent==="string"&&session.payment_intent?session.payment_intent:sessionId;
-  if(!Number.isSafeInteger(userId)||userId<=0||!sku||!Number.isInteger(amountCents)||amountCents<=0) return json({error:"Stripe session metadata is incomplete"},400);
+  const paymentIntent=typeof session?.payment_intent==="string"?session.payment_intent:"";
+  if(!Number.isSafeInteger(metadataUserId)||metadataUserId<=0||!Number.isSafeInteger(referenceUserId)||referenceUserId<=0||metadataUserId!==referenceUserId) return json({error:"Stripe session user identity is inconsistent"},400);
+  if(!sku||!Number.isInteger(amountCents)||amountCents<=0) return json({error:"Stripe session metadata is incomplete"},400);
   if(currency!=="EUR") return json({error:"Unexpected currency"},400);
+  if(paymentIntent&&!paymentIntent.startsWith("pi_")) return json({error:"Invalid Stripe payment intent"},400);
+  const transactionId=paymentIntent||sessionId;
 
   const url=env("SUPABASE_URL"),serviceKey=env("SUPABASE_SERVICE_ROLE_KEY");
   if(!url||!serviceKey) throw new Error("Supabase service configuration missing");
@@ -80,7 +85,7 @@ Deno.serve(async(req:Request)=>{
   if(amountCents!==expectedCents) return json({error:"Stripe amount does not match server catalog"},400);
 
   const {data:fulfilled,error:fulfillError}=await sb.rpc("fulfill_stripe_purchase",{
-   p_user_id:userId,
+   p_user_id:metadataUserId,
    p_provider_transaction_id:transactionId,
    p_sku:sku,
    p_amount_eur:amountCents/100,
