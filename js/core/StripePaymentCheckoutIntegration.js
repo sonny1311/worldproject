@@ -15,8 +15,76 @@ export async function beginStripePurchase({sku}={}){
 export function beginCoinPurchase(request={}){return beginStripePurchase({sku:request.packageId});}
 export function beginPremiumPurchase(plan={}){return beginStripePurchase({sku:plan.id||plan.planId});}
 
+function cleanStripeReturnUrl(){
+ try{const u=new URL(location.href);u.searchParams.delete('payment');u.searchParams.delete('session_id');history.replaceState(history.state,'',u.pathname+(u.search?u.search:'')+u.hash);}catch(_e){}
+}
+function emitReturn(detail){
+ try{window.dispatchEvent(new CustomEvent('world:payment-return',{detail}));}catch(_e){}
+}
+function showPaymentNotice(message,kind='info'){
+ if(window.worldNotifications?.show){window.worldNotifications.show(message,{kind});return;}
+ if(!document?.body)return;
+ const box=document.createElement('div');
+ box.setAttribute('role','status');
+ box.textContent=message;
+ box.style.cssText='position:fixed;right:18px;bottom:18px;z-index:2147483647;max-width:420px;padding:12px 16px;border-radius:10px;background:#172033;color:#fff;box-shadow:0 8px 28px rgba(0,0,0,.35);font:600 14px/1.4 system-ui,sans-serif';
+ document.body.appendChild(box);
+ setTimeout(()=>box.remove(),6500);
+}
+async function waitForPaymentApi(){
+ for(let i=0;i<24;i++){
+  if(window.worldAccounts?.authApi)return window.worldAccounts.authApi;
+  await new Promise(resolve=>setTimeout(resolve,250));
+ }
+ throw new Error('Zahlungssystem ist noch nicht bereit');
+}
+
+export async function verifyStripeReturn(){
+ let url;
+ try{url=new URL(location.href);}catch(_e){return null;}
+ const state=url.searchParams.get('payment');
+ if(state!=='stripe_success'&&state!=='stripe_cancelled')return null;
+
+ if(state==='stripe_cancelled'){
+  cleanStripeReturnUrl();
+  const detail={provider:'stripe',environment:'test',status:'cancelled',paid:false};
+  emitReturn(detail);
+  showPaymentNotice('Stripe-Zahlung abgebrochen. Es wurde nichts gekauft.','info');
+  return detail;
+ }
+
+ const sessionId=String(url.searchParams.get('session_id')||'');
+ if(!sessionId.startsWith('cs_test_')){
+  cleanStripeReturnUrl();
+  const detail={provider:'stripe',environment:'test',status:'invalid_return',paid:false};
+  emitReturn(detail);
+  showPaymentNotice('Stripe-Rückkehr konnte nicht sicher geprüft werden. Es wurde clientseitig nichts gutgeschrieben.','error');
+  return detail;
+ }
+
+ try{
+  await waitForPaymentApi();
+  const result=await edge('stripe_status',{sessionId});
+  cleanStripeReturnUrl();
+  const paid=result?.environment==='test'&&result?.sessionId===sessionId&&result?.paid===true;
+  const detail={provider:'stripe',environment:'test',status:paid?'paid':'pending',paid,sessionId,sku:result?.sku||'',checkoutStatus:result?.checkoutStatus||'',paymentStatus:result?.paymentStatus||''};
+  emitReturn(detail);
+  if(paid)showPaymentNotice('Stripe-Zahlung bestätigt. Die serverseitige Gutschrift wird über den sicheren Zahlungs-Webhook abgeschlossen.','success');
+  else showPaymentNotice('Stripe-Zahlung ist noch nicht als bezahlt bestätigt. Es wurde noch nichts gutgeschrieben.','info');
+  return detail;
+ }catch(error){
+  cleanStripeReturnUrl();
+  const detail={provider:'stripe',environment:'test',status:'verification_failed',paid:false,sessionId,error:error instanceof Error?error.message:String(error)};
+  emitReturn(detail);
+  showPaymentNotice('Stripe-Zahlung konnte nicht sicher bestätigt werden. Es wurde clientseitig nichts gutgeschrieben.','error');
+  return detail;
+ }
+}
+
 function install(){
  window.worldPaymentProviders??={};
- window.worldPaymentProviders.stripe={id:'stripe',label:'Stripe (Test)',environment:'test',beginCoinPurchase,beginPremiumPurchase,begin:beginStripePurchase};
+ window.worldPaymentProviders.stripe={id:'stripe',label:'Stripe (Test)',environment:'test',beginCoinPurchase,beginPremiumPurchase,begin:beginStripePurchase,verifyReturn:verifyStripeReturn};
+ const run=()=>verifyStripeReturn().catch(()=>{});
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else queueMicrotask(run);
 }
 if(typeof window!=='undefined')install();
