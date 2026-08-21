@@ -31,17 +31,25 @@ async function retrieveStripeCheckoutSession(sessionId:string){
  return payload;
 }
 
+async function expireStripeCheckoutSession(sessionId:string){
+ try{
+  await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(sessionId)}/expire`,{method:"POST",headers:{Authorization:`Bearer ${stripeTestKey()}`}});
+ }catch(error){console.warn("Verwaiste Stripe-Testsession konnte nicht automatisch abgelaufen werden",error instanceof Error?error.message:"unknown");}
+}
+
 async function createStripeCheckoutSession(product:any,profileId:number){
  const key=stripeTestKey();
  const base=env("STRIPE_CHECKOUT_BASE_URL").replace(/\/$/,"");
  if(!/^https:\/\//i.test(base)) throw new Error("STRIPE_CHECKOUT_BASE_URL muss auf eine HTTPS-Spieladresse zeigen");
  const sku=String(product.sku),label=String(product.label||sku),amountCents=Math.round(Number(product.price_eur)*100);
  if(!sku||!Number.isInteger(amountCents)||amountCents<=0) throw new Error("Ungültiges Stripe-Kaufprodukt");
+ const expiresAt=Math.floor(Date.now()/1000)+1800;
  const form=new URLSearchParams();
  form.set("mode","payment");
  form.set("success_url",`${base}/?payment=stripe_success&session_id={CHECKOUT_SESSION_ID}`);
  form.set("cancel_url",`${base}/?payment=stripe_cancelled`);
  form.set("client_reference_id",String(profileId));
+ form.set("expires_at",String(expiresAt));
  form.set("line_items[0][quantity]","1");
  form.set("line_items[0][price_data][currency]","eur");
  form.set("line_items[0][price_data][unit_amount]",String(amountCents));
@@ -54,7 +62,7 @@ async function createStripeCheckoutSession(product:any,profileId:number){
  const payload=await response.json().catch(()=>({}));
  if(!response.ok||!payload?.id||!payload?.url) throw new Error(payload?.error?.message||"Stripe Checkout konnte nicht erstellt werden");
  if(payload.livemode===true||!String(payload.id).startsWith("cs_test_")) throw new Error("Stripe hat keine Test-Checkout-Session zurückgegeben");
- return {sessionId:String(payload.id),url:String(payload.url)};
+ return {sessionId:String(payload.id),url:String(payload.url),expiresAt:Number(payload.expires_at||expiresAt)};
 }
 
 Deno.serve(async(req:Request)=>{
@@ -76,10 +84,16 @@ Deno.serve(async(req:Request)=>{
   if(action==="stripe_checkout"){
    const sku=String(body?.sku||"");
    if(!sku) return json({error:"Produkt fehlt"},400);
-   const {data:product,error:productError}=await sb.from("store_products").select("sku,label,price_eur,active").eq("sku",sku).eq("active",true).maybeSingle();
+   const {data:product,error:productError}=await sb.from("store_products").select("sku,label,price_eur,active,kind,coin_amount,premium_plan,duration_days").eq("sku",sku).eq("active",true).maybeSingle();
    if(productError||!product) return json({error:"Produkt ist nicht verfügbar"},400);
+   const kind=String(product.kind||"");
+   if(kind==="coins"&&Number(product.coin_amount)<=0) return json({error:"Coin-Paket ist ungültig"},409);
+   if(kind==="premium"&&(!String(product.premium_plan||"")||Number(product.duration_days)<=0)) return json({error:"Premium-Paket ist ungültig"},409);
+   if(!["coins","premium"].includes(kind)) return json({error:"Produkttyp ist nicht kaufbar"},409);
    const session=await createStripeCheckoutSession(product,profileId);
-   return json({success:true,provider:"stripe",environment:"test",...session});
+   const {error:intentError}=await sb.from("payment_checkout_intents").insert({provider:"stripe",provider_session_id:session.sessionId,user_id:profileId,sku:String(product.sku),amount_eur:Number(product.price_eur),currency:"EUR",kind,coin_amount:kind==="coins"?Number(product.coin_amount):null,premium_plan:kind==="premium"?String(product.premium_plan):null,duration_days:kind==="premium"?Number(product.duration_days):null,expires_at:new Date(session.expiresAt*1000).toISOString()});
+   if(intentError){await expireStripeCheckoutSession(session.sessionId);console.error("Stripe checkout intent snapshot failed",intentError.code);return json({error:"Stripe Checkout konnte nicht sicher vorbereitet werden"},500);}
+   return json({success:true,provider:"stripe",environment:"test",sessionId:session.sessionId,url:session.url,expiresAt:session.expiresAt});
   }
 
   if(action==="stripe_status"){
@@ -91,14 +105,14 @@ Deno.serve(async(req:Request)=>{
    const amountCents=Number(session?.amount_total),currency=String(session?.currency||"").toUpperCase();
    const paymentIntent=typeof session?.payment_intent==="string"?session.payment_intent:"";
    if(!sku||!Number.isInteger(amountCents)||amountCents<=0||currency!=="EUR") return json({error:"Stripe-Session enthält kein gültiges Kaufprodukt"},409);
-   const {data:product,error:productError}=await sb.from("store_products").select("sku,price_eur,active").eq("sku",sku).eq("active",true).maybeSingle();
-   if(productError||!product) return json({error:"Produkt ist nicht mehr verfügbar"},409);
-   const expectedCents=Math.round(Number(product.price_eur)*100);
-   if(!Number.isInteger(expectedCents)||expectedCents<=0||amountCents!==expectedCents) return json({error:"Stripe-Betrag stimmt nicht mit dem Serverkatalog überein"},409);
+   const {data:intent,error:intentError}=await sb.from("payment_checkout_intents").select("sku,amount_eur,currency,fulfilled_at").eq("provider","stripe").eq("provider_session_id",sessionId).eq("user_id",profileId).maybeSingle();
+   if(intentError||!intent) return json({error:"Stripe-Checkout ist ORVUNO nicht bekannt"},409);
+   const expectedCents=Math.round(Number(intent.amount_eur)*100);
+   if(String(intent.sku)!==sku||String(intent.currency).toUpperCase()!==currency||!Number.isInteger(expectedCents)||amountCents!==expectedCents) return json({error:"Stripe-Session stimmt nicht mit dem gespeicherten Kauf überein"},409);
    const checkoutStatus=String(session?.status||""),paymentStatus=String(session?.payment_status||"");
    const paid=checkoutStatus==="complete"&&paymentStatus==="paid";
-   let fulfilled=false;
-   if(paid&&paymentIntent.startsWith("pi_")){
+   let fulfilled=!!intent.fulfilled_at;
+   if(paid&&!fulfilled&&paymentIntent.startsWith("pi_")){
     const {data:purchase,error:purchaseError}=await sb.from("payment_purchases").select("id").eq("user_id",profileId).eq("provider","stripe").eq("provider_transaction_id",paymentIntent).maybeSingle();
     if(purchaseError) console.warn("Stripe fulfillment status lookup failed",purchaseError.code);
     fulfilled=!!purchase;
