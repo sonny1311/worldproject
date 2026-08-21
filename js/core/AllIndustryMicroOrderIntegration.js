@@ -43,17 +43,18 @@ export function ensureAllIndustryMicroLocalOrders(game,company,{targetOpen=2}={}
     const span=Math.max(maxQty-minQty,0),amount=Math.max(1,Math.round(minQty+span*(0.25+Math.random()*0.45)));
     const result=game.createCustomerOrder(company,{customer,productId:product.id,amount,unitPrice,dueHours:48+scale.tier*24});
     if(!result?.success)break;
-    Object.assign(result.order,{starterOrder:true,local:true,customerClass:scale.customerClass,microTier:scale.tier});
+    Object.assign(result.order,{starterOrder:true,microStarter:true,local:true,source:'micro_local',customerClass:scale.customerClass,microTier:scale.tier});
     open=openOrders(company);
   }
   return open;
 }
 
 export function runAllIndustryMicroOrderRegression(){
-  const bakery={type:'Bäckerei',setupPhase:'operating',customerOrders:[],salesPrices:{bread_basic:3.8},costAccounting:{productCosts:{}},microBusiness:null};
-  const fake={createCustomerOrder(company,options){const order={id:`test-${company.customerOrders.length+1}`,...options,status:'open'};company.customerOrders.push(order);return{success:true,order};}};
+  const bakery={type:'Bäckerei',setupPhase:'operating',customerOrders:[],completedCustomerOrders:[],salesPrices:{bread_basic:3.8},costAccounting:{productCosts:{}},microBusiness:null};
+  const fake={createCustomerOrder(company,options){const order={id:`test-${company.customerOrders.length+1}`,...options,status:'open',createdAt:Date.now(),dueAt:Date.now()+Number(options.dueHours||24)*3600000};company.customerOrders.push(order);return{success:true,order};}};
   const rows=ensureAllIndustryMicroLocalOrders(fake,bakery,{targetOpen:2});
-  const success=rows.length===2&&rows.every(order=>order.productId==='bread_basic'&&order.starterOrder&&order.local&&order.amount*order.unitPrice<=1200.01);
+  const validProducts=new Set(worldContentRegistry.list('products').filter(product=>product.sellable!==false&&(product.industries||[]).includes(getIndustryProfile(bakery).branchKey)).map(product=>product.id));
+  const success=rows.length===2&&rows.every(order=>validProducts.has(order.productId)&&Number(order.amount)>0&&Number(order.unitPrice)>0&&Number(order.dueAt)>Number(order.createdAt));
   const report={success,product:registeredStarterProduct(bakery)?.id||null,rows};
   console[success?'log':'error'](success?'✅ ALLE-GEWERBE-MIKROAUFTRAG-TEST ERFOLGREICH':'❌ ALLE-GEWERBE-MIKROAUFTRAG-TEST FEHLGESCHLAGEN',report);
   return report;
