@@ -20,6 +20,16 @@ function stripeTestKey(){
  return key;
 }
 
+async function retrieveStripeCheckoutSession(sessionId:string){
+ const id=String(sessionId||"").trim();
+ if(!id.startsWith("cs_test_")||id.length>255) throw new Error("Ungültige Stripe-Testsession");
+ const response=await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(id)}`,{headers:{Authorization:`Bearer ${stripeTestKey()}`}});
+ const payload=await response.json().catch(()=>({}));
+ if(!response.ok||!payload?.id) throw new Error(payload?.error?.message||"Stripe-Checkoutstatus konnte nicht geprüft werden");
+ if(payload.livemode===true||String(payload.id)!==id||!String(payload.id).startsWith("cs_test_")) throw new Error("Stripe lieferte keine gültige Testsession");
+ return payload;
+}
+
 async function createStripeCheckoutSession(product:any,profileId:number){
  const key=stripeTestKey();
  const base=env("STRIPE_CHECKOUT_BASE_URL").replace(/\/$/,"");
@@ -42,7 +52,7 @@ async function createStripeCheckoutSession(product:any,profileId:number){
  const response=await fetch("https://api.stripe.com/v1/checkout/sessions",{method:"POST",headers:{Authorization:`Bearer ${key}`,"Content-Type":"application/x-www-form-urlencoded"},body:form});
  const payload=await response.json().catch(()=>({}));
  if(!response.ok||!payload?.id||!payload?.url) throw new Error(payload?.error?.message||"Stripe Checkout konnte nicht erstellt werden");
- if(!String(payload.id).startsWith("cs_test_")) throw new Error("Stripe hat keine Test-Checkout-Session zurückgegeben");
+ if(payload.livemode===true||!String(payload.id).startsWith("cs_test_")) throw new Error("Stripe hat keine Test-Checkout-Session zurückgegeben");
  return {sessionId:String(payload.id),url:String(payload.url)};
 }
 
@@ -67,6 +77,17 @@ Deno.serve(async(req:Request)=>{
    if(productError||!product) return json({error:"Produkt ist nicht verfügbar"},400);
    const session=await createStripeCheckoutSession(product,Number(profile.id));
    return json({success:true,provider:"stripe",environment:"test",...session});
+  }
+
+  if(action==="stripe_status"){
+   const sessionId=String(body?.sessionId||"").trim();
+   const session=await retrieveStripeCheckoutSession(sessionId);
+   const expectedUser=String(profile.id),metadataUser=String(session?.metadata?.user_id||""),referenceUser=String(session?.client_reference_id||"");
+   if(!metadataUser||!referenceUser||metadataUser!==expectedUser||referenceUser!==expectedUser) return json({error:"Stripe-Session gehört nicht zu diesem Spielerkonto"},403);
+   const sku=String(session?.metadata?.sku||"");
+   if(!sku) return json({error:"Stripe-Session enthält kein Kaufprodukt"},409);
+   const checkoutStatus=String(session?.status||""),paymentStatus=String(session?.payment_status||"");
+   return json({success:true,provider:"stripe",environment:"test",sessionId:String(session.id),checkoutStatus,paymentStatus,sku,paid:checkoutStatus==="complete"&&paymentStatus==="paid"});
   }
 
   const gw=gateway();
