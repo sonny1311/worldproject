@@ -27,6 +27,8 @@ begin
    raise exception 'Service role required';
  end if;
  if v_provider not in ('braintree','stripe') then raise exception 'Unsupported provider'; end if;
+ if p_user_id is null or p_user_id<=0 then raise exception 'Invalid user'; end if;
+ if not exists(select 1 from public.users where id=p_user_id) then raise exception 'Unknown user'; end if;
  if coalesce(p_provider_transaction_id,'')='' then raise exception 'Missing transaction id'; end if;
  if upper(coalesce(p_currency,'')) <> 'EUR' then raise exception 'Invalid currency'; end if;
  if v_provider='braintree' and v_status not in ('submitted_for_settlement','settling','settled') then
@@ -41,8 +43,10 @@ begin
  where sku=p_sku and active=true
  for share;
  if not found then raise exception 'Unknown product'; end if;
- if round(p_amount_eur,2) <> round(v_product.price_eur,2) then raise exception 'Amount mismatch'; end if;
+ if p_amount_eur is null or p_amount_eur<=0 or round(p_amount_eur,2) <> round(v_product.price_eur,2) then raise exception 'Amount mismatch'; end if;
  if v_product.kind not in ('coins','premium') then raise exception 'Unsupported product kind'; end if;
+ if v_product.kind='coins' and (v_product.coin_amount is null or v_product.coin_amount<=0) then raise exception 'Invalid coin product'; end if;
+ if v_product.kind='premium' and (coalesce(v_product.premium_plan,'')='' or v_product.duration_days is null or v_product.duration_days<=0) then raise exception 'Invalid premium product'; end if;
 
  insert into public.payment_purchases(user_id,provider,provider_transaction_id,sku,amount_eur,currency,status)
  values(p_user_id,v_provider,p_provider_transaction_id,p_sku,round(p_amount_eur,2),'EUR',v_status)
@@ -72,6 +76,7 @@ begin
      premium_auto_renew=false
  where id=p_user_id
  returning premium_until into v_until;
+ if not found then raise exception 'Premium target user disappeared'; end if;
 
  return jsonb_build_object('success',true,'kind','premium','plan',v_product.premium_plan,'premiumUntil',v_until,'transactionId',p_provider_transaction_id,'provider',v_provider);
 end;
