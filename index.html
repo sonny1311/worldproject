@@ -2,10 +2,16 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#07101d">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="application-name" content="ORVUNO">
   <title>ORVUNO</title>
+  <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/app-shell.css">
   <script>
     (()=>{
       let shown=false;
@@ -32,6 +38,7 @@
 </head>
 <body>
   <div id="worldApp"></div>
+  <script type="module" src="js/core/AppPlatformBridge.js"></script>
   <script type="module" src="js/core/SingleBottlingSlotIntegration.js"></script>
   <script type="module" src="js/bootstrap.js"></script>
   <script type="module" src="js/core/BusinessSwitchPaymentGuardIntegration.js"></script>
