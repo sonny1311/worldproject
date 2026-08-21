@@ -25,7 +25,7 @@ export function runOperationalSupplyChainRegressionTest(){
  check("06 Bestellung besitzt stabile ETA",()=>{assert(Number.isFinite(order.eta)&&order.eta>order.createdAt,"ETA fehlt");});
  check("07 Lieferung wechselt zu unterwegs",()=>{orders.advance(order.createdAt+1);assert(order.status==="in_transit","Status wurde nicht unterwegs");});
  check("08 Lieferung kommt nach ETA an",()=>{orders.advance(order.eta);assert(order.status==="arrived","Status wurde nicht angekommen");});
- // 750 Einheiten: 500 passen hinein, weitere 251 muessen die Kapazitaet bewusst ueberschreiten.
+ // 750 Einheiten Kapazitaet: Nach 500 Einheiten Bestand passen noch exakt 250 hinein; 251 muessen scheitern.
  const warehouse=new WarehouseSystem({raw:750,packaging:1000,finished:1000,cold:1000});
  check("09 Wareneingang bucht exakt einmal",()=>{warehouse.receive(order);assert(warehouse.stock.raw.malt===500&&order.status==="stored","Wareneingang falsch");});
  check("10 doppelter Wareneingang wird blockiert",()=>{expectThrow(()=>warehouse.receive(order),"Doppelter Wareneingang wurde akzeptiert");assert(warehouse.stock.raw.malt===500,"Doppelter Wareneingang hat Bestand veraendert");});
