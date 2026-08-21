@@ -33,7 +33,7 @@ async function verifySignature(raw:string,header:string,secret:string){
 }
 
 async function retrieveSession(id:string,key:string){
- if(!id.startsWith("cs_test_")) throw new Error("Keine Stripe-Testsession");
+ if(!id.startsWith("cs_test_")||id.length>255) throw new Error("Keine gültige Stripe-Testsession");
  const response=await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(id)}`,{headers:{Authorization:`Bearer ${key}`}});
  const payload=await response.json().catch(()=>({}));
  if(!response.ok||!payload?.id) throw new Error(payload?.error?.message||"Stripe-Session konnte nicht verifiziert werden");
@@ -62,6 +62,7 @@ Deno.serve(async(req:Request)=>{
   const stripeKey=stripeTestKey();
   const session=await retrieveSession(sessionId,stripeKey);
   if(session.livemode!==false||session.object!=="checkout.session") return json({error:"Live or invalid Stripe session"},400);
+  if(String(session.status||"")!=="complete") return json({received:true,pending:true});
   if(String(session.payment_status||"")!=="paid") return json({received:true,pending:true});
 
   const metadataUserId=Number(session?.metadata?.user_id||0);
@@ -74,25 +75,24 @@ Deno.serve(async(req:Request)=>{
   if(!sku||!Number.isInteger(amountCents)||amountCents<=0) return json({error:"Stripe session metadata is incomplete"},400);
   if(currency!=="EUR") return json({error:"Unexpected currency"},400);
   if(!paymentIntent.startsWith("pi_")) return json({error:"Missing or invalid Stripe payment intent"},400);
-  const transactionId=paymentIntent;
 
   const url=env("SUPABASE_URL"),serviceKey=env("SUPABASE_SERVICE_ROLE_KEY");
   if(!url||!serviceKey) throw new Error("Supabase service configuration missing");
   const sb=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}});
-  const {data:product,error:productError}=await sb.from("store_products").select("sku,price_eur,active").eq("sku",sku).eq("active",true).maybeSingle();
-  if(productError||!product) return json({error:"Product is no longer available"},400);
-  const expectedCents=Math.round(Number(product.price_eur)*100);
-  if(amountCents!==expectedCents) return json({error:"Stripe amount does not match server catalog"},400);
+  const {data:intent,error:intentError}=await sb.from("payment_checkout_intents").select("user_id,sku,amount_eur,currency,kind,coin_amount,premium_plan,duration_days,fulfilled_at").eq("provider","stripe").eq("provider_session_id",sessionId).maybeSingle();
+  if(intentError||!intent) return json({error:"Unknown Stripe checkout intent"},400);
+  const expectedCents=Math.round(Number(intent.amount_eur)*100);
+  if(Number(intent.user_id)!==metadataUserId||String(intent.sku)!==sku||String(intent.currency).toUpperCase()!==currency||!Number.isInteger(expectedCents)||expectedCents!==amountCents) return json({error:"Stripe session does not match stored checkout intent"},400);
 
-  const {data:fulfilled,error:fulfillError}=await sb.rpc("fulfill_stripe_purchase",{
+  const {data:fulfilled,error:fulfillError}=await sb.rpc("fulfill_stripe_checkout_intent",{
    p_user_id:metadataUserId,
-   p_provider_transaction_id:transactionId,
-   p_sku:sku,
+   p_provider_session_id:sessionId,
+   p_provider_transaction_id:paymentIntent,
    p_amount_eur:amountCents/100,
    p_currency:currency,
    p_status:"paid"
   });
-  if(fulfillError){console.error("stripe fulfillment failed",{eventId,transactionId,code:fulfillError.code});return json({error:"Fulfillment failed"},500);}
-  return json({received:true,fulfilled:true,transactionId,result:fulfilled});
+  if(fulfillError){console.error("stripe fulfillment failed",{eventId,sessionId,transactionId:paymentIntent,code:fulfillError.code});return json({error:"Fulfillment failed"},500);}
+  return json({received:true,fulfilled:true,transactionId:paymentIntent,result:fulfilled});
  }catch(error){console.error("stripe webhook error",error instanceof Error?error.message:"unknown");return json({error:"Webhook processing failed"},500);}
 });
