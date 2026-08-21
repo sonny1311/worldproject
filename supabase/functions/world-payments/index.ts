@@ -10,7 +10,8 @@ function gateway(){
  const merchantId=env("BRAINTREE_MERCHANT_ID"),publicKey=env("BRAINTREE_PUBLIC_KEY"),privateKey=env("BRAINTREE_PRIVATE_KEY");
  if(!merchantId||!publicKey||!privateKey) throw new Error("Braintree ist serverseitig noch nicht konfiguriert");
  const mode=env("BRAINTREE_ENVIRONMENT").toLowerCase();
- return new braintree.BraintreeGateway({environment:mode==="production"?braintree.Environment.Production:braintree.Environment.Sandbox,merchantId,publicKey,privateKey});
+ if(mode&&mode!=="sandbox") throw new Error("ORVUNO akzeptiert derzeit ausschließlich Braintree-Sandboxzahlungen");
+ return new braintree.BraintreeGateway({environment:braintree.Environment.Sandbox,merchantId,publicKey,privateKey});
 }
 
 function stripeTestKey(){
@@ -93,7 +94,7 @@ Deno.serve(async(req:Request)=>{
   const gw=gateway();
   if(action==="client_token"){
    const token=await new Promise<string>((resolve,reject)=>gw.clientToken.generate({},(err:any,res:any)=>err?reject(err):resolve(res.clientToken)));
-   return json({success:true,clientToken:token,environment:env("BRAINTREE_ENVIRONMENT").toLowerCase()==="production"?"production":"sandbox"});
+   return json({success:true,clientToken:token,environment:"sandbox"});
   }
   if(action!=="checkout") return json({error:"Unbekannte Zahlungsaktion"},400);
   const sku=String(body?.sku||""),nonce=String(body?.paymentMethodNonce||""),deviceData=body?.deviceData?String(body.deviceData):undefined;
