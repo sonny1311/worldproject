@@ -59,10 +59,10 @@ function decorate(dialog,row,company,job,now=Date.now()){
   let box=row.querySelector('[data-production-clarity]');
   if(!box){
     box=document.createElement('div');box.dataset.productionClarity='1';box.dataset.productionClarityId=String(job.id);
-    Object.assign(box.style,{marginTop:'9px',padding:'9px 10px',borderRadius:'8px',border:'1px solid #d4d4d4',background:'#f7f7f7'});
+    Object.assign(box.style,{marginTop:'9px',padding:'9px 10px',borderRadius:'8px',border:'1px solid #334155',background:'#0b1220',color:'#f8fafc'});
     const title=document.createElement('div');title.dataset.productionClarityTitle='1';title.style.fontWeight='800';
-    const detail=document.createElement('div');detail.dataset.productionClarityDetail='1';Object.assign(detail.style,{marginTop:'4px',fontSize:'13px'});
-    const track=document.createElement('div');Object.assign(track.style,{height:'8px',marginTop:'7px',background:'#e3e3e3',borderRadius:'999px',overflow:'hidden'});
+    const detail=document.createElement('div');detail.dataset.productionClarityDetail='1';Object.assign(detail.style,{marginTop:'4px',fontSize:'13px',color:'#cbd5e1'});
+    const track=document.createElement('div');Object.assign(track.style,{height:'8px',marginTop:'7px',background:'#1e293b',borderRadius:'999px',overflow:'hidden'});
     const fill=document.createElement('div');fill.dataset.productionClarityProgress='1';Object.assign(fill.style,{height:'100%',width:'0%',background:'currentColor',opacity:'.65',transition:'width .25s linear'});track.append(fill);box.append(title,detail,track);row.append(box);
   }
   const info=describe(dialog,company,job,now),title=box.querySelector('[data-production-clarity-title]'),detail=box.querySelector('[data-production-clarity-detail]'),fill=box.querySelector('[data-production-clarity-progress]');
