@@ -6,6 +6,7 @@ VALUES
  ('premium_3m','premium','3 Monate Premium',9.99,NULL,'premium_basic',90,TRUE),
  ('premium_6m','premium','6 Monate Premium',17.99,NULL,'premium_basic',180,TRUE),
  ('premium_12m','premium','12 Monate Premium',29.99,NULL,'premium_basic',365,TRUE),
+ ('coins_50_smoke','coins','50 Coins - Zahlungstest',0.50,50,NULL,NULL,TRUE),
  ('coins_100','coins','100 Coins',0.99,100,NULL,NULL,TRUE),
  ('coins_550','coins','550 Coins',4.99,550,NULL,NULL,TRUE),
  ('coins_1200','coins','1.200 Coins',9.99,1200,NULL,NULL,TRUE),
