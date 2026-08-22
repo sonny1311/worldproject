@@ -14,31 +14,33 @@ function gateway(){
  return new braintree.BraintreeGateway({environment:braintree.Environment.Sandbox,merchantId,publicKey,privateKey});
 }
 
-function stripeTestKey(){
+function stripeConfig(){
  const key=env("STRIPE_SECRET_KEY");
  if(!key) throw new Error("Stripe ist serverseitig noch nicht konfiguriert");
- if(!key.startsWith("sk_test_")) throw new Error("ORVUNO akzeptiert derzeit ausschließlich Stripe-Testschlüssel");
- return key;
+ if(key.startsWith("sk_live_")) return {key,environment:"live",sessionPrefix:"cs_live_"};
+ if(key.startsWith("sk_test_")) return {key,environment:"test",sessionPrefix:"cs_test_"};
+ throw new Error("STRIPE_SECRET_KEY ist kein gültiger Stripe-Schlüssel");
 }
 
 async function retrieveStripeCheckoutSession(sessionId:string){
  const id=String(sessionId||"").trim();
- if(!id.startsWith("cs_test_")||id.length>255) throw new Error("Ungültige Stripe-Testsession");
- const response=await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(id)}`,{headers:{Authorization:`Bearer ${stripeTestKey()}`}});
+ const stripe=stripeConfig();
+ if(!id.startsWith(stripe.sessionPrefix)||id.length>255) throw new Error("Ungültige Stripe-Session");
+ const response=await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(id)}`,{headers:{Authorization:`Bearer ${stripe.key}`}});
  const payload=await response.json().catch(()=>({}));
  if(!response.ok||!payload?.id) throw new Error(payload?.error?.message||"Stripe-Checkoutstatus konnte nicht geprüft werden");
- if(payload.livemode===true||String(payload.id)!==id||!String(payload.id).startsWith("cs_test_")) throw new Error("Stripe lieferte keine gültige Testsession");
- return payload;
+ if(payload.livemode!==(stripe.environment==="live")||String(payload.id)!==id||!String(payload.id).startsWith(stripe.sessionPrefix)) throw new Error("Stripe lieferte keine gültige Session für die konfigurierte Umgebung");
+ return {...payload,orvuno_environment:stripe.environment};
 }
 
 async function expireStripeCheckoutSession(sessionId:string){
  try{
-  await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(sessionId)}/expire`,{method:"POST",headers:{Authorization:`Bearer ${stripeTestKey()}`}});
+  await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(sessionId)}/expire`,{method:"POST",headers:{Authorization:`Bearer ${stripeConfig().key}`}});
  }catch(error){console.warn("Verwaiste Stripe-Testsession konnte nicht automatisch abgelaufen werden",error instanceof Error?error.message:"unknown");}
 }
 
 async function createStripeCheckoutSession(product:any,profileId:number){
- const key=stripeTestKey();
+ const stripe=stripeConfig(),key=stripe.key;
  const base=env("STRIPE_CHECKOUT_BASE_URL").replace(/\/$/,"");
  if(!/^https:\/\//i.test(base)) throw new Error("STRIPE_CHECKOUT_BASE_URL muss auf eine HTTPS-Spieladresse zeigen");
  const sku=String(product.sku),label=String(product.label||sku),amountCents=Math.round(Number(product.price_eur)*100);
@@ -61,8 +63,8 @@ async function createStripeCheckoutSession(product:any,profileId:number){
  const response=await fetch("https://api.stripe.com/v1/checkout/sessions",{method:"POST",headers:{Authorization:`Bearer ${key}`,"Content-Type":"application/x-www-form-urlencoded"},body:form});
  const payload=await response.json().catch(()=>({}));
  if(!response.ok||!payload?.id||!payload?.url) throw new Error(payload?.error?.message||"Stripe Checkout konnte nicht erstellt werden");
- if(payload.livemode===true||!String(payload.id).startsWith("cs_test_")) throw new Error("Stripe hat keine Test-Checkout-Session zurückgegeben");
- return {sessionId:String(payload.id),url:String(payload.url),expiresAt:Number(payload.expires_at||expiresAt)};
+ if(payload.livemode!==(stripe.environment==="live")||!String(payload.id).startsWith(stripe.sessionPrefix)) throw new Error("Stripe hat eine Checkout-Session aus der falschen Umgebung zurückgegeben");
+ return {sessionId:String(payload.id),url:String(payload.url),expiresAt:Number(payload.expires_at||expiresAt),environment:stripe.environment};
 }
 
 Deno.serve(async(req:Request)=>{
@@ -93,7 +95,7 @@ Deno.serve(async(req:Request)=>{
    const session=await createStripeCheckoutSession(product,profileId);
    const {error:intentError}=await sb.from("payment_checkout_intents").insert({provider:"stripe",provider_session_id:session.sessionId,user_id:profileId,sku:String(product.sku),amount_eur:Number(product.price_eur),currency:"EUR",kind,coin_amount:kind==="coins"?Number(product.coin_amount):null,premium_plan:kind==="premium"?String(product.premium_plan):null,duration_days:kind==="premium"?Number(product.duration_days):null,expires_at:new Date(session.expiresAt*1000).toISOString()});
    if(intentError){await expireStripeCheckoutSession(session.sessionId);console.error("Stripe checkout intent snapshot failed",intentError.code);return json({error:"Stripe Checkout konnte nicht sicher vorbereitet werden"},500);}
-   return json({success:true,provider:"stripe",environment:"test",sessionId:session.sessionId,url:session.url,expiresAt:session.expiresAt});
+   return json({success:true,provider:"stripe",environment:session.environment,sessionId:session.sessionId,url:session.url,expiresAt:session.expiresAt});
   }
 
   if(action==="stripe_status"){
@@ -117,7 +119,7 @@ Deno.serve(async(req:Request)=>{
     if(purchaseError) console.warn("Stripe fulfillment status lookup failed",purchaseError.code);
     fulfilled=!!purchase;
    }
-   return json({success:true,provider:"stripe",environment:"test",sessionId:String(session.id),checkoutStatus,paymentStatus,sku,paid,fulfilled});
+   return json({success:true,provider:"stripe",environment:String(session.orvuno_environment),sessionId:String(session.id),checkoutStatus,paymentStatus,sku,paid,fulfilled});
   }
 
   const gw=gateway();
