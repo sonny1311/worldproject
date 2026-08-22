@@ -1,1 +1,1 @@
-html,body{margin:0;height:100%;overflow:hidden}#gameCanvas{display:block;width:100vw;height:100vh;background:#87CEEB;}
+html,body{margin:0;min-height:100%;height:auto;overflow-x:hidden;overflow-y:auto}#worldApp{min-height:100vh;overflow:visible}#gameCanvas{display:block;width:100vw;height:100vh;background:#87CEEB;}
