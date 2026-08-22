@@ -3,7 +3,11 @@
 -- Vollstaendige, aber sichere User-Verwaltung fuer die In-Game-Admin-Konsole.
 -- Keine Passwoerter, Session-Tokens oder sonstigen Auth-Secrets werden exponiert.
 
-create or replace function public.admin_list_players()
+-- admin_list_players() existiert bereits mit einer kleineren Rueckgabesignatur.
+-- PostgreSQL erlaubt keinen Return-Type-Wechsel per CREATE OR REPLACE.
+drop function if exists public.admin_list_players();
+
+create function public.admin_list_players()
 returns table(
   id bigint,
   public_id uuid,
