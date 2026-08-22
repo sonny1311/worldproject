@@ -9,3 +9,12 @@ js/config.local.js
 server/.env
 server/.env.*
 !server/.env.example
+
+# Android / Bubblewrap signing secrets and build output
+*.jks
+*.keystore
+android/.gradle/
+android/build/
+android/app/build/
+android/*.aab
+android/*.apk
