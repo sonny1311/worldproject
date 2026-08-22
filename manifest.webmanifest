@@ -11,5 +11,19 @@
   "background_color": "#07101d",
   "theme_color": "#07101d",
   "categories": ["games", "simulation"],
+  "icons": [
+    {
+      "src": "/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/app-icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
   "prefer_related_applications": false
 }
