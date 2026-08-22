@@ -5,11 +5,12 @@ const env=(name:string)=>Deno.env.get(name)?.trim()||"";
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{"Content-Type":"application/json"}});
 const encoder=new TextEncoder();
 
-function stripeTestKey(){
+function stripeConfig(){
  const key=env("STRIPE_SECRET_KEY");
  if(!key) throw new Error("STRIPE_SECRET_KEY fehlt");
- if(!key.startsWith("sk_test_")) throw new Error("Nur Stripe-Testmodus ist erlaubt");
- return key;
+ if(key.startsWith("sk_live_")) return {key,live:true,sessionPrefix:"cs_live_"};
+ if(key.startsWith("sk_test_")) return {key,live:false,sessionPrefix:"cs_test_"};
+ throw new Error("STRIPE_SECRET_KEY ist ungültig");
 }
 
 function hex(bytes:ArrayBuffer){return [...new Uint8Array(bytes)].map(x=>x.toString(16).padStart(2,"0")).join("");}
@@ -32,8 +33,8 @@ async function verifySignature(raw:string,header:string,secret:string){
  return signatures.some(sig=>equalHex(digest,sig));
 }
 
-async function retrieveSession(id:string,key:string){
- if(!id.startsWith("cs_test_")||id.length>255) throw new Error("Keine gültige Stripe-Testsession");
+async function retrieveSession(id:string,key:string,sessionPrefix:string){
+ if(!id.startsWith(sessionPrefix)||id.length>255) throw new Error("Keine gültige Stripe-Session");
  const response=await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(id)}`,{headers:{Authorization:`Bearer ${key}`}});
  const payload=await response.json().catch(()=>({}));
  if(!response.ok||!payload?.id) throw new Error(payload?.error?.message||"Stripe-Session konnte nicht verifiziert werden");
@@ -52,16 +53,16 @@ Deno.serve(async(req:Request)=>{
 
   const event=JSON.parse(raw);
   const eventId=String(event?.id||"");
-  if(!eventId.startsWith("evt_")||event?.livemode!==false) return json({error:"Invalid or live Stripe event"},400);
+  const stripe=stripeConfig();
+  if(!eventId.startsWith("evt_")||event?.livemode!==stripe.live) return json({error:"Stripe event environment mismatch"},400);
   const type=String(event?.type||"");
   if(!["checkout.session.completed","checkout.session.async_payment_succeeded"].includes(type)) return json({received:true,ignored:true});
 
   const eventSession=event?.data?.object;
   const sessionId=String(eventSession?.id||"");
-  if(eventSession?.object!=="checkout.session"||!sessionId.startsWith("cs_test_")) return json({error:"Invalid Stripe checkout event"},400);
-  const stripeKey=stripeTestKey();
-  const session=await retrieveSession(sessionId,stripeKey);
-  if(session.livemode!==false||session.object!=="checkout.session") return json({error:"Live or invalid Stripe session"},400);
+  if(eventSession?.object!=="checkout.session"||!sessionId.startsWith(stripe.sessionPrefix)) return json({error:"Invalid Stripe checkout event"},400);
+  const session=await retrieveSession(sessionId,stripe.key,stripe.sessionPrefix);
+  if(session.livemode!==stripe.live||session.object!=="checkout.session") return json({error:"Stripe session environment mismatch"},400);
   if(String(session.status||"")!=="complete") return json({received:true,pending:true});
   if(String(session.payment_status||"")!=="paid") return json({received:true,pending:true});
 
