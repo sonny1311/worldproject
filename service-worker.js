@@ -1,7 +1,7 @@
 // ORVUNO App-Shell Service Worker.
 // Netzwerk hat Vorrang, damit Spieler niemals durch einen alten Cache auf veralteter Spiellogik hängen.
-const CACHE='orvuno-app-shell-v1';
-const SHELL=['./','./index.html','./css/style.css','./css/app-shell.css','./manifest.webmanifest'];
+const CACHE='orvuno-app-shell-v2';
+const SHELL=['./','./index.html','./css/style.css','./css/app-shell.css','./manifest.webmanifest','./app-icon.svg','./app-icon-maskable.svg'];
 const STATIC_RE=/\.(?:js|css|html|webmanifest|png|jpg|jpeg|webp|svg|ico|woff2?)$/i;
 
 self.addEventListener('install',event=>{
