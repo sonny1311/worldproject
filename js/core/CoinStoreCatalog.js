@@ -1,7 +1,6 @@
 // WorldProject - Echtgeld-Coinshop. Keine Coins werden clientseitig gutgeschrieben.
 // Der Checkout wird ausschliesslich ueber den verifizierten Payment-/Store-Backendpfad abgeschlossen.
 export const COIN_STORE_PACKAGES=Object.freeze([
- {id:'coins_50_smoke',coins:50,priceEuro:0.50,label:'50 Coins – Zahlungstest',bonusCoins:0,icon:'🧪',tag:'Zahlungstest'},
  {id:'coins_100',coins:100,priceEuro:0.99,label:'100 Coins',bonusCoins:0,icon:'🪙',tag:'Starter'},
  {id:'coins_550',coins:550,priceEuro:4.99,label:'550 Coins',bonusCoins:50,icon:'💰',tag:'Klein'},
  {id:'coins_1200',coins:1200,priceEuro:9.99,label:'1.200 Coins',bonusCoins:200,icon:'📦',tag:'Beliebt'},
