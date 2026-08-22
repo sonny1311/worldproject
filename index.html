@@ -26,13 +26,15 @@
         if(window.orvunoBootComplete||shown)return;
         shown=true;
         const render=()=>{
+          const i18n=window.orvunoI18n;
+          const tx=(key,fallback)=>i18n?.t?.(key)||fallback;
           const box=document.createElement('div');box.id='orvuno-boot-error';
           Object.assign(box.style,{position:'fixed',inset:'0',zIndex:'999999',display:'flex',alignItems:'center',justifyContent:'center',padding:'24px',background:'radial-gradient(circle at 50% 20%,#17263d,#03070c 70%)',fontFamily:'Arial,sans-serif',color:'#fff'});
           const card=document.createElement('div');Object.assign(card.style,{width:'min(620px,94vw)',padding:'30px',borderRadius:'18px',background:'#101a2b',border:'1px solid #7f3340',boxShadow:'0 24px 80px rgba(0,0,0,.55)'});
-          const title=document.createElement('h1');title.textContent='ORVUNO konnte nicht gestartet werden';title.style.margin='0 0 14px';
-          const text=document.createElement('div');text.textContent='Beim Laden ist ein technischer Fehler aufgetreten. Der Spielstand wurde dadurch nicht verändert.';Object.assign(text.style,{lineHeight:'1.5',color:'#dce3ed',marginBottom:'18px'});
+          const title=document.createElement('h1');title.dataset.i18n='boot.title';title.textContent=tx('boot.title','ORVUNO konnte nicht gestartet werden');title.style.margin='0 0 14px';
+          const text=document.createElement('div');text.dataset.i18n='boot.text';text.textContent=tx('boot.text','Beim Laden ist ein technischer Fehler aufgetreten. Der Spielstand wurde dadurch nicht verändert.');Object.assign(text.style,{lineHeight:'1.5',color:'#dce3ed',marginBottom:'18px'});
           const detail=document.createElement('pre');detail.textContent=[message,source].filter(Boolean).join('\n');Object.assign(detail.style,{whiteSpace:'pre-wrap',wordBreak:'break-word',padding:'13px',borderRadius:'9px',background:'#080d16',color:'#ffb4bd',fontSize:'12px'});
-          const retry=document.createElement('button');retry.textContent='Neu laden';Object.assign(retry.style,{marginTop:'18px',padding:'12px 18px',border:0,borderRadius:'9px',background:'#3868ee',color:'#fff',fontWeight:'800',cursor:'pointer'});retry.onclick=()=>location.reload();
+          const retry=document.createElement('button');retry.dataset.i18n='common.reload';retry.textContent=tx('common.reload','Neu laden');Object.assign(retry.style,{marginTop:'18px',padding:'12px 18px',border:0,borderRadius:'9px',background:'#3868ee',color:'#fff',fontWeight:'800',cursor:'pointer'});retry.onclick=()=>location.reload();
           card.append(title,text,detail,retry);box.append(card);document.body.append(box);
         };
         if(document.body)render();else addEventListener('DOMContentLoaded',render,{once:true});
@@ -45,7 +47,8 @@
 </head>
 <body>
   <div id="worldApp"></div>
-  <a class="android-download-fab" href="https://github.com/sonny1311/worldproject/releases/download/android-v1.0.0/app-release-signed.apk" download>📱 ORVUNO für Android herunterladen</a>
+  <a class="android-download-fab" data-i18n="android.download" href="https://github.com/sonny1311/worldproject/releases/download/android-v1.0.0/app-release-signed.apk" download>📱 ORVUNO für Android herunterladen</a>
+  <script type="module" src="js/core/OrvunoI18nIntegration.js"></script>
   <script type="module" src="js/core/AppPlatformBridge.js"></script>
   <script type="module" src="js/core/SingleBottlingSlotIntegration.js"></script>
   <script type="module" src="js/bootstrap.js"></script>
