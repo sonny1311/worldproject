@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="ORVUNO App Icon">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0d1b2e"/>
+      <stop offset="1" stop-color="#050a12"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffd86a"/>
+      <stop offset="1" stop-color="#d99b26"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="108" fill="url(#bg)"/>
+  <circle cx="256" cy="248" r="151" fill="none" stroke="url(#gold)" stroke-width="34"/>
+  <path d="M179 292V209h42v83h-42zm57 0V169h42v123h-42zm57 0V126h42v166h-42z" fill="#f4f7fb"/>
+  <path d="M158 333h196" stroke="#5ea1ff" stroke-width="22" stroke-linecap="round"/>
+  <path d="M184 157l58-41 52 24 54-53" fill="none" stroke="#5ea1ff" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="348" cy="87" r="14" fill="#5ea1ff"/>
+</svg>
