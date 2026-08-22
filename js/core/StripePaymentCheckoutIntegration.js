@@ -1,4 +1,4 @@
-// ORVUNO – Stripe Hosted Checkout provider (Testmodus).
+// ORVUNO – Stripe Hosted Checkout provider.
 // Preis und Kaufprodukt werden serverseitig aus store_products aufgelöst.
 function api(){const a=window.worldAccounts?.authApi;if(!a)throw new Error('Zahlungssystem ist noch nicht bereit');return a;}
 function assertCheckoutContext(){if(window.worldBusinessSwitchPaymentGuard?.blocked?.())throw new Error('Während eines Betriebswechsels kann keine Zahlung gestartet werden');}
@@ -8,9 +8,10 @@ export async function beginStripePurchase({sku}={}){
  assertCheckoutContext();
  if(!sku)throw new Error('Ungültiges Kaufprodukt');
  const result=await edge('stripe_checkout',{sku});
- if(result?.environment!=='test'||!String(result?.sessionId||'').startsWith('cs_test_')||!result?.url)throw new Error('Stripe-Testcheckout konnte nicht sicher gestartet werden');
+ const environment=result?.environment,sessionId=String(result?.sessionId||''),prefix=environment==='live'?'cs_live_':environment==='test'?'cs_test_':'';
+ if(!prefix||!sessionId.startsWith(prefix)||!result?.url)throw new Error('Stripe-Checkout konnte nicht sicher gestartet werden');
  location.assign(result.url);
- return {success:true,opened:true,provider:'stripe',environment:'test',sessionId:result.sessionId};
+ return {success:true,opened:true,provider:'stripe',environment,sessionId};
 }
 export function beginCoinPurchase(request={}){return beginStripePurchase({sku:request.packageId});}
 export function beginPremiumPurchase(plan={}){return beginStripePurchase({sku:plan.id||plan.planId});}
@@ -62,16 +63,16 @@ export async function verifyStripeReturn(){
 
  if(state==='stripe_cancelled'){
   cleanStripeReturnUrl();
-  const detail={provider:'stripe',environment:'test',status:'cancelled',paid:false,fulfilled:false};
+  const detail={provider:'stripe',status:'cancelled',paid:false,fulfilled:false};
   emitReturn(detail);
   showPaymentNotice('Stripe-Zahlung abgebrochen. Es wurde nichts gekauft.','info');
   return detail;
  }
 
  const sessionId=String(url.searchParams.get('session_id')||'');
- if(!sessionId.startsWith('cs_test_')){
+ if(!/^cs_(test|live)_/.test(sessionId)){
   cleanStripeReturnUrl();
-  const detail={provider:'stripe',environment:'test',status:'invalid_return',paid:false,fulfilled:false};
+  const detail={provider:'stripe',status:'invalid_return',paid:false,fulfilled:false};
   emitReturn(detail);
   showPaymentNotice('Stripe-Rückkehr konnte nicht sicher geprüft werden. Es wurde clientseitig nichts gutgeschrieben.','error');
   return detail;
@@ -81,9 +82,10 @@ export async function verifyStripeReturn(){
   await waitForPaymentApi();
   const result=await verifyFulfillment(sessionId);
   cleanStripeReturnUrl();
-  const paid=result?.environment==='test'&&result?.sessionId===sessionId&&result?.paid===true;
+  const environment=result?.environment;
+  const paid=['test','live'].includes(environment)&&result?.sessionId===sessionId&&result?.paid===true;
   const fulfilled=paid&&result?.fulfilled===true;
-  const detail={provider:'stripe',environment:'test',status:fulfilled?'fulfilled':paid?'paid_pending_fulfillment':'pending',paid,fulfilled,sessionId,sku:result?.sku||'',checkoutStatus:result?.checkoutStatus||'',paymentStatus:result?.paymentStatus||''};
+  const detail={provider:'stripe',environment,status:fulfilled?'fulfilled':paid?'paid_pending_fulfillment':'pending',paid,fulfilled,sessionId,sku:result?.sku||'',checkoutStatus:result?.checkoutStatus||'',paymentStatus:result?.paymentStatus||''};
   emitReturn(detail);
   if(fulfilled){await refreshEntitlements();showPaymentNotice('✅ Stripe-Zahlung bestätigt und serverseitig gutgeschrieben.','success');}
   else if(paid)showPaymentNotice('Stripe-Zahlung ist bestätigt. Die serverseitige Gutschrift ist noch in Bearbeitung; es erfolgt keine clientseitige Doppelgutschrift.','info');
@@ -91,7 +93,7 @@ export async function verifyStripeReturn(){
   return detail;
  }catch(error){
   cleanStripeReturnUrl();
-  const detail={provider:'stripe',environment:'test',status:'verification_failed',paid:false,fulfilled:false,sessionId,error:error instanceof Error?error.message:String(error)};
+  const detail={provider:'stripe',status:'verification_failed',paid:false,fulfilled:false,sessionId,error:error instanceof Error?error.message:String(error)};
   emitReturn(detail);
   showPaymentNotice('Stripe-Zahlung konnte nicht sicher bestätigt werden. Es wurde clientseitig nichts gutgeschrieben.','error');
   return detail;
@@ -100,7 +102,9 @@ export async function verifyStripeReturn(){
 
 function install(){
  window.worldPaymentProviders??={};
- window.worldPaymentProviders.stripe={id:'stripe',label:'Stripe (Test)',environment:'test',beginCoinPurchase,beginPremiumPurchase,begin:beginStripePurchase,verifyReturn:verifyStripeReturn};
+ const provider={id:'stripe',label:'Stripe',beginCoinPurchase,beginPremiumPurchase,begin:beginStripePurchase,verifyReturn:verifyStripeReturn};
+ window.worldPaymentProviders.stripe=provider;
+ window.worldPaymentCheckout=provider;
  const run=()=>verifyStripeReturn().catch(()=>{});
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else queueMicrotask(run);
 }
