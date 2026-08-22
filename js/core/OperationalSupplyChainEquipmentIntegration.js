@@ -45,7 +45,7 @@ if(!proto.__worldEquipmentIntegrated){
    if(current?.machineAvailable)return;
    const compatible=new Set(compatibleMachineIds(company,recipe.machineType)),installing=(company?.buildingState?.equipment||[]).find(x=>x&&x.status==='installing'&&(compatible.has(x.id||x.type)||(x.id||x.type)===recipe.machineType));
    if(installing){
-    const state=equipmentInstallationState(installing,{now:Date.now()}),minutes=Math.max(1,Math.ceil(Number(state.remainingMs||0)/60000)),box=this.el('div');box.className='machine-installation-note';Object.assign(box.style,{marginTop:'8px',padding:'9px',border:'1px solid #60a5fa',borderRadius:'7px',background:'#eff6ff'});box.append(this.el('strong',`🔧 ${installing.name||installing.label||installing.id} wird montiert`),this.el('div',`Noch ca. ${minutes>=60?`${Math.floor(minutes/60)} Std. ${minutes%60} Min.`:`${minutes} Min.`} bis zur Betriebsbereitschaft.`));row.append(box);return;
+    const state=equipmentInstallationState(installing,{now:Date.now()}),minutes=Math.max(1,Math.ceil(Number(state.remainingMs||0)/60000)),box=this.el('div');box.className='machine-installation-note';Object.assign(box.style,{marginTop:'8px',padding:'9px',border:'1px solid #3b82f6',borderRadius:'7px',background:'#0b1b33',color:'#f8fafc'});box.append(this.el('strong',`🔧 ${installing.name||installing.label||installing.id} wird montiert`),this.el('div',`Noch ca. ${minutes>=60?`${Math.floor(minutes/60)} Std. ${minutes%60} Min.`:`${minutes} Min.`} bis zur Betriebsbereitschaft.`));row.append(box);return;
    }
    const options=equipmentForMachineRequirement(company,recipe.machineType).filter(x=>!x.owned);
    if(!options.length)return;
