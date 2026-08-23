@@ -27,7 +27,9 @@
   <script>
     (()=>{
       let shown=false;
+      const isBenignResizeObserverMessage=(value)=>/ResizeObserver loop (?:completed with undelivered notifications|limit exceeded)/i.test(String(value||''));
       function showBootError(message,source=''){
+        if(isBenignResizeObserverMessage(message))return;
         if(window.orvunoBootComplete||shown)return;
         shown=true;
         const render=()=>{
@@ -44,8 +46,14 @@
         };
         if(document.body)render();else addEventListener('DOMContentLoaded',render,{once:true});
       }
-      addEventListener('error',e=>showBootError(e.message||'Unbekannter Startfehler',e.filename?`${e.filename}:${e.lineno||''}`:''));
-      addEventListener('unhandledrejection',e=>{const r=e.reason;showBootError(r?.message||String(r||'Unbekannter Startfehler'));});
+      addEventListener('error',e=>{
+        if(isBenignResizeObserverMessage(e?.message)){
+          e.preventDefault?.();
+          return;
+        }
+        showBootError(e.message||'Unbekannter Startfehler',e.filename?`${e.filename}:${e.lineno||''}`:'');
+      });
+      addEventListener('unhandledrejection',e=>{const r=e.reason;if(isBenignResizeObserverMessage(r?.message||r))return;showBootError(r?.message||String(r||'Unbekannter Startfehler'));});
       window.orvunoShowBootError=showBootError;
     })();
   </script>
