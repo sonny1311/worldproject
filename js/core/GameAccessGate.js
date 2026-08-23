@@ -34,6 +34,10 @@ export class GameAccessGate {
             applyPlayerMoneyContext(user);
         }
 
+        // Erst NACH erfolgreicher Authentifizierung wird die Spieloberfläche sichtbar.
+        // Dadurch sieht ein nicht angemeldeter App-Nutzer ausschließlich den Login-Dialog.
+        document.documentElement.classList.add("orvuno-authenticated");
+
         // Wichtig: access-granted bekommt ebenfalls das vollständige Profil, damit
         // InGameAdminAccessIntegration die serverseitige owner/admin-Rolle sofort sieht.
         window.dispatchEvent(new CustomEvent("world:access-granted",{detail:{user:profile}}));
@@ -50,7 +54,7 @@ export class GameAccessGate {
     }
 
     async ensureAccess(){
-        if(this.user) return this.user;
+        if(this.user){ document.documentElement.classList.add("orvuno-authenticated"); return this.user; }
         if(!this._promise) this._promise=new Promise(resolve=>{this._resolver=resolve;});
         const restored=await this.restoreSession(); if(restored) return restored;
         this.openRequiredLogin(); return this._promise;
@@ -58,6 +62,7 @@ export class GameAccessGate {
 
     openRequiredLogin(){
         if(this.dialog?.overlay) return;
+        document.documentElement.classList.remove("orvuno-authenticated");
         this.dialog=new AccountAuthDialog({accountSystem:this.accountSystem,api:this.api,required:true,onAuthenticated:user=>this.grant(user)});
         this.dialog.open("login");
     }
@@ -65,6 +70,7 @@ export class GameAccessGate {
     async logout(){
         try{ await this.api.logout(); }catch{}
         this.user=null; window.worldCurrentUser=null; window.worldServerAccountOverview=null;
+        document.documentElement.classList.remove("orvuno-authenticated");
         window.dispatchEvent(new CustomEvent("world:access-revoked")); location.reload();
     }
 }
