@@ -1,0 +1,97 @@
+/* ORVUNO Premium Test Theme
+   Isolated visual experiment for the test branch only.
+   Goal: premium dark identity inspired by the quality level of FUTNARO,
+   while keeping ORVUNO's own blue/industrial character. */
+:root{
+  --orv-bg:#05080d;
+  --orv-bg-2:#0a1019;
+  --orv-panel:#0d141f;
+  --orv-panel-2:#111b29;
+  --orv-line:rgba(218,166,58,.58);
+  --orv-line-soft:rgba(218,166,58,.22);
+  --orv-gold:#d9a63a;
+  --orv-gold-bright:#f1c45d;
+  --orv-blue:#2f6fba;
+  --orv-blue-bright:#4c91e6;
+  --orv-red:#8d2029;
+  --orv-text:#f4f6f8;
+  --orv-muted:#aeb9c8;
+  --orv-shadow:0 14px 40px rgba(0,0,0,.38);
+}
+html,body{
+  background:
+    radial-gradient(circle at 82% 8%,rgba(47,111,186,.14),transparent 28%),
+    radial-gradient(circle at 14% 18%,rgba(217,166,58,.08),transparent 24%),
+    linear-gradient(145deg,var(--orv-bg),#070b12 48%,#030508);
+  color:var(--orv-text);
+}
+#worldApp{background:transparent!important;color:var(--orv-text)}
+
+/* Existing game surfaces: visual upgrade without changing game logic/layout. */
+#worldApp :is(.card,.panel,.box,.widget,.tile,.section,.content-card,[class*="card"],[class*="panel"]){
+  border-color:var(--orv-line-soft)!important;
+  box-shadow:var(--orv-shadow);
+}
+#worldApp :is(.card,.panel,.widget,.tile,[class*="card"],[class*="panel"]){
+  background:linear-gradient(155deg,rgba(17,27,41,.97),rgba(7,11,18,.97))!important;
+}
+#worldApp :is(h1,h2,h3,.title,.heading,[class*="title"]){
+  color:var(--orv-text);
+  text-shadow:0 1px 18px rgba(0,0,0,.5);
+}
+#worldApp :is(.subtitle,.muted,.secondary,[class*="muted"]){color:var(--orv-muted)!important}
+
+/* Navigation gets ORVUNO blue as identity; gold remains the premium trim. */
+#worldApp :is(nav,.nav,.sidebar,.topbar,.header,[class*="sidebar"],[class*="topbar"]){
+  background:linear-gradient(180deg,rgba(10,16,25,.98),rgba(5,8,13,.98))!important;
+  border-color:var(--orv-line-soft)!important;
+}
+#worldApp :is(a,button,[role="button"]){transition:background-color .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s ease}
+#worldApp :is(a,button,[role="button"]):hover{border-color:var(--orv-gold)!important}
+#worldApp :is(.active,[aria-current="page"],[class*="active"]){
+  border-color:var(--orv-gold)!important;
+  box-shadow:inset 3px 0 0 var(--orv-blue-bright),0 0 24px rgba(47,111,186,.16);
+}
+
+/* Primary actions remain clearly actionable instead of becoming decorative. */
+#worldApp :is(button,.button,.btn,[role="button"]):not(.danger):not([class*="danger"]){
+  border:1px solid rgba(217,166,58,.48);
+}
+#worldApp :is(.primary,.btn-primary,[class*="primary"]){
+  background:linear-gradient(180deg,#326fb4,#1d4f88)!important;
+  color:#fff!important;
+  border-color:var(--orv-gold)!important;
+  box-shadow:0 7px 20px rgba(24,74,128,.32);
+}
+#worldApp :is(.danger,.btn-danger,[class*="danger"]){background:linear-gradient(180deg,#9b2630,#68151d)!important}
+
+/* Money / premium / important values: restrained gold hierarchy. */
+#worldApp :is(.money,.coins,.premium,.currency,[class*="money"],[class*="coin"],[class*="premium"]){color:var(--orv-gold-bright)!important}
+
+/* Tables stay readable for management-heavy screens. */
+#worldApp table{border-collapse:separate;border-spacing:0;background:rgba(6,10,16,.78)}
+#worldApp th{background:rgba(217,166,58,.08);color:var(--orv-gold-bright);border-color:var(--orv-line-soft)!important}
+#worldApp td{border-color:rgba(255,255,255,.07)!important}
+#worldApp tr:hover td{background:rgba(47,111,186,.07)}
+
+/* Inputs: high contrast, no flashy styling. */
+#worldApp :is(input,select,textarea){
+  background:#080d15!important;
+  color:var(--orv-text)!important;
+  border:1px solid rgba(217,166,58,.3)!important;
+}
+#worldApp :is(input,select,textarea):focus{outline:2px solid rgba(76,145,230,.42);border-color:var(--orv-gold)!important}
+
+/* Scrollbar and selection are subtle brand details. */
+*{scrollbar-color:#375d88 #090e16}
+::selection{background:rgba(47,111,186,.6);color:#fff}
+
+.android-download-fab{
+  background:linear-gradient(180deg,#14243a,#0b1422)!important;
+  border-color:var(--orv-gold)!important;
+  box-shadow:0 10px 32px rgba(0,0,0,.48),0 0 18px rgba(47,111,186,.12)!important;
+}
+
+@media (max-width:720px){
+  #worldApp :is(.card,.panel,.widget,.tile,[class*="card"],[class*="panel"]){box-shadow:0 8px 24px rgba(0,0,0,.3)}
+}
