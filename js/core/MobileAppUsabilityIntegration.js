@@ -23,7 +23,7 @@ html.orvuno-installed-app .android-download-fab{display:none!important}
   #orvuno-side-nav,#orvuno-right-rail{display:none!important}
   #world-main-nav{position:fixed!important;left:0!important;right:0!important;top:auto!important;bottom:0!important;width:100%!important;max-width:none!important;min-height:0!important;height:auto!important;max-height:76px!important;display:flex!important;flex-wrap:nowrap!important;align-items:center!important;gap:6px!important;padding:8px 8px calc(8px + env(safe-area-inset-bottom,0px))!important;box-sizing:border-box!important;overflow-x:auto!important;overflow-y:hidden!important;background:rgba(7,16,29,.98)!important;border-top:1px solid #2b3b53!important;box-shadow:0 -8px 24px rgba(0,0,0,.4)!important;z-index:99000!important;scrollbar-width:none!important}
   #world-main-nav::-webkit-scrollbar{display:none!important}
-  #world-main-nav button{flex:0 0 auto!important;width:auto!important;min-width:auto!important;max-width:none!important;min-height:44px!important;height:44px!important;margin:0!important;padding:8px 10px!important;border-radius:9px!important;font-size:13px!important;line-height:1.05!important;white-space:nowrap!important;box-shadow:none!important}
+  #world-main-nav button{flex:0 0 auto!important;width:auto!important;min-width:auto!important;max-width:none!important;min-height:44px!important;height:44px!important;margin:0!important;padding:8px 10px!important;border-radius:9px!important;font-size:13px!important;line-height:1.05!important;white-space:nowrap!important;box-shadow:none!important;position:static!important;inset:auto!important;transform:none!important}
   #orvuno-language-control{top:calc(env(safe-area-inset-top,0px) + 6px)!important;right:8px!important;left:auto!important;transform:scale(.82)!important;transform-origin:top right!important;z-index:99500!important}
   .android-download-fab{display:none!important}
   [role="dialog"],.orvuno-modal,.modal,.dialog{width:100vw!important;max-width:100vw!important;max-height:100dvh!important;border-radius:0!important;box-sizing:border-box!important}
@@ -33,11 +33,36 @@ html.orvuno-installed-app .android-download-fab{display:none!important}
 `;
     document.head.append(s);
   }
+  function moveFloatingActionsIntoNav(){
+    if(!isMobile())return;
+    const nav=document.getElementById('world-main-nav');
+    if(!nav)return;
+    const candidates=[...document.querySelectorAll('button,[role="button"]')];
+    for(const el of candidates){
+      if(el.closest('#world-main-nav'))continue;
+      const text=(el.textContent||'').replace(/\s+/g,' ').trim();
+      const move=text==='Ausbau'||/^⚙️?\s*Ausbau$/i.test(text)||/^🎬?\s*Werbung\b/i.test(text);
+      if(!move)continue;
+      const cs=getComputedStyle(el);
+      const looksFloating=cs.position==='fixed'||cs.position==='sticky'||Number(cs.zIndex||0)>1000;
+      if(!looksFloating)continue;
+      el.dataset.orvunoMobileRelocated='1';
+      el.style.removeProperty('position');
+      el.style.removeProperty('top');
+      el.style.removeProperty('right');
+      el.style.removeProperty('bottom');
+      el.style.removeProperty('left');
+      el.style.removeProperty('inset');
+      el.style.removeProperty('transform');
+      nav.append(el);
+    }
+  }
   function normalizeRuntime(){
     mark();
     if(!isMobile())return;
     const nav=document.getElementById('world-main-nav');
     if(nav){nav.style.removeProperty('top');nav.setAttribute('aria-label','ORVUNO Schnellnavigation');}
+    moveFloatingActionsIntoNav();
     // Remove desktop-only fixed positioning from large content overlays so the page itself scrolls.
     document.querySelectorAll('#world-home-dashboard [style*="position: fixed"],#world-home-dashboard [style*="position:fixed"]').forEach(el=>{
       if(el.closest('[role="dialog"],.modal,.dialog,.orvuno-modal'))return;
