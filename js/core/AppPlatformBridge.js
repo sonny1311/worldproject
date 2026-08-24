@@ -1,7 +1,12 @@
-// ORVUNO – schlanke Brücke zwischen Webspiel und späterem Android-/AdMob-Wrapper.
+// ORVUNO – Brücke zwischen Webspiel und nativen Android-Store-Wrappern.
 // Enthält absichtlich keine produktiven SDK-IDs, Secrets oder Store-spezifischen Schlüssel.
 
+const params=new URLSearchParams(location.search);
+const explicitStore=String(params.get('app')||'').toLowerCase();
+const twaReferrer=String(document.referrer||'').startsWith('android-app://');
 const isStandalone=()=>window.matchMedia?.('(display-mode: standalone)')?.matches||window.navigator.standalone===true;
+const detectedStore=explicitStore==='amazon'?'amazon':explicitStore==='google'?'google':window.OrvunoAmazonIap?'amazon':twaReferrer?'google':'web';
+const nativeApp=detectedStore==='amazon'||detectedStore==='google';
 
 function topVisibleOverlay(){
   const candidates=[...document.querySelectorAll('[data-orvuno-payment-overlay],[role="dialog"],.orvuno-modal,.modal,.dialog')]
@@ -45,6 +50,8 @@ async function showRewardedAd(context={}){
 
 function setConnectionState(){
   document.documentElement.dataset.orvunoOnline=navigator.onLine?'1':'0';
+  document.documentElement.dataset.orvunoStore=detectedStore;
+  document.documentElement.dataset.orvunoNativeApp=nativeApp?'1':'0';
   window.dispatchEvent(new CustomEvent('orvuno:connection-changed',{detail:{online:navigator.onLine}}));
 }
 
@@ -55,8 +62,10 @@ async function registerServiceWorker(){
 }
 
 window.orvunoAppBridge={
-  version:1,
+  version:2,
   standalone:isStandalone(),
+  store:detectedStore,
+  isNativeApp:nativeApp,
   handleBack,
   closeTopOverlay,
   registerRewardedAdProvider,
