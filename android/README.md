@@ -1,17 +1,28 @@
-# ORVUNO Android / Google Play
+# ORVUNO Android / Google Play / Amazon Appstore
 
 Feste Daten für die Android-Version:
 
 - App-Name: ORVUNO
 - Paketname / Application ID: `de.nadena.orvuno`
-- Start-URL: `https://orvuno-worldproject.vercel.app/`
+- Web-Basis: `https://orvuno-worldproject.vercel.app/`
 - Manifest: `https://orvuno-worldproject.vercel.app/manifest.webmanifest`
 - Version: `1.0.0`
 - Version Code: `1`
 - Release-Kanal zunächst: Google Play – geschlossener Test
 - Wrapper: Trusted Web Activity (TWA) mit Bubblewrap
 
-## Bubblewrap
+## App-Erkennung und Registrierung
+
+Die Store-App darf neue Accounts direkt freischalten, ohne dass der Spieler zuerst eine Registrierungs-/Bestätigungsmail anklicken muss. Die normale Website behält dagegen die E-Mail-Bestätigung.
+
+Für eine eindeutige Store-Kennung sollten die Wrapper folgende Start-URLs verwenden:
+
+- Google Play: `https://orvuno-worldproject.vercel.app/?orvuno_app=android&orvuno_store=google`
+- Amazon Appstore: `https://orvuno-worldproject.vercel.app/?orvuno_app=android&orvuno_store=amazon`
+
+Die Kennung wird beim ersten Start lokal gespeichert. Zusätzlich erkennt ORVUNO Android-Standalone/TWA-Starts als App, damit bereits gebaute Wrapper mit der bisherigen Start-URL `/` weiterhin funktionieren.
+
+## Bubblewrap / Google Play
 
 ORVUNO ist bereits als Web-App/PWA aufgebaut. Für Google Play wird eine Trusted Web Activity mit Bubblewrap verwendet. Die Website bleibt die eigentliche Spielanwendung; die Android-App ist der verifizierte Wrapper.
 
@@ -29,7 +40,7 @@ Beim Assistenten mindestens diese Werte verwenden:
 - Version name: `1.0.0`
 - Version code: `1`
 - Host: `orvuno-worldproject.vercel.app`
-- Start URL: `/`
+- Start URL: `/?orvuno_app=android&orvuno_store=google`
 
 Danach:
 
@@ -38,6 +49,10 @@ bubblewrap build
 ```
 
 Die für Google Play bestimmte Datei heißt anschließend üblicherweise `app-release-bundle.aab`.
+
+## Amazon Appstore
+
+Für die Amazon-Ausgabe wird derselbe Webstand verwendet. Der Android-Wrapper soll als Start-URL `/?orvuno_app=android&orvuno_store=amazon` verwenden. Store-spezifische Bezahlmodule werden getrennt von der Google-Play-Version behandelt; die Account-Registrierung verhält sich in beiden Android-Store-Versionen gleich.
 
 ## Upload-Key
 
